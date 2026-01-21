@@ -177,30 +177,32 @@ export const InventoryProvider = ({
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
       if (event.type === 'UPDATE') {
+        // We use spread syntax to ensure new array references are passed to React
+        // even if the service returned a mutated array (although service is fixed now)
         switch (event.key) {
           case inventoryService.keys.STREETS:
-            setStreets(inventoryService.getStreets())
+            setStreets([...inventoryService.getStreets()])
             break
           case inventoryService.keys.LOCATIONS:
-            setLocations(inventoryService.getLocations())
+            setLocations([...inventoryService.getLocations()])
             break
           case inventoryService.keys.MATERIALS:
-            setMaterials(inventoryService.getMaterials())
+            setMaterials([...inventoryService.getMaterials()])
             break
           case inventoryService.keys.EQUIPMENTS:
-            setEquipments(inventoryService.getEquipments())
+            setEquipments([...inventoryService.getEquipments()])
             break
           case inventoryService.keys.SETTINGS:
-            setSettings(inventoryService.getSettings())
+            setSettings({ ...inventoryService.getSettings() })
             break
           case inventoryService.keys.PALLETS:
-            setPallets(inventoryService.getPallets())
+            setPallets([...inventoryService.getPallets()])
             break
           case inventoryService.keys.HISTORY:
-            setHistory(inventoryService.getHistory())
+            setHistory([...inventoryService.getHistory()])
             break
           case inventoryService.keys.USERS:
-            setUsers(inventoryService.getUsers())
+            setUsers([...inventoryService.getUsers()])
             break
         }
       } else if (event.type === 'SYNC_STATUS') {

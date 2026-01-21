@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -53,10 +53,12 @@ export function MaterialsTab() {
     name: string
     type: MaterialType
     description: string
+    image: string
   }>({
     name: '',
     type: 'TRP',
     description: '',
+    image: '',
   })
 
   const filteredMaterials = materials.filter(
@@ -81,7 +83,7 @@ export function MaterialsTab() {
   const closeDialog = () => {
     setIsAddOpen(false)
     setEditingMaterial(null)
-    setFormData({ name: '', type: 'TRP', description: '' })
+    setFormData({ name: '', type: 'TRP', description: '', image: '' })
   }
 
   const openEdit = (material: Material) => {
@@ -90,6 +92,7 @@ export function MaterialsTab() {
       name: material.name,
       type: material.type,
       description: material.description || '',
+      image: material.image || '',
     })
     setIsAddOpen(true)
   }
@@ -98,7 +101,7 @@ export function MaterialsTab() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
         <div>
-          <h3 className="text-lg font-medium">Catálogo de Materiais</h3>
+          <h3 className="text-lg font-medium">Catálogo de Fardamento</h3>
           <p className="text-sm text-muted-foreground">
             Base de dados mestre para itens de estoque (TRP/TRD).
           </p>
@@ -108,20 +111,21 @@ export function MaterialsTab() {
         </Button>
       </div>
 
-      <div className="flex items-center space-x-2 bg-white p-2 rounded-md border">
+      <div className="flex items-center space-x-2 bg-background p-2 rounded-md border">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar material..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="border-0 focus-visible:ring-0"
+          className="border-0 focus-visible:ring-0 shadow-none"
         />
       </div>
 
-      <div className="border rounded-md bg-white">
+      <div className="border rounded-md bg-card">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[60px]">Img</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Descrição Padrão</TableHead>
               <TableHead>Tipo</TableHead>
@@ -132,7 +136,7 @@ export function MaterialsTab() {
             {filteredMaterials.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center py-8 text-muted-foreground"
                 >
                   Nenhum material encontrado.
@@ -141,14 +145,29 @@ export function MaterialsTab() {
             ) : (
               filteredMaterials.map((material) => (
                 <TableRow key={material.id}>
+                  <TableCell>
+                    {material.image ? (
+                      <div className="h-8 w-8 rounded overflow-hidden bg-slate-100">
+                        <img
+                          src={material.image}
+                          alt={material.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center">
+                        <ImageIcon className="h-4 w-4 text-slate-300" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{material.name}</TableCell>
                   <TableCell>{material.description}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
                         material.type === 'TRD'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
                       }`}
                     >
                       {material.type}
@@ -222,7 +241,7 @@ export function MaterialsTab() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Ex: Motor Elétrico"
+                placeholder="Ex: Gandola Camuflada"
               />
             </div>
             <div className="space-y-2">
@@ -233,6 +252,16 @@ export function MaterialsTab() {
                   setFormData({ ...formData, description: e.target.value })
                 }
                 placeholder="Ex: Especificações técnicas..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>URL da Imagem</Label>
+              <Input
+                value={formData.image}
+                onChange={(e) =>
+                  setFormData({ ...formData, image: e.target.value })
+                }
+                placeholder="https://..."
               />
             </div>
             <div className="space-y-2">

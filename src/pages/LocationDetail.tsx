@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Box, Trash2, Edit2, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Box,
+  Trash2,
+  Edit2,
+  AlertTriangle,
+  ImageIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -48,6 +55,7 @@ export default function LocationDetail() {
     getLocationStatus,
     updatePallet,
     clearLocation,
+    getMaterialImage,
   } = useInventoryStore()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -61,7 +69,6 @@ export default function LocationDetail() {
   const locationPallets = getPalletsByLocation(location.id)
   const status = getLocationStatus(location.id)
   const isOccupied = status === 'occupied'
-  const isVerification = status === 'verification'
 
   const handleEdit = () => {
     if (selectedPallet) {
@@ -95,23 +102,17 @@ export default function LocationDetail() {
             Localização {location.name}
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            {isVerification ? (
-              <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Necessita Verificação
-              </Badge>
-            ) : (
-              <Badge
-                variant={isOccupied ? 'default' : 'destructive'}
-                className={cn(
-                  'text-sm px-3 py-0.5',
-                  isOccupied
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-red-600 hover:bg-red-700',
-                )}
-              >
-                {isOccupied ? 'Ocupado' : 'Vazio'}
-              </Badge>
-            )}
+            <Badge
+              variant={isOccupied ? 'default' : 'destructive'}
+              className={cn(
+                'text-sm px-3 py-0.5',
+                isOccupied
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-red-600 hover:bg-red-700',
+              )}
+            >
+              {isOccupied ? 'Ocupado' : 'Vazio'}
+            </Badge>
             <span className="text-muted-foreground text-sm">
               ID: {location.id}
             </span>
@@ -127,7 +128,7 @@ export default function LocationDetail() {
             </CardHeader>
             <CardContent>
               {locationPallets.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-lg border border-dashed">
+                <div className="text-center py-12 text-muted-foreground bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed">
                   <Box className="h-12 w-12 mx-auto mb-3 opacity-20" />
                   <p>Nenhum material alocado nesta localização</p>
                 </div>
@@ -136,6 +137,7 @@ export default function LocationDetail() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[80px]">Ref.</TableHead>
                         <TableHead>Material</TableHead>
                         <TableHead>Qtd</TableHead>
                         <TableHead className="hidden sm:table-cell">
@@ -145,91 +147,113 @@ export default function LocationDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {locationPallets.map((pallet) => (
-                        <TableRow key={pallet.id}>
-                          <TableCell>
-                            <div className="font-medium">
-                              {pallet.materialName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {pallet.description}
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className="mt-1 text-[10px]"
-                            >
-                              {pallet.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-bold">
-                            {pallet.quantity}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
-                            {format(new Date(pallet.entryDate), 'dd/MM/yyyy', {
-                              locale: ptBR,
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Dialog
-                              open={isEditOpen}
-                              onOpenChange={setIsEditOpen}
-                            >
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setSelectedPallet(pallet)
-                                    setEditForm({
-                                      quantity: pallet.quantity,
-                                      description: pallet.description,
-                                    })
-                                  }}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Editar Palete</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                  <div className="space-y-2">
-                                    <Label>Descrição</Label>
-                                    <Input
-                                      value={editForm.description}
-                                      onChange={(e) =>
-                                        setEditForm({
-                                          ...editForm,
-                                          description: e.target.value,
-                                        })
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Quantidade</Label>
-                                    <Input
-                                      type="number"
-                                      value={editForm.quantity}
-                                      onChange={(e) =>
-                                        setEditForm({
-                                          ...editForm,
-                                          quantity: parseInt(e.target.value),
-                                        })
-                                      }
-                                    />
-                                  </div>
+                      {locationPallets.map((pallet) => {
+                        const imageUrl = getMaterialImage(pallet.materialName)
+                        return (
+                          <TableRow key={pallet.id}>
+                            <TableCell>
+                              {imageUrl ? (
+                                <div className="h-12 w-12 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden border">
+                                  <img
+                                    src={imageUrl}
+                                    alt={pallet.materialName}
+                                    className="h-full w-full object-cover"
+                                  />
                                 </div>
-                                <DialogFooter>
-                                  <Button onClick={handleEdit}>
-                                    Salvar Alterações
+                              ) : (
+                                <div className="h-12 w-12 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-muted-foreground">
+                                  <ImageIcon className="h-6 w-6 opacity-20" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {pallet.materialName}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {pallet.description}
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="mt-1 text-[10px]"
+                              >
+                                {pallet.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-bold">
+                              {pallet.quantity}
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                              {format(
+                                new Date(pallet.entryDate),
+                                'dd/MM/yyyy',
+                                {
+                                  locale: ptBR,
+                                },
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Dialog
+                                open={isEditOpen}
+                                onOpenChange={setIsEditOpen}
+                              >
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedPallet(pallet)
+                                      setEditForm({
+                                        quantity: pallet.quantity,
+                                        description: pallet.description,
+                                      })
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
                                   </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Editar Palete</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label>Descrição</Label>
+                                      <Input
+                                        value={editForm.description}
+                                        onChange={(e) =>
+                                          setEditForm({
+                                            ...editForm,
+                                            description: e.target.value,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Quantidade</Label>
+                                      <Input
+                                        type="number"
+                                        value={editForm.quantity}
+                                        onChange={(e) =>
+                                          setEditForm({
+                                            ...editForm,
+                                            quantity: parseInt(e.target.value),
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button onClick={handleEdit}>
+                                      Salvar Alterações
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -239,7 +263,7 @@ export default function LocationDetail() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-50">
+          <Card className="bg-slate-50 dark:bg-slate-900/50">
             <CardHeader>
               <CardTitle className="text-lg">Ações Rápidas</CardTitle>
             </CardHeader>
@@ -283,12 +307,13 @@ export default function LocationDetail() {
             <CardContent className="text-sm space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span>
-                  {isVerification
-                    ? 'Verificar'
-                    : isOccupied
-                      ? 'Ocupado'
-                      : 'Livre'}
+                <span
+                  className={cn(
+                    'font-bold',
+                    isOccupied ? 'text-green-600' : 'text-red-600',
+                  )}
+                >
+                  {isOccupied ? 'Ocupado' : 'Livre'}
                 </span>
               </div>
               <div className="flex justify-between">

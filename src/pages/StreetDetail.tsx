@@ -1,19 +1,10 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import {
-  Filter,
-  ArrowLeft,
-  Layers,
-  Plus,
-  AlertTriangle,
-  Pencil,
-  Trash2,
-} from 'lucide-react'
+import { ArrowLeft, Layers, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -58,7 +49,6 @@ export default function StreetDetail() {
   const [editLocation, setEditLocation] = useState<{
     id: string
     name: string
-    needsVerification: boolean
   } | null>(null)
 
   const street = streets.find((s) => s.id === id)
@@ -94,11 +84,7 @@ export default function StreetDetail() {
 
   const handleUpdateLocation = () => {
     if (editLocation && editLocation.name.trim()) {
-      updateLocation(
-        editLocation.id,
-        editLocation.name,
-        editLocation.needsVerification,
-      )
+      updateLocation(editLocation.id, editLocation.name)
       setEditLocation(null)
       toast({ title: 'Localização atualizada' })
     }
@@ -114,8 +100,8 @@ export default function StreetDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="h-8 w-8 text-slate-400" />
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Layers className="h-8 w-8 text-muted-foreground" />
               {street.name}
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -149,7 +135,7 @@ export default function StreetDetail() {
             </DialogContent>
           </Dialog>
 
-          <div className="flex items-center gap-4 bg-white p-3 rounded-lg border shadow-sm">
+          <div className="flex items-center gap-4 bg-card p-3 rounded-lg border shadow-sm">
             <div className="flex items-center space-x-2">
               <Switch
                 id="show-empty"
@@ -186,7 +172,6 @@ export default function StreetDetail() {
           const status = getLocationStatus(location.id)
           const pallets = getPalletsByLocation(location.id)
           const isOccupied = status === 'occupied'
-          const isVerification = status === 'verification'
 
           return (
             <div key={location.id} className="relative group">
@@ -200,7 +185,6 @@ export default function StreetDetail() {
                     setEditLocation({
                       id: location.id,
                       name: location.name,
-                      needsVerification: location.needsVerification,
                     })
                   }}
                 >
@@ -241,41 +225,32 @@ export default function StreetDetail() {
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2',
-                    isVerification
-                      ? 'bg-yellow-50/80 hover:bg-yellow-100 border-yellow-300 text-yellow-900'
-                      : isOccupied
-                        ? 'bg-green-50/50 hover:bg-green-100 border-green-200 hover:border-green-400 text-green-900'
-                        : 'bg-red-50/50 hover:bg-red-100 border-red-200 hover:border-red-400 text-red-900',
+                    'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2 shadow-sm',
+                    isOccupied
+                      ? 'bg-green-600/10 dark:bg-green-900/20 hover:bg-green-600/20 border-green-600 text-green-700 dark:text-green-400'
+                      : 'bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-700 dark:text-red-400',
                   )}
                 >
                   <span className="text-2xl font-bold tracking-tighter">
                     {location.name}
                   </span>
 
-                  {isVerification ? (
-                    <div className="flex flex-col items-center">
-                      <AlertTriangle className="h-6 w-6 text-yellow-600 animate-pulse" />
-                      <span className="text-[10px] font-bold text-yellow-700 mt-1">
-                        Verificar
-                      </span>
-                    </div>
-                  ) : isOccupied ? (
+                  {isOccupied ? (
                     <div className="flex flex-col items-center gap-1">
                       <Badge
                         variant="secondary"
-                        className="bg-green-200/50 text-green-800 hover:bg-green-300/50 border-0 text-[10px] px-1.5 h-5"
+                        className="bg-green-600 text-white hover:bg-green-700 border-0 text-[10px] px-1.5 h-5"
                       >
                         {pallets.length} Item{pallets.length > 1 ? 's' : ''}
                       </Badge>
-                      <span className="text-[10px] opacity-70 truncate max-w-[90%] text-center px-1">
+                      <span className="text-[10px] opacity-90 truncate max-w-[90%] text-center px-1 font-medium">
                         {pallets[0]?.materialName}
                       </span>
                     </div>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="border-red-200 bg-red-100/50 text-red-700 text-[10px] px-2 h-5"
+                      className="border-red-600 bg-red-600 text-white text-[10px] px-2 h-5"
                     >
                       Vazio
                     </Badge>
@@ -306,18 +281,6 @@ export default function StreetDetail() {
                   )
                 }
               />
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="verify-check"
-                checked={editLocation?.needsVerification || false}
-                onCheckedChange={(checked) =>
-                  setEditLocation((prev) =>
-                    prev ? { ...prev, needsVerification: !!checked } : null,
-                  )
-                }
-              />
-              <Label htmlFor="verify-check">Necessita Verificação</Label>
             </div>
           </div>
           <DialogFooter>

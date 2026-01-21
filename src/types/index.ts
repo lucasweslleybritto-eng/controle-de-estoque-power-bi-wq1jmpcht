@@ -7,7 +7,8 @@ export interface Location {
   id: string
   streetId: string
   name: string
-  needsVerification: boolean
+  // needsVerification removed from logic, keeping optional for backward compatibility if needed, but we will ignore it.
+  needsVerification?: boolean
 }
 
 export type MaterialType = 'TRP' | 'TRD'
@@ -17,6 +18,7 @@ export interface Material {
   name: string
   type: MaterialType
   description?: string
+  image?: string
 }
 
 export interface SystemSettings {
@@ -33,6 +35,8 @@ export interface Pallet {
   quantity: number
   entryDate: string
   type: MaterialType
+  // Helper to link back to material definition for image
+  materialId?: string
 }
 
 export interface MovementLog {
@@ -51,7 +55,7 @@ export interface Equipment {
   id: string
   name: string
   status: 'available' | 'in-use' | 'maintenance'
-  imageQuery: string
+  image: string
   model?: string
   operator?: string | null
 }

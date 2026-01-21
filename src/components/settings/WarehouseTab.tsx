@@ -28,10 +28,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 
 export function WarehouseTab() {
   const {
@@ -56,7 +54,6 @@ export function WarehouseTab() {
   const [editingLocation, setEditingLocation] = useState<{
     id: string
     name: string
-    needsVerification: boolean
   } | null>(null)
   const [newLocation, setNewLocation] = useState<{
     streetId: string
@@ -90,11 +87,7 @@ export function WarehouseTab() {
 
   const handleUpdateLocation = () => {
     if (editingLocation && editingLocation.name.trim()) {
-      updateLocation(
-        editingLocation.id,
-        editingLocation.name,
-        editingLocation.needsVerification,
-      )
+      updateLocation(editingLocation.id, editingLocation.name)
       setEditingLocation(null)
       toast({ title: 'Local atualizado' })
     }
@@ -139,14 +132,14 @@ export function WarehouseTab() {
           <AccordionItem
             key={street.id}
             value={street.id}
-            className="border rounded-lg px-4 bg-white"
+            className="border rounded-lg px-4 bg-card"
           >
             <div className="flex items-center justify-between py-2">
               <AccordionTrigger className="hover:no-underline py-2">
                 <span className="font-semibold text-lg flex items-center">
                   <Building className="mr-2 h-5 w-5 text-muted-foreground" />
                   {street.name}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 text-xs font-normal text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
                     {getLocationsByStreet(street.id).length} Locais
                   </span>
                 </span>
@@ -196,21 +189,16 @@ export function WarehouseTab() {
               </div>
             </div>
             <AccordionContent className="pb-4 pt-2">
-              <div className="space-y-2 pl-4 border-l-2 border-slate-100 ml-2">
+              <div className="space-y-2 pl-4 border-l-2 border-slate-100 dark:border-slate-800 ml-2">
                 {getLocationsByStreet(street.id).map((location) => (
                   <div
                     key={location.id}
-                    className="flex items-center justify-between group p-2 hover:bg-slate-50 rounded-md transition-colors"
+                    className="flex items-center justify-between group p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-md transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <span className="font-medium">{location.name}</span>
-                        {location.needsVerification && (
-                          <span className="ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded border border-yellow-200">
-                            Verificar
-                          </span>
-                        )}
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -346,20 +334,6 @@ export function WarehouseTab() {
                   )
                 }
               />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="verify-mode"
-                checked={editingLocation?.needsVerification || false}
-                onCheckedChange={(checked) =>
-                  setEditingLocation((prev) =>
-                    prev ? { ...prev, needsVerification: !!checked } : null,
-                  )
-                }
-              />
-              <Label htmlFor="verify-mode">
-                Necessita Verificação (Amarelo)
-              </Label>
             </div>
           </div>
           <DialogFooter>

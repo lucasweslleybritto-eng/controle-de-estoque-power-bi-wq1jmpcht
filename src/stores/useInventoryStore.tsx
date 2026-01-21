@@ -13,6 +13,7 @@ import {
   MovementLog,
   Material,
   SystemSettings,
+  Equipment,
 } from '@/types'
 
 // Mock Data Setup
@@ -22,19 +23,57 @@ const INITIAL_STREETS: Street[] = [
 ]
 
 const INITIAL_LOCATIONS: Location[] = [
-  { id: 'loc-a-1', streetId: 'rua-a', name: 'A-001', needsVerification: false },
-  { id: 'loc-a-2', streetId: 'rua-a', name: 'A-002', needsVerification: true },
-  { id: 'loc-b-1', streetId: 'rua-b', name: 'B-001', needsVerification: false },
+  { id: 'loc-a-1', streetId: 'rua-a', name: 'A-001' },
+  { id: 'loc-a-2', streetId: 'rua-a', name: 'A-002' },
+  { id: 'loc-b-1', streetId: 'rua-b', name: 'B-001' },
 ]
 
 const INITIAL_MATERIALS: Material[] = [
-  { id: 'mat-1', name: 'Motor WEG', type: 'TRD', description: 'Motor 5CV' },
-  { id: 'mat-2', name: 'Cabo 5mm', type: 'TRP', description: 'Bobina' },
-  { id: 'mat-3', name: 'Conector RJ45', type: 'TRP', description: 'Caixa' },
+  {
+    id: 'mat-1',
+    name: 'Gandola Camuflada',
+    type: 'TRD',
+    description: 'Tamanho M - Padrão Exército',
+    image: 'https://img.usecurling.com/p/200/200?q=camo%20jacket',
+  },
+  {
+    id: 'mat-2',
+    name: 'Coturno Tático',
+    type: 'TRP',
+    description: 'Preto - Tamanho 42',
+    image: 'https://img.usecurling.com/p/200/200?q=combat%20boots',
+  },
+  {
+    id: 'mat-3',
+    name: 'Cinto NA',
+    type: 'TRP',
+    description: 'Verde Oliva',
+    image: 'https://img.usecurling.com/p/200/200?q=military%20belt',
+  },
+]
+
+const INITIAL_EQUIPMENTS: Equipment[] = [
+  {
+    id: '1',
+    name: 'Empilhadeira Elétrica 01',
+    model: 'Toyota 8FBE',
+    status: 'available',
+    image: 'https://img.usecurling.com/p/300/200?q=forklift&color=yellow',
+    operator: null,
+  },
+  {
+    id: '2',
+    name: 'Paleteira Manual 05',
+    model: 'Standard',
+    status: 'in-use',
+    image:
+      'https://img.usecurling.com/p/300/200?q=hand%20pallet%20truck&color=blue',
+    operator: 'Sd. Silva',
+  },
 ]
 
 const INITIAL_SETTINGS: SystemSettings = {
-  systemName: 'Estoque Classe 2',
+  systemName: 'Depósito de Fardamento',
   lowStockThreshold: 10,
   highOccupancyThreshold: 80,
 }
@@ -43,20 +82,22 @@ const INITIAL_PALLETS: Pallet[] = [
   {
     id: 'plt-1',
     locationId: 'loc-a-1',
-    materialName: 'Motor WEG',
-    description: 'Motor 5CV',
-    quantity: 10,
+    materialName: 'Gandola Camuflada',
+    description: 'Lote 2024',
+    quantity: 50,
     entryDate: new Date().toISOString(),
     type: 'TRD',
+    materialId: 'mat-1',
   },
   {
     id: 'plt-2',
     locationId: 'TRP_AREA',
-    materialName: 'Cabo 5mm',
-    description: 'Bobina chegada',
-    quantity: 50,
+    materialName: 'Coturno Tático',
+    description: 'Recebimento Pendente',
+    quantity: 20,
     entryDate: new Date().toISOString(),
     type: 'TRP',
+    materialId: 'mat-2',
   },
 ]
 
@@ -66,16 +107,16 @@ interface InventoryContextType {
   pallets: Pallet[]
   history: MovementLog[]
   materials: Material[]
+  equipments: Equipment[]
   settings: SystemSettings
 
   // Getters
   getLocationsByStreet: (streetId: string) => Location[]
   getPalletsByLocation: (locationId: string) => Pallet[]
-  getLocationStatus: (
-    locationId: string,
-  ) => 'occupied' | 'empty' | 'verification'
+  getLocationStatus: (locationId: string) => 'occupied' | 'empty'
   getStreetName: (streetId: string) => string
   getLocationName: (locationId: string) => string
+  getMaterialImage: (materialName: string) => string | undefined
 
   // Street CRUD
   addStreet: (name: string) => void
@@ -84,13 +125,17 @@ interface InventoryContextType {
 
   // Location CRUD
   addLocation: (streetId: string, name: string) => void
-  updateLocation: (id: string, name: string, needsVerification: boolean) => void
+  updateLocation: (id: string, name: string) => void
   deleteLocation: (id: string) => void
 
   // Material CRUD
   addMaterial: (material: Omit<Material, 'id'>) => void
   updateMaterial: (id: string, material: Partial<Material>) => void
   deleteMaterial: (id: string) => void
+
+  // Equipment CRUD
+  addEquipment: (equipment: Omit<Equipment, 'id'>) => void
+  deleteEquipment: (id: string) => void
 
   // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
@@ -112,7 +157,6 @@ export const InventoryProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  // Initialize state from localStorage or defaults
   const [streets, setStreets] = useState<Street[]>(() => {
     const saved = localStorage.getItem('inventory_streets')
     return saved ? JSON.parse(saved) : INITIAL_STREETS
@@ -124,6 +168,10 @@ export const InventoryProvider = ({
   const [materials, setMaterials] = useState<Material[]>(() => {
     const saved = localStorage.getItem('inventory_materials')
     return saved ? JSON.parse(saved) : INITIAL_MATERIALS
+  })
+  const [equipments, setEquipments] = useState<Equipment[]>(() => {
+    const saved = localStorage.getItem('inventory_equipments')
+    return saved ? JSON.parse(saved) : INITIAL_EQUIPMENTS
   })
   const [settings, setSettings] = useState<SystemSettings>(() => {
     const saved = localStorage.getItem('inventory_settings')
@@ -146,6 +194,10 @@ export const InventoryProvider = ({
   }, [materials])
 
   useEffect(() => {
+    localStorage.setItem('inventory_equipments', JSON.stringify(equipments))
+  }, [equipments])
+
+  useEffect(() => {
     localStorage.setItem('inventory_settings', JSON.stringify(settings))
   }, [settings])
 
@@ -162,12 +214,11 @@ export const InventoryProvider = ({
 
   const getLocationStatus = useCallback(
     (locationId: string) => {
-      const loc = locations.find((l) => l.id === locationId)
-      if (loc?.needsVerification) return 'verification'
+      // Removed verification logic as per user story requirement
       const hasPallet = pallets.some((p) => p.locationId === locationId)
       return hasPallet ? 'occupied' : 'empty'
     },
-    [locations, pallets],
+    [pallets],
   )
 
   const getStreetName = useCallback(
@@ -180,6 +231,14 @@ export const InventoryProvider = ({
       locations.find((l) => l.id === locationId)?.name ||
       (locationId === 'TRP_AREA' ? 'Zona TRP' : 'N/A'),
     [locations],
+  )
+
+  const getMaterialImage = useCallback(
+    (materialName: string) => {
+      const mat = materials.find((m) => m.name === materialName)
+      return mat?.image
+    },
+    [materials],
   )
 
   // Actions
@@ -229,18 +288,12 @@ export const InventoryProvider = ({
   const addLocation = (streetId: string, name: string) => {
     setLocations((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), streetId, name, needsVerification: false },
+      { id: crypto.randomUUID(), streetId, name },
     ])
   }
 
-  const updateLocation = (
-    id: string,
-    name: string,
-    needsVerification: boolean,
-  ) => {
-    setLocations((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, name, needsVerification } : l)),
-    )
+  const updateLocation = (id: string, name: string) => {
+    setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)))
   }
 
   const deleteLocation = (id: string) => {
@@ -263,6 +316,18 @@ export const InventoryProvider = ({
     setMaterials((prev) => prev.filter((m) => m.id !== id))
   }
 
+  // Equipment CRUD
+  const addEquipment = (equipment: Omit<Equipment, 'id'>) => {
+    setEquipments((prev) => [
+      ...prev,
+      { ...equipment, id: crypto.randomUUID() },
+    ])
+  }
+
+  const deleteEquipment = (id: string) => {
+    setEquipments((prev) => prev.filter((e) => e.id !== id))
+  }
+
   // Settings
   const updateSettings = (updates: Partial<SystemSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }))
@@ -270,8 +335,16 @@ export const InventoryProvider = ({
 
   // Pallet Actions
   const addPallet = (palletData: Omit<Pallet, 'id' | 'entryDate'>) => {
+    // Try to find material ID if not provided
+    let materialId = palletData.materialId
+    if (!materialId) {
+      const mat = materials.find((m) => m.name === palletData.materialName)
+      materialId = mat?.id
+    }
+
     const newPallet: Pallet = {
       ...palletData,
+      materialId,
       id: crypto.randomUUID(),
       entryDate: new Date().toISOString(),
     }
@@ -312,12 +385,14 @@ export const InventoryProvider = ({
       pallets,
       history,
       materials,
+      equipments,
       settings,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
       getStreetName,
       getLocationName,
+      getMaterialImage,
       addStreet,
       updateStreet,
       deleteStreet,
@@ -327,6 +402,8 @@ export const InventoryProvider = ({
       addMaterial,
       updateMaterial,
       deleteMaterial,
+      addEquipment,
+      deleteEquipment,
       updateSettings,
       addPallet,
       updatePallet,
@@ -340,12 +417,14 @@ export const InventoryProvider = ({
       pallets,
       history,
       materials,
+      equipments,
       settings,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
       getStreetName,
       getLocationName,
+      getMaterialImage,
       addStreet,
       updateStreet,
       deleteStreet,
@@ -355,6 +434,8 @@ export const InventoryProvider = ({
       addMaterial,
       updateMaterial,
       deleteMaterial,
+      addEquipment,
+      deleteEquipment,
       updateSettings,
       addPallet,
       updatePallet,

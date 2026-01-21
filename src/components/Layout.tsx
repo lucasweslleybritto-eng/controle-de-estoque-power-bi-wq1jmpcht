@@ -14,6 +14,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
+import { ThemeToggle } from './ThemeToggle'
 
 export default function Layout() {
   const location = useLocation()
@@ -36,7 +37,7 @@ export default function Layout() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1 h-10 w-10" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -44,7 +45,7 @@ export default function Layout() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
-                    <Link to="/">Estoque Classe 2</Link>
+                    <Link to="/">Depósito</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 {pathSegments.length > 0 && (
@@ -73,8 +74,11 @@ export default function Layout() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+          <div className="mr-4">
+            <ThemeToggle />
+          </div>
         </header>
-        <div className="flex-1 flex flex-col p-4 md:p-8 max-w-[100vw] overflow-x-hidden bg-slate-50/50">
+        <div className="flex-1 flex flex-col p-4 md:p-8 max-w-[100vw] overflow-x-hidden bg-background">
           <Outlet />
         </div>
       </SidebarInset>

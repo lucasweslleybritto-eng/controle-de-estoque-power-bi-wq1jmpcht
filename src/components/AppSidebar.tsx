@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   History,
   Settings,
+  Shield,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -64,14 +65,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
-            E2
+      <SidebarHeader className="border-b p-4 bg-primary/5">
+        <div className="flex items-center gap-3 px-1 transition-all">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-700 shadow-md">
+            <Shield className="h-6 w-6 text-black fill-black/10" />
           </div>
-          <span className="font-bold text-lg tracking-tight group-data-[collapsible=icon]:hidden">
-            Estoque Classe 2
-          </span>
+          <div className="flex flex-col overflow-hidden transition-all group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <span className="font-bold text-sm leading-none text-foreground uppercase whitespace-nowrap">
+              8º B Sup Sl
+            </span>
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase whitespace-nowrap">
+              Depósito de Fardamento
+            </span>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>

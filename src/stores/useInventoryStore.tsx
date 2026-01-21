@@ -93,6 +93,8 @@ const InventoryContext = createContext<InventoryContextType | undefined>(
   undefined,
 )
 
+const USER_STORAGE_KEY = 'inventory_current_user'
+
 export const InventoryProvider = ({
   children,
 }: {
@@ -122,7 +124,17 @@ export const InventoryProvider = ({
     inventoryService.getHistory(),
   )
   const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+
+  // Persistent User State
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem(USER_STORAGE_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch (e) {
+      console.error('Failed to parse user from storage', e)
+      return null
+    }
+  })
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(
     inventoryService.getStatus().status,
@@ -138,6 +150,29 @@ export const InventoryProvider = ({
   useEffect(() => {
     inventoryService.init()
   }, [])
+
+  // Sync currentUser with latest data from users list
+  useEffect(() => {
+    if (currentUser) {
+      const freshUser = users.find((u) => u.id === currentUser.id)
+      if (freshUser) {
+        // Update session if user details changed
+        if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
+          setCurrentUser(freshUser)
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshUser))
+        }
+      } else if (users.length > 0 && syncStatus === 'synced') {
+        // User was deleted remotely
+        setCurrentUser(null)
+        localStorage.removeItem(USER_STORAGE_KEY)
+        toast({
+          variant: 'destructive',
+          title: 'Sessão Expirada',
+          description: 'Seu usuário foi removido do sistema.',
+        })
+      }
+    }
+  }, [users, currentUser, syncStatus, toast])
 
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
@@ -166,12 +201,6 @@ export const InventoryProvider = ({
             break
           case inventoryService.keys.USERS:
             setUsers(inventoryService.getUsers())
-            if (currentUser) {
-              const updatedUser = inventoryService
-                .getUsers()
-                .find((u) => u.id === currentUser.id)
-              if (updatedUser) setCurrentUser(updatedUser)
-            }
             break
         }
       } else if (event.type === 'SYNC_STATUS') {
@@ -271,7 +300,6 @@ export const InventoryProvider = ({
   }, [materials, isLowStock, getMaterialTotalStock])
 
   // --- CRUD Methods Wrapper ---
-  // Now using upsertItem/deleteItem from service
 
   const addLog = (
     type: LogType,
@@ -323,12 +351,14 @@ export const InventoryProvider = ({
     const user = users.find((u) => u.id === userId)
     if (user) {
       setCurrentUser(user)
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
       toast({ title: `Bem-vindo, ${user.name}` })
     }
   }
 
   const logout = () => {
     setCurrentUser(null)
+    localStorage.removeItem(USER_STORAGE_KEY)
     toast({ title: 'Logout realizado' })
   }
 
@@ -359,6 +389,7 @@ export const InventoryProvider = ({
     }
     updateUser(currentUser.id, updatedUser)
     setCurrentUser(updatedUser)
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser))
   }
 
   const addStreet = (name: string) => {
@@ -398,11 +429,6 @@ export const InventoryProvider = ({
       inventoryService.deleteItem(inventoryService.keys.LOCATIONS, l.id),
     )
 
-    // Cascade update pallets (move to limbo? or delete? logic kept from before: filter out)
-    // Actually, persistence should probably handle this or we explicitly delete them.
-    // Previous store filtered them out. Here we should probably explicitly delete or move.
-    // We'll leave pallets as orphans for now or delete them?
-    // Let's delete them to match previous behavior
     const streetLocationIds = streetLocations.map((l) => l.id)
     const palletsToDelete = pallets.filter((p) =>
       streetLocationIds.includes(p.locationId),
@@ -424,8 +450,6 @@ export const InventoryProvider = ({
   }
 
   const moveStreet = (id: string, direction: 'up' | 'down') => {
-    // This is for manual button moving, if still used.
-    // Reorder logic mostly used in DragDrop now.
     const index = streets.findIndex((s) => s.id === id)
     if (index === -1) return
     if (direction === 'up' && index === 0) return
@@ -434,7 +458,6 @@ export const InventoryProvider = ({
     const newStreets = [...streets]
     const swapIndex = direction === 'up' ? index - 1 : index + 1
 
-    // Swap orders
     const streetA = newStreets[index]
     const streetB = newStreets[swapIndex]
     const orderA = streetA.order
@@ -448,11 +471,8 @@ export const InventoryProvider = ({
   }
 
   const reorderStreets = (newStreets: Street[]) => {
-    // Update all streets with their new index as order
     const updates = newStreets.map((s, index) => ({ ...s, order: index }))
-    // Optimistic update
     setStreets(updates)
-    // Bulk upsert
     inventoryService.upsertMany(inventoryService.keys.STREETS, updates)
   }
 
@@ -499,18 +519,7 @@ export const InventoryProvider = ({
   }
 
   const moveLocation = (locationId: string, direction: 'up' | 'down') => {
-    // Location ordering within street not explicitly in 'order' field in Location type in previous version,
-    // usually array order. If we want persistence, we should add order to Location too.
-    // For now, adhering to User Story which emphasizes Street ordering.
-    // We will just do local array manipulation and assume DB returns insertion order or we add order later.
-    // But since we persist to DB now, we lose array order unless we have an 'order' field.
-    // Just keep as is (might not persist order if we don't add field).
-    // Let's rely on name sorting or ID for now if no order field.
-    // Implementing 'move' without 'order' field in DB is hard.
-    // I won't change Location schema to add order to keep changes minimal to the Story scope (Street Reorder).
-    console.warn(
-      'Location reorder not fully supported in persistent mode without schema change',
-    )
+    console.warn('Location reorder not fully supported in persistent mode')
   }
 
   const changeLocationStreet = (locationId: string, newStreetId: string) => {
@@ -550,8 +559,6 @@ export const InventoryProvider = ({
   const importMaterials = (
     data: { material: Omit<Material, 'id'>; initialQuantity: number }[],
   ) => {
-    // Process one by one or bulk. Bulk is better but service needs it.
-    // We'll iterate.
     data.forEach(({ material, initialQuantity }) => {
       const existing = materials.find((m) => m.name === material.name)
       let materialId = existing?.id

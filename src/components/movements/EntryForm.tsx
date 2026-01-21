@@ -22,11 +22,12 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { cn } from '@/lib/utils'
+import { useEffect } from 'react'
 
 const entrySchema = z
   .object({
     materialType: z.enum(['TRP', 'TRD']),
-    materialName: z.string().min(2, 'Nome do material é obrigatório'),
+    materialName: z.string().min(2, 'Selecione um material'),
     description: z.string(),
     quantity: z.coerce.number().min(1, 'Quantidade mínima é 1'),
     streetId: z.string().optional(),
@@ -47,7 +48,8 @@ const entrySchema = z
 
 export function EntryForm() {
   const { toast } = useToast()
-  const { streets, getLocationsByStreet, addPallet } = useInventoryStore()
+  const { streets, getLocationsByStreet, addPallet, materials } =
+    useInventoryStore()
 
   const entryForm = useForm<z.infer<typeof entrySchema>>({
     resolver: zodResolver(entrySchema),
@@ -61,6 +63,15 @@ export function EntryForm() {
 
   const materialType = entryForm.watch('materialType')
   const selectedStreetId = entryForm.watch('streetId')
+  const materialName = entryForm.watch('materialName')
+
+  // Reset material selection when type changes to ensure consistency
+  useEffect(() => {
+    entryForm.setValue('materialName', '')
+  }, [materialType, entryForm.setValue])
+
+  const availableMaterials = materials.filter((m) => m.type === materialType)
+  const selectedMaterial = materials.find((m) => m.name === materialName)
 
   const onEntrySubmit = (data: z.infer<typeof entrySchema>) => {
     addPallet({
@@ -87,7 +98,7 @@ export function EntryForm() {
       <CardHeader>
         <CardTitle>Nova Entrada</CardTitle>
         <CardDescription>
-          Preencha os dados para registrar recebimento de material.
+          Selecione o material e preencha os dados de recebimento.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -133,10 +144,30 @@ export function EntryForm() {
             </div>
 
             <div className="space-y-2">
-              <Label>Nome do Material</Label>
-              <Input
-                {...entryForm.register('materialName')}
-                placeholder="Ex: Motor Elétrico"
+              <Label>Material</Label>
+              <Controller
+                name="materialName"
+                control={entryForm.control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o Material" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMaterials.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Sem materiais {materialType} cadastrados
+                        </div>
+                      ) : (
+                        availableMaterials.map((m) => (
+                          <SelectItem key={m.id} value={m.name}>
+                            {m.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
               />
               {entryForm.formState.errors.materialName && (
                 <span className="text-xs text-red-500">
@@ -146,7 +177,7 @@ export function EntryForm() {
             </div>
 
             <div className="space-y-2">
-              <Label>Descrição / Detalhes</Label>
+              <Label>Descrição / Lote</Label>
               <Input
                 {...entryForm.register('description')}
                 placeholder="Ex: Lote 123, Fornecedor X"
@@ -219,7 +250,40 @@ export function EntryForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full md:w-auto" size="lg">
+          {/* Visual Preview Section */}
+          {materialName && (
+            <div className="rounded-lg border bg-slate-50/50 p-4 mt-6 flex flex-col sm:flex-row items-center gap-6 animate-fade-in">
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-white shadow-sm">
+                {selectedMaterial?.image ? (
+                  <img
+                    src={selectedMaterial.image}
+                    alt={materialName}
+                    className="h-full w-full object-contain p-1"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground text-center p-1">
+                    Sem Imagem
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-1 text-center sm:text-left">
+                <h4 className="font-semibold text-sm">Confirmação Visual</h4>
+                <p className="text-sm text-muted-foreground">
+                  Você selecionou:{' '}
+                  <span className="font-medium text-foreground">
+                    {materialName}
+                  </span>
+                </p>
+                {selectedMaterial?.description && (
+                  <p className="text-xs text-muted-foreground italic">
+                    {selectedMaterial.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <Button type="submit" className="w-full md:w-auto mt-6" size="lg">
             <Check className="mr-2 h-4 w-4" /> Confirmar Entrada
           </Button>
         </form>

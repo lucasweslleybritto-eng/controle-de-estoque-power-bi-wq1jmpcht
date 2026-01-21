@@ -17,15 +17,27 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
-import { Download, Search, FilterX } from 'lucide-react'
+import { Download, Search, FilterX, Trash2 } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export default function GeneralSpreadsheet() {
-  const { pallets, locations, streets, getLocationName } = useInventoryStore()
+  const { pallets, locations, streets, getLocationName, removePallet } =
+    useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [streetFilter, setStreetFilter] = useState('all')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const getStreetName = (locId: string) => {
     if (locId === 'TRP_AREA') return 'Entrada'
@@ -47,6 +59,13 @@ export default function GeneralSpreadsheet() {
 
     return matchesSearch && matchesStreet
   })
+
+  const handleDelete = () => {
+    if (deleteId) {
+      removePallet(deleteId, 'Gerente')
+      setDeleteId(null)
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -118,13 +137,14 @@ export default function GeneralSpreadsheet() {
                   <TableHead className="hidden md:table-cell">
                     Entrada
                   </TableHead>
+                  <TableHead className="w-[50px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPallets.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="text-center h-32 text-muted-foreground"
                     >
                       Nenhum resultado encontrado.
@@ -158,6 +178,17 @@ export default function GeneralSpreadsheet() {
                           locale: ptBR,
                         })}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                          onClick={() => setDeleteId(pallet.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Excluir</span>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -170,6 +201,30 @@ export default function GeneralSpreadsheet() {
       <div className="text-xs text-center text-muted-foreground">
         Mostrando {filteredPallets.length} de {pallets.length} registros
       </div>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Material?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá o material da planilha e do estoque
+              permanentemente. Tem certeza que deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

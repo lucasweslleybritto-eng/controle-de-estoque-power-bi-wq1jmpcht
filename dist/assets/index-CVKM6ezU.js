@@ -29898,9 +29898,10 @@ var SelectSeparator = import_react.forwardRef(({ className, ...props }, ref) => 
 }));
 SelectSeparator.displayName = Separator$3.displayName;
 function GeneralSpreadsheet() {
-	const { pallets, locations, streets, getLocationName } = useInventoryStore();
+	const { pallets, locations, streets, getLocationName, removePallet } = useInventoryStore();
 	const [searchTerm, setSearchTerm] = (0, import_react.useState)("");
 	const [streetFilter, setStreetFilter] = (0, import_react.useState)("all");
+	const [deleteId, setDeleteId] = (0, import_react.useState)(null);
 	const getStreetName = (locId) => {
 		if (locId === "TRP_AREA") return "Entrada";
 		const loc = locations.find((l) => l.id === locId);
@@ -29912,6 +29913,12 @@ function GeneralSpreadsheet() {
 		const matchesStreet = streetFilter === "all" || streetFilter === "TRP_AREA" && pallet.locationId === "TRP_AREA" || loc?.streetId === streetFilter;
 		return matchesSearch && matchesStreet;
 	});
+	const handleDelete = () => {
+		if (deleteId) {
+			removePallet(deleteId, "Gerente");
+			setDeleteId(null);
+		}
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6 animate-fade-in",
 		children: [
@@ -29995,10 +30002,14 @@ function GeneralSpreadsheet() {
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, {
 								className: "hidden md:table-cell",
 								children: "Entrada"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, {
+								className: "w-[50px]",
+								children: "Ações"
 							})
 						] })
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableBody, { children: filteredPallets.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableRow, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
-						colSpan: 6,
+						colSpan: 7,
 						className: "text-center h-32 text-muted-foreground",
 						children: "Nenhum resultado encontrado."
 					}) }) : filteredPallets.map((pallet) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableRow, {
@@ -30027,7 +30038,17 @@ function GeneralSpreadsheet() {
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
 								className: "hidden md:table-cell text-sm text-muted-foreground",
 								children: format(new Date(pallet.entryDate), "dd/MM/yy HH:mm", { locale: ptBR })
-							})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								variant: "ghost",
+								size: "icon",
+								className: "h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50",
+								onClick: () => setDeleteId(pallet.id),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "sr-only",
+									children: "Excluir"
+								})]
+							}) })
 						]
 					}, pallet.id)) })] })
 				})
@@ -30041,6 +30062,15 @@ function GeneralSpreadsheet() {
 					pallets.length,
 					" registros"
 				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialog, {
+				open: !!deleteId,
+				onOpenChange: (open) => !open && setDeleteId(null),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Material?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogDescription, { children: "Esta ação removerá o material da planilha e do estoque permanentemente. Tem certeza que deseja continuar?" })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+					onClick: handleDelete,
+					className: "bg-red-600 hover:bg-red-700 focus:ring-red-600",
+					children: "Excluir"
+				})] })] })
 			})
 		]
 	});
@@ -36453,7 +36483,7 @@ function number(params) {
 }
 var entrySchema = object({
 	materialType: _enum(["TRP", "TRD"]),
-	materialName: string().min(2, "Nome do material é obrigatório"),
+	materialName: string().min(2, "Selecione um material"),
 	description: string(),
 	quantity: number().min(1, "Quantidade mínima é 1"),
 	streetId: string().optional(),
@@ -36467,7 +36497,7 @@ var entrySchema = object({
 });
 function EntryForm() {
 	const { toast: toast$2 } = useToast();
-	const { streets, getLocationsByStreet, addPallet } = useInventoryStore();
+	const { streets, getLocationsByStreet, addPallet, materials } = useInventoryStore();
 	const entryForm = useForm({
 		resolver: a(entrySchema),
 		defaultValues: {
@@ -36479,6 +36509,12 @@ function EntryForm() {
 	});
 	const materialType = entryForm.watch("materialType");
 	const selectedStreetId = entryForm.watch("streetId");
+	const materialName = entryForm.watch("materialName");
+	(0, import_react.useEffect)(() => {
+		entryForm.setValue("materialName", "");
+	}, [materialType, entryForm.setValue]);
+	const availableMaterials = materials.filter((m) => m.type === materialType);
+	const selectedMaterial = materials.find((m) => m.name === materialName);
 	const onEntrySubmit = (data) => {
 		addPallet({
 			locationId: data.materialType === "TRP" ? "TRP_AREA" : data.locationId,
@@ -36498,107 +36534,162 @@ function EntryForm() {
 			quantity: 1
 		});
 	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Nova Entrada" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Preencha os dados para registrar recebimento de material." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Nova Entrada" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Selecione o material e preencha os dados de recebimento." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
 		onSubmit: entryForm.handleSubmit(onEntrySubmit),
 		className: "space-y-6",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "grid md:grid-cols-2 gap-6",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Tipo de Material" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-						name: "materialType",
-						control: entryForm.control,
-						render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex gap-4",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-								type: "button",
-								variant: field.value === "TRP" ? "default" : "outline",
-								className: cn$1("flex-1", field.value === "TRP" && "bg-blue-600 hover:bg-blue-700"),
-								onClick: () => field.onChange("TRP"),
-								children: "TRP (Entrada)"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-								type: "button",
-								variant: field.value === "TRD" ? "default" : "outline",
-								className: cn$1("flex-1", field.value === "TRD" && "bg-green-600 hover:bg-green-700"),
-								onClick: () => field.onChange("TRD"),
-								children: "TRD (Rua)"
-							})]
-						})
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nome do Material" }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							...entryForm.register("materialName"),
-							placeholder: "Ex: Motor Elétrico"
-						}),
-						entryForm.formState.errors.materialName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "text-xs text-red-500",
-							children: entryForm.formState.errors.materialName.message
-						})
-					]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Descrição / Detalhes" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-						...entryForm.register("description"),
-						placeholder: "Ex: Lote 123, Fornecedor X"
-					})]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Quantidade" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-						type: "number",
-						...entryForm.register("quantity")
-					})]
-				}),
-				materialType === "TRD" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-						name: "streetId",
-						control: entryForm.control,
-						render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-							onValueChange: field.onChange,
-							value: field.value,
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione a Rua" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: streets.map((s$2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-								value: s$2.id,
-								children: s$2.name
-							}, s$2.id)) })]
-						})
-					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "space-y-2",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Localização" }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-							name: "locationId",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "grid md:grid-cols-2 gap-6",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Tipo de Material" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+							name: "materialType",
+							control: entryForm.control,
+							render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex gap-4",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									type: "button",
+									variant: field.value === "TRP" ? "default" : "outline",
+									className: cn$1("flex-1", field.value === "TRP" && "bg-blue-600 hover:bg-blue-700"),
+									onClick: () => field.onChange("TRP"),
+									children: "TRP (Entrada)"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									type: "button",
+									variant: field.value === "TRD" ? "default" : "outline",
+									className: cn$1("flex-1", field.value === "TRD" && "bg-green-600 hover:bg-green-700"),
+									onClick: () => field.onChange("TRD"),
+									children: "TRD (Rua)"
+								})]
+							})
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Material" }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+								name: "materialName",
+								control: entryForm.control,
+								render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+									onValueChange: field.onChange,
+									value: field.value,
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione o Material" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: availableMaterials.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										className: "p-2 text-sm text-muted-foreground text-center",
+										children: [
+											"Sem materiais ",
+											materialType,
+											" cadastrados"
+										]
+									}) : availableMaterials.map((m) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: m.name,
+										children: m.name
+									}, m.id)) })]
+								})
+							}),
+							entryForm.formState.errors.materialName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-xs text-red-500",
+								children: entryForm.formState.errors.materialName.message
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Descrição / Lote" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							...entryForm.register("description"),
+							placeholder: "Ex: Lote 123, Fornecedor X"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Quantidade" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							type: "number",
+							...entryForm.register("quantity")
+						})]
+					}),
+					materialType === "TRD" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+							name: "streetId",
 							control: entryForm.control,
 							render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
 								onValueChange: field.onChange,
 								value: field.value,
-								disabled: !selectedStreetId,
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione o Local" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: selectedStreetId && getLocationsByStreet(selectedStreetId).map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: l.id,
-									children: l.name
-								}, l.id)) })]
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione a Rua" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: streets.map((s$2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: s$2.id,
+									children: s$2.name
+								}, s$2.id)) })]
 							})
+						})]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Localização" }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+								name: "locationId",
+								control: entryForm.control,
+								render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+									onValueChange: field.onChange,
+									value: field.value,
+									disabled: !selectedStreetId,
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione o Local" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: selectedStreetId && getLocationsByStreet(selectedStreetId).map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: l.id,
+										children: l.name
+									}, l.id)) })]
+								})
+							}),
+							entryForm.formState.errors.locationId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-xs text-red-500",
+								children: entryForm.formState.errors.locationId.message
+							})
+						]
+					})] })
+				]
+			}),
+			materialName && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "rounded-lg border bg-slate-50/50 p-4 mt-6 flex flex-col sm:flex-row items-center gap-6 animate-fade-in",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "relative h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-white shadow-sm",
+					children: selectedMaterial?.image ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: selectedMaterial.image,
+						alt: materialName,
+						className: "h-full w-full object-contain p-1"
+					}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground text-center p-1",
+						children: "Sem Imagem"
+					})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "flex-1 space-y-1 text-center sm:text-left",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h4", {
+							className: "font-semibold text-sm",
+							children: "Confirmação Visual"
 						}),
-						entryForm.formState.errors.locationId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "text-xs text-red-500",
-							children: entryForm.formState.errors.locationId.message
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-sm text-muted-foreground",
+							children: [
+								"Você selecionou:",
+								" ",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "font-medium text-foreground",
+									children: materialName
+								})
+							]
+						}),
+						selectedMaterial?.description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs text-muted-foreground italic",
+							children: selectedMaterial.description
 						})
 					]
-				})] })
-			]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-			type: "submit",
-			className: "w-full md:w-auto",
-			size: "lg",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "mr-2 h-4 w-4" }), " Confirmar Entrada"]
-		})]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+				type: "submit",
+				className: "w-full md:w-auto mt-6",
+				size: "lg",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "mr-2 h-4 w-4" }), " Confirmar Entrada"]
+			})
+		]
 	}) })] });
 }
 var exitSchema = object({
@@ -39338,4 +39429,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-CLh0gOsT.js.map
+//# sourceMappingURL=index-CVKM6ezU.js.map

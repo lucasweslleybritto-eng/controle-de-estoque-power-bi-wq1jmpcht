@@ -81,7 +81,11 @@ export default function Users() {
     } else {
       addUser({
         ...formData,
-        avatar: `https://img.usecurling.com/ppl/thumbnail?seed=${Date.now()}`,
+        preferences: {
+          lowStockAlerts: true,
+          movementAlerts: true,
+          emailNotifications: false,
+        },
       })
       toast({ title: 'Usuário criado com sucesso' })
     }
@@ -180,28 +184,27 @@ export default function Users() {
         </Dialog>
       </div>
 
+      {/* Responsive List / Cards Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {users.map((user) => (
           <Card key={user.id} className="overflow-hidden">
             <CardHeader className="pb-3 border-b bg-muted/30">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3 items-center">
-                  <div className="h-10 w-10 rounded-full overflow-hidden border bg-background">
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border text-primary font-bold">
+                    {user.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{user.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-1 mt-0.5">
+                  <div className="overflow-hidden">
+                    <CardTitle className="text-base truncate">
+                      {user.name}
+                    </CardTitle>
+                    <CardDescription className="flex items-center gap-1 mt-0.5 truncate">
                       <Mail className="h-3 w-3" /> {user.email}
                     </CardDescription>
                   </div>
                 </div>
                 <div
-                  className={`px-2 py-1 rounded text-xs font-bold border ${
+                  className={`shrink-0 px-2 py-1 rounded text-xs font-bold border ${
                     user.role === 'ADMIN'
                       ? 'bg-purple-100 text-purple-800 border-purple-200'
                       : user.role === 'OPERATOR'

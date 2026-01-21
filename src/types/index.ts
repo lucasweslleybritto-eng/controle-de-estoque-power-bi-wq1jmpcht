@@ -66,10 +66,17 @@ export interface Equipment {
 
 export type UserRole = 'ADMIN' | 'OPERATOR' | 'VIEWER'
 
+export interface UserPreferences {
+  lowStockAlerts: boolean
+  movementAlerts: boolean
+  emailNotifications: boolean
+}
+
 export interface User {
   id: string
   name: string
   email: string
   role: UserRole
-  avatar?: string
+  avatar?: string // Deprecated in UI but kept for type compatibility if needed, or we can ignore it
+  preferences: UserPreferences
 }

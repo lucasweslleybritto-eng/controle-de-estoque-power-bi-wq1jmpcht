@@ -23,16 +23,21 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { cn, fileToBase64 } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 
 const entrySchema = z
   .object({
     materialType: z.enum(['TRP', 'TRD']),
     materialName: z.string().min(2, 'Nome do material é obrigatório'),
     description: z.string(),
-    quantity: z.coerce.number().min(1, 'Quantidade mínima é 1'),
+    quantity: z.coerce
+      .number({ invalid_type_error: 'Deve ser um número' })
+      .int('Deve ser inteiro')
+      .min(1, 'Quantidade mínima é 1'),
     streetId: z.string().optional(),
     locationId: z.string().optional(),
     user: z.string().min(2, 'Nome do operador é obrigatório'),
+    date: z.date().optional(),
   })
   .refine(
     (data) => {
@@ -61,10 +66,11 @@ export function EntryForm() {
       description: '',
       quantity: 1,
       user: currentUser?.name || '',
+      date: new Date(),
     },
   })
 
-  // Ensure user is set even if component mounts before user is ready (though protected by Layout)
+  // Ensure user is set even if component mounts before user is ready
   useEffect(() => {
     if (currentUser?.name) {
       entryForm.setValue('user', currentUser.name)
@@ -100,6 +106,7 @@ export function EntryForm() {
         quantity: data.quantity,
         type: data.materialType,
         image: previewImage || undefined,
+        entryDate: data.date?.toISOString(),
       },
       data.user,
     )
@@ -113,6 +120,7 @@ export function EntryForm() {
       description: '',
       quantity: 1,
       user: currentUser?.name || '',
+      date: new Date(),
     })
     setPreviewImage(null)
   }
@@ -191,6 +199,17 @@ export function EntryForm() {
               </div>
 
               <div className="space-y-2">
+                <Label>Data da Entrada</Label>
+                <Controller
+                  name="date"
+                  control={entryForm.control}
+                  render={({ field }) => (
+                    <DatePicker date={field.value} setDate={field.onChange} />
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>Foto do Material</Label>
                 <div className="flex items-center gap-4">
                   <Input
@@ -207,7 +226,17 @@ export function EntryForm() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Quantidade</Label>
-                <Input type="number" {...entryForm.register('quantity')} />
+                <Input
+                  type="number"
+                  {...entryForm.register('quantity')}
+                  min="1"
+                  step="1"
+                />
+                {entryForm.formState.errors.quantity && (
+                  <span className="text-xs text-red-500">
+                    {entryForm.formState.errors.quantity.message}
+                  </span>
+                )}
               </div>
 
               {materialType === 'TRD' && (

@@ -17,6 +17,7 @@ import {
   LogType,
   User,
   UserRole,
+  UserPreferences,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -71,12 +72,16 @@ interface InventoryContextType {
   addUser: (user: Omit<User, 'id'>) => void
   updateUser: (id: string, user: Partial<User>) => void
   deleteUser: (id: string) => void
+  updateUserPreferences: (prefs: Partial<UserPreferences>) => void
 
   // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
 
   // Pallet/Movement Actions
-  addPallet: (pallet: Omit<Pallet, 'id' | 'entryDate'>, user?: string) => void
+  addPallet: (
+    pallet: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
+    user?: string,
+  ) => void
   updatePallet: (id: string, updates: Partial<Pallet>) => void
   movePallet: (id: string, newLocationId: string) => void
   removePallet: (id: string, user: string) => void
@@ -147,9 +152,25 @@ export const InventoryProvider = ({
             break
           case inventoryService.keys.USERS:
             setUsers(inventoryService.getUsers())
+            // Also update current user if their data changed
+            if (currentUser) {
+              const updatedUser = inventoryService
+                .getUsers()
+                .find((u) => u.id === currentUser.id)
+              if (updatedUser) setCurrentUser(updatedUser)
+            }
             break
         }
       } else if (event.type === 'NOTIFICATION') {
+        // Filter notifications based on user preferences
+        if (currentUser) {
+          const { preferences } = currentUser
+          if (event.category === 'low-stock' && !preferences.lowStockAlerts)
+            return
+          if (event.category === 'movement' && !preferences.movementAlerts)
+            return
+        }
+
         toast({
           title: 'Notificação',
           description: event.message,
@@ -158,7 +179,7 @@ export const InventoryProvider = ({
       }
     })
     return unsubscribe
-  }, [toast])
+  }, [toast, currentUser])
 
   // Getters & Helpers
   const getLocationsByStreet = useCallback(
@@ -236,10 +257,10 @@ export const InventoryProvider = ({
 
   const addLog = (
     type: LogType,
-    params: { pallet?: Pallet; details?: string },
+    params: { pallet?: Pallet; details?: string; date?: string },
     user: string = 'Sistema',
   ) => {
-    const { pallet, details } = params
+    const { pallet, details, date } = params
     let locName = 'N/A'
     let streetName = 'N/A'
     let image = undefined
@@ -267,7 +288,7 @@ export const InventoryProvider = ({
 
     const log: MovementLog = {
       id: crypto.randomUUID(),
-      date: new Date().toISOString(),
+      date: date || new Date().toISOString(),
       user,
       type,
       materialType,
@@ -315,6 +336,16 @@ export const InventoryProvider = ({
     inventoryService.saveUsers(newUsers)
   }
 
+  const updateUserPreferences = (prefs: Partial<UserPreferences>) => {
+    if (!currentUser) return
+    const updatedUser = {
+      ...currentUser,
+      preferences: { ...currentUser.preferences, ...prefs },
+    }
+    updateUser(currentUser.id, updatedUser)
+    setCurrentUser(updatedUser)
+  }
+
   // CRUD Actions
   const addStreet = (name: string) => {
     const newStreets = [...streets, { id: crypto.randomUUID(), name }]
@@ -325,7 +356,7 @@ export const InventoryProvider = ({
       { details: `Rua criada: ${name}` },
       currentUser?.name || 'Gerente',
     )
-    inventoryService.notifyEvent(`Nova rua criada: ${name}`)
+    inventoryService.notifyEvent(`Nova rua criada: ${name}`, 'system')
   }
 
   const updateStreet = (id: string, name: string) => {
@@ -363,7 +394,11 @@ export const InventoryProvider = ({
       { details: `Rua excluída: ${streetName}` },
       currentUser?.name || 'Gerente',
     )
-    inventoryService.notifyEvent(`Rua ${streetName} excluída`, 'destructive')
+    inventoryService.notifyEvent(
+      `Rua ${streetName} excluída`,
+      'system',
+      'destructive',
+    )
   }
 
   const moveStreet = (id: string, direction: 'up' | 'down') => {
@@ -518,7 +553,7 @@ export const InventoryProvider = ({
   }
 
   const addPallet = (
-    palletData: Omit<Pallet, 'id' | 'entryDate'>,
+    palletData: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
     user: string = 'Operador',
   ) => {
     let materialId = palletData.materialId
@@ -531,15 +566,16 @@ export const InventoryProvider = ({
       ...palletData,
       materialId,
       id: crypto.randomUUID(),
-      entryDate: new Date().toISOString(),
+      entryDate: palletData.entryDate || new Date().toISOString(),
     }
 
     const newPallets = [...pallets, newPallet]
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
-    addLog('ENTRY', { pallet: newPallet }, user)
+    addLog('ENTRY', { pallet: newPallet, date: newPallet.entryDate }, user)
     inventoryService.notifyEvent(
       `Nova entrada: ${palletData.materialName} (${palletData.quantity})`,
+      'movement',
     )
   }
 
@@ -557,6 +593,7 @@ export const InventoryProvider = ({
     )
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+    inventoryService.notifyEvent('Material movimentado', 'movement')
   }
 
   const removePallet = (id: string, user: string) => {
@@ -568,6 +605,7 @@ export const InventoryProvider = ({
       inventoryService.savePallets(newPallets)
       inventoryService.notifyEvent(
         `Saída de material: ${pallet.materialName} (${pallet.quantity})`,
+        'movement',
         'destructive',
       )
     }
@@ -582,7 +620,11 @@ export const InventoryProvider = ({
     const newPallets = pallets.filter((p) => p.locationId !== locationId)
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
-    inventoryService.notifyEvent('Localização esvaziada', 'destructive')
+    inventoryService.notifyEvent(
+      'Localização esvaziada',
+      'movement',
+      'destructive',
+    )
   }
 
   const value = useMemo(
@@ -624,6 +666,7 @@ export const InventoryProvider = ({
       addUser,
       updateUser,
       deleteUser,
+      updateUserPreferences,
       updateSettings,
       addPallet,
       updatePallet,
@@ -669,6 +712,7 @@ export const InventoryProvider = ({
       addUser,
       updateUser,
       deleteUser,
+      updateUserPreferences,
       updateSettings,
       addPallet,
       updatePallet,

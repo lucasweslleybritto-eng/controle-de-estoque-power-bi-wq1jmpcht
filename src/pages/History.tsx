@@ -186,7 +186,7 @@ export default function History() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="rounded-md border-0">
+          <div className="rounded-md border-0 w-full overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
                 <TableRow>

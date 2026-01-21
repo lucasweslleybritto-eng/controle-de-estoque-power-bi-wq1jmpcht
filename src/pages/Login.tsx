@@ -58,12 +58,8 @@ export default function Login() {
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-200 overflow-hidden">
-                        {user.avatar ? (
-                          <img src={user.avatar} className="w-full h-full" />
-                        ) : (
-                          <User className="w-4 h-4 m-1 text-slate-500" />
-                        )}
+                      <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
+                        <User className="w-4 h-4 text-slate-500" />
                       </div>
                       <span className="font-medium">{user.name}</span>
                       <span className="text-xs text-muted-foreground ml-1 uppercase border px-1 rounded">

@@ -22,12 +22,15 @@ const KEYS = {
 
 const CHANNEL_NAME = 'inventory_sync_channel'
 
+export type NotificationCategory = 'movement' | 'low-stock' | 'system'
+
 export type ServiceEvent =
   | { type: 'UPDATE'; key: string }
   | {
       type: 'NOTIFICATION'
       message: string
       variant?: 'default' | 'destructive'
+      category: NotificationCategory
     }
 
 // Mock Data
@@ -80,27 +83,33 @@ const INITIAL_EQUIPMENTS: Equipment[] = [
   },
 ]
 
+const DEFAULT_PREFERENCES = {
+  lowStockAlerts: true,
+  movementAlerts: true,
+  emailNotifications: false,
+}
+
 const INITIAL_USERS: User[] = [
   {
     id: 'admin-1',
     name: 'Administrador',
     email: 'admin@sistema.com',
     role: 'ADMIN',
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
+    preferences: DEFAULT_PREFERENCES,
   },
   {
     id: 'op-1',
     name: 'Operador Padrão',
     email: 'operador@sistema.com',
     role: 'OPERATOR',
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
+    preferences: DEFAULT_PREFERENCES,
   },
   {
     id: 'viewer-1',
     name: 'Visitante',
     email: 'visitante@sistema.com',
     role: 'VIEWER',
-    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
+    preferences: DEFAULT_PREFERENCES,
   },
 ]
 
@@ -155,12 +164,14 @@ class InventoryService {
 
   public notifyEvent(
     message: string,
+    category: NotificationCategory = 'system',
     variant: 'default' | 'destructive' = 'default',
   ) {
     this.channel.postMessage({
       type: 'NOTIFICATION',
       message,
       variant,
+      category,
     })
   }
 

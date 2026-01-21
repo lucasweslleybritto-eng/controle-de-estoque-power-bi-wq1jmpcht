@@ -19,12 +19,23 @@ import {
   Legend,
 } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { TrendingUp, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import {
+  TrendingUp,
+  Package,
+  ArrowUpRight,
+  ArrowDownRight,
+  Download,
+  FileText,
+} from 'lucide-react'
 import { format, subDays, startOfDay, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { Button } from '@/components/ui/button'
+import { exportToCSV } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Reports() {
   const { history, pallets, materials } = useInventoryStore()
+  const { toast } = useToast()
 
   // 1. Calculate Stock Value (Total Items)
   const totalItems = pallets.reduce((sum, p) => sum + p.quantity, 0)
@@ -78,18 +89,56 @@ export default function Reports() {
     return total <= m.minStock
   }).length
 
+  const handleExportCSV = () => {
+    const reportData = history.map((log) => ({
+      Data: format(new Date(log.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+      Tipo: log.type,
+      Material: log.materialName || '-',
+      Quantidade: log.quantity || 0,
+      Usuario: log.user,
+      Detalhes: log.description || '-',
+    }))
+
+    exportToCSV(
+      reportData,
+      `relatorio-completo-${format(new Date(), 'dd-MM-yyyy')}`,
+    )
+    toast({
+      title: 'CSV Gerado',
+      description: 'Relatório baixado com sucesso.',
+    })
+  }
+
+  const handleExportPDF = () => {
+    window.print()
+    toast({
+      title: 'Modo Impressão',
+      description: 'Use a opção "Salvar como PDF" do seu navegador.',
+    })
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Relatórios e Análises
-        </h1>
-        <p className="text-muted-foreground">
-          Visão geral da performance do armazém.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Relatórios e Análises
+          </h1>
+          <p className="text-muted-foreground">
+            Visão geral da performance do armazém.
+          </p>
+        </div>
+        <div className="flex gap-2 print:hidden">
+          <Button variant="outline" onClick={handleExportCSV}>
+            <Download className="mr-2 h-4 w-4" /> Exportar CSV
+          </Button>
+          <Button variant="outline" onClick={handleExportPDF}>
+            <FileText className="mr-2 h-4 w-4" /> Imprimir / PDF
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -142,8 +191,8 @@ export default function Reports() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid md:grid-cols-2 gap-6 print:block print:space-y-6">
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle>Fluxo de Entrada e Saída (7 Dias)</CardTitle>
             <CardDescription>
@@ -180,7 +229,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle>Top Saídas (Giro de Estoque)</CardTitle>
             <CardDescription>

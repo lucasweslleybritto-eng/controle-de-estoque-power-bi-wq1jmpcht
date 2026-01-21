@@ -190,7 +190,7 @@ export default function GeneralSpreadsheet() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="rounded-md border-0">
+          <div className="rounded-md border-0 w-full overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>

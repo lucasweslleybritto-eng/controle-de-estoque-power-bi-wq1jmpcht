@@ -61,6 +61,9 @@ interface InventoryContextType {
   addMaterial: (material: Omit<Material, 'id'>) => void
   updateMaterial: (id: string, material: Partial<Material>) => void
   deleteMaterial: (id: string) => void
+  importMaterials: (
+    data: { material: Omit<Material, 'id'>; initialQuantity: number }[],
+  ) => void
 
   // Equipment CRUD
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void
@@ -233,11 +236,18 @@ export const InventoryProvider = ({
   const isLowStock = useCallback(
     (materialId: string) => {
       const material = materials.find((m) => m.id === materialId)
-      if (!material || material.minStock === undefined) return false
+      // Use material specific minStock or fallback to global setting if not set (optional enhancement, but keeping per material for now)
+      // If minStock is undefined, we could use settings.lowStockThreshold
+      const threshold =
+        material?.minStock !== undefined
+          ? material.minStock
+          : settings.lowStockThreshold
+
+      if (!material) return false
       const total = getMaterialTotalStock(materialId)
-      return total <= material.minStock
+      return total <= threshold
     },
-    [materials, getMaterialTotalStock],
+    [materials, getMaterialTotalStock, settings.lowStockThreshold],
   )
 
   const alerts = useMemo(() => {
@@ -527,6 +537,71 @@ export const InventoryProvider = ({
     inventoryService.saveMaterials(newMaterials)
   }
 
+  const importMaterials = (
+    data: { material: Omit<Material, 'id'>; initialQuantity: number }[],
+  ) => {
+    const newMaterials = [...materials]
+    const newPallets = [...pallets]
+    const importedLogs: MovementLog[] = []
+
+    data.forEach(({ material, initialQuantity }) => {
+      // Check if material already exists by name
+      const existing = newMaterials.find((m) => m.name === material.name)
+      let materialId = existing?.id
+
+      if (!existing) {
+        materialId = crypto.randomUUID()
+        newMaterials.push({ ...material, id: materialId })
+      } else {
+        // Option: Update existing material or skip? For bulk import, we usually just ensure it exists
+        // If needed we can update descriptions/minStock here
+      }
+
+      if (initialQuantity > 0 && materialId) {
+        const pallet: Pallet = {
+          id: crypto.randomUUID(),
+          locationId: 'TRP_AREA', // Default to TRP for bulk imports
+          materialName: material.name,
+          description: 'Importação em Massa',
+          quantity: initialQuantity,
+          entryDate: new Date().toISOString(),
+          type: material.type,
+          materialId: materialId,
+        }
+        newPallets.push(pallet)
+
+        // Generate Log
+        importedLogs.push({
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          user: currentUser?.name || 'Sistema (Import)',
+          type: 'ENTRY',
+          materialType: material.type,
+          materialName: material.name,
+          quantity: initialQuantity,
+          locationName: 'Zona TRP',
+          streetName: 'Zona de Entrada',
+          description: 'Importação via Planilha',
+        })
+      }
+    })
+
+    setMaterials(newMaterials)
+    inventoryService.saveMaterials(newMaterials)
+
+    if (newPallets.length > pallets.length) {
+      setPallets(newPallets)
+      inventoryService.savePallets(newPallets)
+      const newHistory = [...importedLogs, ...history]
+      setHistory(newHistory)
+      inventoryService.saveHistory(newHistory)
+      inventoryService.notifyEvent(
+        `${data.length} materiais processados na importação`,
+        'system',
+      )
+    }
+  }
+
   const addEquipment = (equipment: Omit<Equipment, 'id'>) => {
     const newEquipments = [
       ...equipments,
@@ -665,6 +740,7 @@ export const InventoryProvider = ({
       addMaterial,
       updateMaterial,
       deleteMaterial,
+      importMaterials,
       addEquipment,
       deleteEquipment,
       login,
@@ -712,6 +788,7 @@ export const InventoryProvider = ({
       addMaterial,
       updateMaterial,
       deleteMaterial,
+      importMaterials,
       addEquipment,
       deleteEquipment,
       login,

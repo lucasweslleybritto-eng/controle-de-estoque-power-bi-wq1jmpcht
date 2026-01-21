@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Save, AlertTriangle, Trash2 } from 'lucide-react'
+import { Save, AlertTriangle, Trash2, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -84,14 +84,16 @@ export function SystemTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Limites e Alertas</CardTitle>
+            <CardTitle>Limites e Alertas (Global)</CardTitle>
             <CardDescription>
-              Defina quando o sistema deve alertar os operadores.
+              Defina os gatilhos padrões para alertas de estoque.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Alerta de Estoque Baixo (Qtd)</Label>
+              <Label className="flex items-center gap-2">
+                <Bell className="h-4 w-4" /> Alerta de Estoque Baixo (Qtd)
+              </Label>
               <Input
                 type="number"
                 value={formData.lowStockThreshold}
@@ -103,8 +105,8 @@ export function SystemTab() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Materiais com quantidade abaixo deste valor serão marcados em
-                vermelho.
+                Gatilho global. Se um material não tiver limite específico, este
+                valor será usado.
               </p>
             </div>
             <div className="space-y-2">
@@ -120,8 +122,7 @@ export function SystemTab() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Ruas com ocupação acima deste valor serão marcadas como
-                críticas.
+                Ruas com ocupação acima deste valor serão destacadas.
               </p>
             </div>
           </CardContent>

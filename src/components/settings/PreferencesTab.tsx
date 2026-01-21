@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, BellOff, Mail, Save } from 'lucide-react'
+import { Bell, Mail, Save } from 'lucide-react'
 import {
   Card,
   CardContent,

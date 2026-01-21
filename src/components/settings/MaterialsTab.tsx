@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Plus,
   Pencil,
@@ -6,6 +6,9 @@ import {
   Search,
   Image as ImageIcon,
   Upload,
+  FileSpreadsheet,
+  AlertCircle,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +27,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -48,6 +52,15 @@ import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
 import { Material, MaterialType } from '@/types'
 import { fileToBase64 } from '@/lib/utils'
+import { z } from 'zod'
+
+const importSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  description: z.string().optional(),
+  type: z.enum(['TRP', 'TRD']).default('TRP'),
+  minStock: z.number().min(0).default(0),
+  initialQuantity: z.number().min(0).default(0),
+})
 
 export function MaterialsTab() {
   const {
@@ -55,13 +68,16 @@ export function MaterialsTab() {
     addMaterial,
     updateMaterial,
     deleteMaterial,
+    importMaterials,
     currentUser,
   } = useInventoryStore()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
   const [isLoadingImage, setIsLoadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState<{
     name: string
@@ -163,6 +179,121 @@ export function MaterialsTab() {
     }
   }
 
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (
+      !file.name.endsWith('.csv') &&
+      file.type !== 'text/csv' &&
+      file.type !== 'application/vnd.ms-excel'
+    ) {
+      toast({
+        variant: 'destructive',
+        title: 'Formato não suportado',
+        description:
+          'Por favor, envie um arquivo CSV. Suporte a Excel (.xlsx) em breve.',
+      })
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const lines = text.split('\n')
+      // Remove header if it exists (simple check)
+      if (lines.length > 0 && lines[0].toLowerCase().includes('name')) {
+        lines.shift()
+      }
+
+      const parsedItems = lines
+        .map((line) => {
+          if (!line.trim()) return null
+          // Basic CSV regex split that handles quotes
+          const regex = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g
+          const matches = []
+          let match
+          while ((match = regex.exec(line))) {
+            if (match[1] !== undefined) {
+              matches.push(match[1].replace(/^"|"$/g, '').replace(/""/g, '"'))
+            }
+          }
+
+          // Fallback if regex fails or simple structure
+          const cols = matches.length > 1 ? matches : line.split(',')
+
+          if (cols.length < 1) return null
+
+          // Expected: Name, Description, Type, MinStock, InitialQuantity
+          const name = cols[0]?.trim()
+          if (!name) return null
+
+          return {
+            name,
+            description: cols[1]?.trim() || '',
+            type: (cols[2]?.trim().toUpperCase() === 'TRD' ? 'TRD' : 'TRP') as
+              | 'TRP'
+              | 'TRD',
+            minStock: parseInt(cols[3]?.trim() || '0') || 0,
+            initialQuantity: parseInt(cols[4]?.trim() || '0') || 0,
+          }
+        })
+        .filter(Boolean) as z.infer<typeof importSchema>[]
+
+      const validItems = parsedItems.filter((item) => {
+        const result = importSchema.safeParse(item)
+        return result.success
+      })
+
+      if (validItems.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro na importação',
+          description: 'Nenhum item válido encontrado no arquivo.',
+        })
+        return
+      }
+
+      importMaterials(
+        validItems.map((item) => ({
+          material: {
+            name: item.name,
+            description: item.description,
+            type: item.type,
+            minStock: item.minStock,
+          },
+          initialQuantity: item.initialQuantity,
+        })),
+      )
+
+      toast({
+        title: 'Importação Concluída',
+        description: `${validItems.length} materiais processados com sucesso.`,
+      })
+      setIsImportOpen(false)
+    } catch (error) {
+      console.error('Import error', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao ler arquivo',
+        description: 'Verifique se o arquivo está formatado corretamente.',
+      })
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const downloadTemplate = () => {
+    const header = 'Name,Description,Type,MinStock,InitialQuantity\n'
+    const example = 'Exemplo Item,Descrição do item,TRP,10,50'
+    const blob = new Blob([header + example], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'template_importacao.csv'
+    link.click()
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
@@ -173,9 +304,61 @@ export function MaterialsTab() {
           </p>
         </div>
         {canEdit && (
-          <Button onClick={() => setIsAddOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Novo Material
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar Itens
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Importação em Massa (CSV)</DialogTitle>
+                  <DialogDescription>
+                    Carregue um arquivo CSV para adicionar múltiplos materiais
+                    de uma vez.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-md text-sm space-y-2 border">
+                    <p className="font-medium flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-blue-500" />
+                      Instruções:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-1">
+                      <li>O arquivo deve ser .csv (separado por vírgulas)</li>
+                      <li>
+                        Colunas: Nome, Descrição, Tipo (TRP/TRD), Estoque Mín.,
+                        Qtd Inicial
+                      </li>
+                      <li>A primeira linha (cabeçalho) é ignorada</li>
+                    </ul>
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-blue-600"
+                      onClick={downloadTemplate}
+                    >
+                      <Download className="mr-1 h-3 w-3" /> Baixar Modelo CSV
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="import-file">Selecione o Arquivo</Label>
+                    <Input
+                      id="import-file"
+                      type="file"
+                      accept=".csv,text/csv,application/vnd.ms-excel"
+                      onChange={handleImportFile}
+                      ref={fileInputRef}
+                    />
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button onClick={() => setIsAddOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Novo Material
+            </Button>
+          </div>
         )}
       </div>
 

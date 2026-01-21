@@ -1,155 +1,96 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react'
 import {
-  Search,
   Package,
-  Box,
-  ArrowRight,
-  Plus,
-  Pencil,
-  Trash2,
+  TrendingUp,
+  AlertTriangle,
+  History,
   LayoutDashboard,
-  ChevronLeft,
-  ChevronRight,
+  ArrowRight,
+  TrendingDown,
   Building,
 } from 'lucide-react'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Label } from '@/components/ui/label'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { cn } from '@/lib/utils'
-import { useToast } from '@/hooks/use-toast'
+import { format, subDays, isAfter } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from 'recharts'
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
+import { Link } from 'react-router-dom'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 
 export default function Index() {
   const {
-    streets,
     pallets,
-    locations,
+    history,
+    materials,
+    isLowStock,
+    streets,
     getLocationsByStreet,
-    addStreet,
-    updateStreet,
-    deleteStreet,
-    moveStreet,
     currentUser,
   } = useInventoryStore()
-  const { toast } = useToast()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isAddOpen, setIsAddOpen] = useState(false)
-  const [newStreetName, setNewStreetName] = useState('')
-  const [editStreet, setEditStreet] = useState<{
-    id: string
-    name: string
-  } | null>(null)
 
-  const canEdit =
-    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
+  // Dashboard Stats
+  const stats = useMemo(() => {
+    const totalItems = pallets.reduce((acc, p) => acc + p.quantity, 0)
 
-  const totalCapacity = locations.length
+    const lowStockItems = materials.filter((m) => isLowStock(m.id)).length
+
+    const thirtyDaysAgo = subDays(new Date(), 30)
+    const movementsLast30Days = history.filter((h) =>
+      isAfter(new Date(h.date), thirtyDaysAgo),
+    ).length
+
+    const recentMovements = history.slice(0, 5)
+
+    const healthyItems = materials.length - lowStockItems
+
+    return {
+      totalItems,
+      lowStockItems,
+      movementsLast30Days,
+      recentMovements,
+      stockHealthData: [
+        { name: 'Saudável', value: healthyItems },
+        { name: 'Estoque Baixo', value: lowStockItems },
+      ],
+    }
+  }, [pallets, materials, history, isLowStock])
+
+  // Warehouse Map Logic (Collapsible)
+  const totalCapacity = useMemo(
+    () =>
+      streets.reduce((acc, s) => acc + getLocationsByStreet(s.id).length, 0),
+    [streets, getLocationsByStreet],
+  )
   const occupiedSlots = pallets.filter(
     (p) => p.locationId !== 'TRP_AREA',
   ).length
-  const emptySlots = totalCapacity - occupiedSlots
+
   const occupancyRate =
     totalCapacity > 0 ? Math.round((occupiedSlots / totalCapacity) * 100) : 0
-
-  const filteredStreets = streets.filter((street) =>
-    street.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
-
-  const handleAddStreet = () => {
-    if (newStreetName.trim()) {
-      addStreet(newStreetName)
-      setNewStreetName('')
-      setIsAddOpen(false)
-      toast({
-        title: 'Rua adicionada',
-        description: `Rua ${newStreetName} criada com sucesso.`,
-      })
-    }
-  }
-
-  const handleUpdateStreet = () => {
-    if (editStreet && editStreet.name.trim()) {
-      updateStreet(editStreet.id, editStreet.name)
-      setEditStreet(null)
-      toast({ title: 'Rua atualizada', description: 'Nome da rua alterado.' })
-    }
-  }
-
-  const handleMoveStreet = (
-    id: string,
-    direction: 'up' | 'down',
-    e: React.MouseEvent,
-  ) => {
-    e.preventDefault()
-    e.stopPropagation()
-    moveStreet(id, direction)
-  }
-
-  if (streets.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center animate-fade-in">
-        <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-full">
-          <Building className="h-12 w-12 text-slate-400" />
-        </div>
-        <div className="space-y-2 max-w-md">
-          <h2 className="text-2xl font-bold tracking-tight">
-            O armazém está vazio
-          </h2>
-          <p className="text-muted-foreground">
-            Parece que não há ruas cadastradas no momento. Comece criando a
-            estrutura do seu armazém para gerenciar o estoque.
-          </p>
-        </div>
-        {canEdit && (
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="mt-4">
-                <Plus className="mr-2 h-4 w-4" /> Criar Primeira Rua
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Nova Rua</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <Label>Nome da Rua</Label>
-                <Input
-                  value={newStreetName}
-                  onChange={(e) => setNewStreetName(e.target.value)}
-                  placeholder="Ex: Rua A"
-                  className="mt-2"
-                />
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddStreet}>Criar Rua</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -157,266 +98,284 @@ export default function Index() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <LayoutDashboard className="h-8 w-8 text-primary" />
-            Estoque Classe 2
+            Dashboard Geral
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestão de Ruas e Armazenamento
+            Visão geral do armazém e indicadores de performance.
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar rua..."
-              className="pl-10 bg-background"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          {canEdit && (
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" /> Nova Rua
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Nova Rua</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <Label>Nome da Rua</Label>
-                  <Input
-                    value={newStreetName}
-                    onChange={(e) => setNewStreetName(e.target.value)}
-                    placeholder="Ex: Rua A"
-                    className="mt-2"
-                  />
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleAddStreet}>Salvar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm border-l-4 border-l-blue-600">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Ocupação TRD
+              Total de Itens em Estoque
             </CardTitle>
-            <Package className="h-4 w-4 text-primary" />
+            <Package className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{occupancyRate}%</div>
+            <div className="text-2xl font-bold">{stats.totalItems}</div>
+            <p className="text-xs text-muted-foreground">Unidades totais</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-l-4 border-l-red-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Abaixo do Mínimo
+            </CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.lowStockItems}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {occupiedSlots} de {totalCapacity} slots ocupados
+              Materiais precisam de reposição
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-green-600 shadow-sm hover:shadow-md transition-shadow">
+
+        <Card className="shadow-sm border-l-4 border-l-green-600">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Posições Livres
+              Movimentações (30 dias)
             </CardTitle>
-            <Box className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {emptySlots}
+            <div className="text-2xl font-bold">
+              {stats.movementsLast30Days}
             </div>
             <p className="text-xs text-muted-foreground">
-              Disponíveis nas ruas
+              Entradas e Saídas recentes
             </p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-blue-600 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Ruas
-            </CardTitle>
-            <ArrowRight className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {streets.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Setores ativos</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filteredStreets.map((street, index) => {
-          const streetLocations = getLocationsByStreet(street.id)
-          const streetOccupied = streetLocations.filter((l) =>
-            pallets.some((p) => p.locationId === l.id),
-          ).length
-          const streetTotal = streetLocations.length
-          const streetOccupancy =
-            streetTotal > 0
-              ? Math.round((streetOccupied / streetTotal) * 100)
-              : 0
-
-          const isFirst = index === 0
-          const isLast = index === filteredStreets.length - 1
-
-          return (
-            <div key={street.id} className="group relative block h-full">
-              {canEdit && (
-                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1">
-                  {/* Reordering Controls */}
-                  <div className="flex bg-background/80 backdrop-blur-sm rounded-md border shadow-sm mr-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-6 hover:bg-accent rounded-l-md rounded-r-none"
-                      onClick={(e) => handleMoveStreet(street.id, 'up', e)}
-                      disabled={isFirst || searchQuery !== ''}
-                      title="Mover para trás"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Movements List */}
+        <Card className="col-span-1 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" /> Movimentações Recentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Material</TableHead>
+                  <TableHead className="text-right">Qtd</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.recentMovements.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center text-muted-foreground py-8"
                     >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="w-[1px] bg-border h-full" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-6 hover:bg-accent rounded-r-md rounded-l-none"
-                      onClick={(e) => handleMoveStreet(street.id, 'down', e)}
-                      disabled={isLast || searchQuery !== ''}
-                      title="Mover para frente"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <Dialog
-                    open={editStreet?.id === street.id}
-                    onOpenChange={(open) => !open && setEditStreet(null)}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          setEditStreet({ id: street.id, name: street.name })
-                        }
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Editar Rua</DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4">
-                        <Label>Nome</Label>
-                        <Input
-                          value={editStreet?.name || ''}
-                          onChange={(e) =>
-                            setEditStreet((prev) =>
-                              prev ? { ...prev, name: e.target.value } : null,
-                            )
-                          }
-                        />
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={handleUpdateStreet}>Salvar</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir Rua?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Isso removerá a rua, todas as suas localizações e
-                          materiais alocados.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-destructive hover:bg-destructive/90"
-                          onClick={() => {
-                            deleteStreet(street.id)
-                            toast({
-                              title: 'Rua removida',
-                              variant: 'destructive',
-                            })
-                          }}
+                      Nenhuma movimentação registrada.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  stats.recentMovements.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs">
+                        {format(new Date(log.date), 'dd/MM HH:mm', {
+                          locale: ptBR,
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[10px] px-1.5',
+                            log.type === 'ENTRY'
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : log.type === 'EXIT'
+                                ? 'bg-red-100 text-red-800 border-red-200'
+                                : 'bg-gray-100 text-gray-800',
+                          )}
                         >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              )}
-              <Link to={`/street/${street.id}`} className="block h-full">
-                <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-muted group-hover:border-t-primary">
-                  <CardHeader className="bg-muted/20 border-b pb-4">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-2xl font-bold">
-                        {street.name}
-                      </CardTitle>
-                      <span className="text-xs font-semibold px-2 py-1 bg-background border rounded-full text-muted-foreground">
-                        {streetTotal} Slots
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Ocupação
-                          </span>
-                          <span className="font-medium">
-                            {streetOccupancy}%
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full transition-all duration-500',
-                              streetOccupancy > 90
-                                ? 'bg-green-600'
-                                : streetOccupancy < 10
-                                  ? 'bg-red-500'
-                                  : 'bg-green-500',
-                            )}
-                            style={{ width: `${streetOccupancy}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-[10px] text-muted-foreground px-1">
-                          <span>Vazio (Vermelho)</span>
-                          <span>Cheio (Verde)</span>
-                        </div>
-                      </div>
-                      <div className="pt-2 flex items-center text-primary text-sm font-medium group-hover:translate-x-1 transition-transform">
-                        Ver Detalhes <ArrowRight className="ml-1 h-3 w-3" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                          {log.type === 'ENTRY'
+                            ? 'ENTRADA'
+                            : log.type === 'EXIT'
+                              ? 'SAÍDA'
+                              : 'SISTEMA'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {log.materialName || log.description}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-sm">
+                        {log.quantity || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+            <div className="mt-4 text-right">
+              <Link to="/history">
+                <Button variant="ghost" size="sm" className="text-primary">
+                  Ver Histórico Completo <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
               </Link>
             </div>
-          )
-        })}
+          </CardContent>
+        </Card>
+
+        {/* Stock Health Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Saúde do Estoque</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] w-full">
+              {materials.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                  Sem dados.
+                </div>
+              ) : (
+                <ChartContainer
+                  config={{
+                    healthy: {
+                      label: 'Saudável',
+                      color: 'hsl(var(--chart-2))',
+                    },
+                    low: {
+                      label: 'Baixo',
+                      color: 'hsl(var(--destructive))',
+                    },
+                  }}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.stockHealthData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell key="cell-0" fill="hsl(var(--chart-2))" />
+                        <Cell key="cell-1" fill="hsl(var(--destructive))" />
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              )}
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Itens Saudáveis</span>
+                <span className="font-bold">
+                  {stats.stockHealthData[0].value}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Itens em Alerta</span>
+                <span className="font-bold text-destructive">
+                  {stats.stockHealthData[1].value}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Warehouse Map (Legacy Index View) - Collapsed by default if simpler dashboard is preferred, but let's keep it visible as it is useful */}
+      <div className="pt-4">
+        <Accordion type="single" collapsible defaultValue="map">
+          <AccordionItem value="map" className="border-none">
+            <AccordionTrigger className="hover:no-underline py-2">
+              <div className="flex items-center gap-2 text-xl font-bold">
+                <Building className="h-6 w-6" /> Mapa do Armazém (Ruas e
+                Ocupação)
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
+                {streets.map((street) => {
+                  const streetLocations = getLocationsByStreet(street.id)
+                  const streetOccupied = streetLocations.filter((l) =>
+                    pallets.some((p) => p.locationId === l.id),
+                  ).length
+                  const streetTotal = streetLocations.length
+                  const streetOccupancy =
+                    streetTotal > 0
+                      ? Math.round((streetOccupied / streetTotal) * 100)
+                      : 0
+
+                  return (
+                    <Link
+                      to={`/street/${street.id}`}
+                      key={street.id}
+                      className="block h-full group"
+                    >
+                      <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-muted group-hover:border-t-primary">
+                        <CardHeader className="bg-muted/20 border-b pb-4">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-xl font-bold">
+                              {street.name}
+                            </CardTitle>
+                            <span className="text-xs font-semibold px-2 py-1 bg-background border rounded-full text-muted-foreground">
+                              {streetTotal} Slots
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Ocupação
+                                </span>
+                                <span className="font-medium">
+                                  {streetOccupancy}%
+                                </span>
+                              </div>
+                              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    'h-full transition-all duration-500',
+                                    streetOccupancy > 90
+                                      ? 'bg-green-600'
+                                      : streetOccupancy < 10
+                                        ? 'bg-red-500'
+                                        : 'bg-green-500',
+                                  )}
+                                  style={{ width: `${streetOccupancy}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  )
+                })}
+                {streets.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    Nenhuma rua cadastrada. Vá em Configurações &gt; Ruas para
+                    começar.
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   )

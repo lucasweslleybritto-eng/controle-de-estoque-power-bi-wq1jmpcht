@@ -9,6 +9,8 @@ import {
   Pencil,
   Trash2,
   LayoutDashboard,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,6 +48,7 @@ export default function Index() {
     addStreet,
     updateStreet,
     deleteStreet,
+    moveStreet,
   } = useInventoryStore()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
@@ -86,6 +89,16 @@ export default function Index() {
       setEditStreet(null)
       toast({ title: 'Rua atualizada', description: 'Nome da rua alterado.' })
     }
+  }
+
+  const handleMoveStreet = (
+    id: string,
+    direction: 'up' | 'down',
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault()
+    e.stopPropagation()
+    moveStreet(id, direction)
   }
 
   return (
@@ -185,7 +198,7 @@ export default function Index() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filteredStreets.map((street) => {
+        {filteredStreets.map((street, index) => {
           const streetLocations = getLocationsByStreet(street.id)
           const streetOccupied = streetLocations.filter((l) =>
             pallets.some((p) => p.locationId === l.id),
@@ -196,9 +209,37 @@ export default function Index() {
               ? Math.round((streetOccupied / streetTotal) * 100)
               : 0
 
+          const isFirst = index === 0
+          const isLast = index === filteredStreets.length - 1
+
           return (
             <div key={street.id} className="group relative block h-full">
-              <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+              <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1">
+                {/* Reordering Controls */}
+                <div className="flex bg-background/80 backdrop-blur-sm rounded-md border shadow-sm mr-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-6 hover:bg-accent rounded-l-md rounded-r-none"
+                    onClick={(e) => handleMoveStreet(street.id, 'up', e)}
+                    disabled={isFirst || searchQuery !== ''}
+                    title="Mover para trás"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="w-[1px] bg-border h-full" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-6 hover:bg-accent rounded-r-md rounded-l-none"
+                    onClick={(e) => handleMoveStreet(street.id, 'down', e)}
+                    disabled={isLast || searchQuery !== ''}
+                    title="Mover para frente"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 <Dialog
                   open={editStreet?.id === street.id}
                   onOpenChange={(open) => !open && setEditStreet(null)}

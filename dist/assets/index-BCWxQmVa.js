@@ -19125,6 +19125,10 @@ var ChevronDown = createLucideIcon("chevron-down", [["path", {
 	d: "m6 9 6 6 6-6",
 	key: "qrunsl"
 }]]);
+var ChevronLeft = createLucideIcon("chevron-left", [["path", {
+	d: "m15 18-6-6 6-6",
+	key: "1wnfg3"
+}]]);
 var ChevronRight = createLucideIcon("chevron-right", [["path", {
 	d: "m9 18 6-6-6-6",
 	key: "mthhwq"
@@ -19153,6 +19157,22 @@ var CircleAlert = createLucideIcon("circle-alert", [
 		y1: "16",
 		y2: "16",
 		key: "4dfq90"
+	}]
+]);
+var CircleArrowRight = createLucideIcon("circle-arrow-right", [
+	["circle", {
+		cx: "12",
+		cy: "12",
+		r: "10",
+		key: "1mglay"
+	}],
+	["path", {
+		d: "m12 16 4-4-4-4",
+		key: "1i9zcv"
+	}],
+	["path", {
+		d: "M8 12h8",
+		key: "1wcyev"
 	}]
 ]);
 var CircleCheck = createLucideIcon("circle-check", [["circle", {
@@ -26271,6 +26291,17 @@ const InventoryProvider = ({ children }) => {
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
 	};
+	const moveStreet = (id, direction) => {
+		const index$1 = streets.findIndex((s$2) => s$2.id === id);
+		if (index$1 === -1) return;
+		if (direction === "up" && index$1 === 0) return;
+		if (direction === "down" && index$1 === streets.length - 1) return;
+		const newStreets = [...streets];
+		const swapIndex = direction === "up" ? index$1 - 1 : index$1 + 1;
+		[newStreets[index$1], newStreets[swapIndex]] = [newStreets[swapIndex], newStreets[index$1]];
+		setStreets(newStreets);
+		inventoryService.saveStreets(newStreets);
+	};
 	const addLocation = (streetId, name) => {
 		const newLocations = [...locations, {
 			id: crypto.randomUUID(),
@@ -26295,6 +26326,29 @@ const InventoryProvider = ({ children }) => {
 		const newPallets = pallets.filter((p) => p.locationId !== id);
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
+	};
+	const moveLocation = (locationId, direction) => {
+		const location = locations.find((l) => l.id === locationId);
+		if (!location) return;
+		const streetLocations = locations.filter((l) => l.streetId === location.streetId);
+		const indexInStreet = streetLocations.findIndex((l) => l.id === locationId);
+		if (direction === "up" && indexInStreet === 0) return;
+		if (direction === "down" && indexInStreet === streetLocations.length - 1) return;
+		const swapIndex = direction === "up" ? indexInStreet - 1 : indexInStreet + 1;
+		const temp = streetLocations[indexInStreet];
+		streetLocations[indexInStreet] = streetLocations[swapIndex];
+		streetLocations[swapIndex] = temp;
+		const newLocations = [...locations.filter((l) => l.streetId !== location.streetId), ...streetLocations];
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
+	};
+	const changeLocationStreet = (locationId, newStreetId) => {
+		const newLocations = locations.map((l) => l.id === locationId ? {
+			...l,
+			streetId: newStreetId
+		} : l);
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
 	};
 	const addMaterial = (material) => {
 		const newMaterials = [...materials, {
@@ -26400,9 +26454,12 @@ const InventoryProvider = ({ children }) => {
 		addStreet,
 		updateStreet,
 		deleteStreet,
+		moveStreet,
 		addLocation,
 		updateLocation,
 		deleteLocation,
+		moveLocation,
+		changeLocationStreet,
 		addMaterial,
 		updateMaterial,
 		deleteMaterial,
@@ -26431,9 +26488,12 @@ const InventoryProvider = ({ children }) => {
 		addStreet,
 		updateStreet,
 		deleteStreet,
+		moveStreet,
 		addLocation,
 		updateLocation,
 		deleteLocation,
+		moveLocation,
+		changeLocationStreet,
 		addMaterial,
 		updateMaterial,
 		deleteMaterial,
@@ -26457,7 +26517,7 @@ function useInventoryStore() {
 	return context;
 }
 function Index() {
-	const { streets, pallets, locations, getLocationsByStreet, addStreet, updateStreet, deleteStreet } = useInventoryStore();
+	const { streets, pallets, locations, getLocationsByStreet, addStreet, updateStreet, deleteStreet, moveStreet } = useInventoryStore();
 	const { toast: toast$2 } = useToast();
 	const [searchQuery, setSearchQuery] = (0, import_react.useState)("");
 	const [isAddOpen, setIsAddOpen] = (0, import_react.useState)(false);
@@ -26488,6 +26548,11 @@ function Index() {
 				description: "Nome da rua alterado."
 			});
 		}
+	};
+	const handleMoveStreet = (id, direction, e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		moveStreet(id, direction);
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-8 animate-fade-in",
@@ -26595,66 +26660,95 @@ function Index() {
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-				children: filteredStreets.map((street) => {
+				children: filteredStreets.map((street, index$1) => {
 					const streetLocations = getLocationsByStreet(street.id);
 					const streetOccupied = streetLocations.filter((l) => pallets.some((p) => p.locationId === l.id)).length;
 					const streetTotal = streetLocations.length;
 					const streetOccupancy = streetTotal > 0 ? Math.round(streetOccupied / streetTotal * 100) : 0;
+					const isFirst = index$1 === 0;
+					const isLast = index$1 === filteredStreets.length - 1;
 					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "group relative block h-full",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
-								open: editStreet?.id === street.id,
-								onOpenChange: (open) => !open && setEditStreet(null),
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTrigger, {
+							className: "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex bg-background/80 backdrop-blur-sm rounded-md border shadow-sm mr-1",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											className: "h-8 w-6 hover:bg-accent rounded-l-md rounded-r-none",
+											onClick: (e) => handleMoveStreet(street.id, "up", e),
+											disabled: isFirst || searchQuery !== "",
+											title: "Mover para trás",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { className: "h-4 w-4" })
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-[1px] bg-border h-full" }),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											className: "h-8 w-6 hover:bg-accent rounded-r-md rounded-l-none",
+											onClick: (e) => handleMoveStreet(street.id, "down", e),
+											disabled: isLast || searchQuery !== "",
+											title: "Mover para frente",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "h-4 w-4" })
+										})
+									]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
+									open: editStreet?.id === street.id,
+									onOpenChange: (open) => !open && setEditStreet(null),
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTrigger, {
+										asChild: true,
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "secondary",
+											size: "icon",
+											className: "h-8 w-8",
+											onClick: () => setEditStreet({
+												id: street.id,
+												name: street.name
+											}),
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-4 w-4" })
+										})
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Editar Rua" }) }),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "py-4",
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nome" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+												value: editStreet?.name || "",
+												onChange: (e) => setEditStreet((prev) => prev ? {
+													...prev,
+													name: e.target.value
+												} : null)
+											})]
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											onClick: handleUpdateStreet,
+											children: "Salvar"
+										}) })
+									] })]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
 									asChild: true,
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-										variant: "secondary",
+										variant: "destructive",
 										size: "icon",
 										className: "h-8 w-8",
-										onClick: () => setEditStreet({
-											id: street.id,
-											name: street.name
-										}),
-										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-4 w-4" })
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4" })
 									})
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Editar Rua" }) }),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										className: "py-4",
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nome" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											value: editStreet?.name || "",
-											onChange: (e) => setEditStreet((prev) => prev ? {
-												...prev,
-												name: e.target.value
-											} : null)
-										})]
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-										onClick: handleUpdateStreet,
-										children: "Salvar"
-									}) })
-								] })]
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
-								asChild: true,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-									variant: "destructive",
-									size: "icon",
-									className: "h-8 w-8",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4" })
-								})
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Rua?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogDescription, { children: "Isso removerá a rua, todas as suas localizações e materiais alocados." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
-								className: "bg-destructive hover:bg-destructive/90",
-								onClick: () => {
-									deleteStreet(street.id);
-									toast$2({
-										title: "Rua removida",
-										variant: "destructive"
-									});
-								},
-								children: "Excluir"
-							})] })] })] })]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Rua?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogDescription, { children: "Isso removerá a rua, todas as suas localizações e materiais alocados." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+									className: "bg-destructive hover:bg-destructive/90",
+									onClick: () => {
+										deleteStreet(street.id);
+										toast$2({
+											title: "Rua removida",
+											variant: "destructive"
+										});
+									},
+									children: "Excluir"
+								})] })] })] })
+							]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
 							to: `/street/${street.id}`,
 							className: "block h-full",
@@ -26857,15 +26951,1038 @@ var Switch = import_react.forwardRef(({ className, ...props }, ref) => /* @__PUR
 	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Thumb, { className: cn("pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0") })
 }));
 Switch.displayName = Root$3.displayName;
+function clamp(value, [min$1, max$1]) {
+	return Math.min(max$1, Math.max(min$1, value));
+}
+var DirectionContext = import_react.createContext(void 0);
+function useDirection(localDir) {
+	const globalDir = import_react.useContext(DirectionContext);
+	return localDir || globalDir || "ltr";
+}
+var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
+var OPEN_KEYS = [
+	" ",
+	"Enter",
+	"ArrowUp",
+	"ArrowDown"
+];
+var SELECTION_KEYS$1 = [" ", "Enter"];
+var SELECT_NAME = "Select";
+var [Collection$3, useCollection$3, createCollectionScope$3] = createCollection(SELECT_NAME);
+var [createSelectContext, createSelectScope] = createContextScope(SELECT_NAME, [createCollectionScope$3, createPopperScope]);
+var usePopperScope$1 = createPopperScope();
+var [SelectProvider, useSelectContext] = createSelectContext(SELECT_NAME);
+var [SelectNativeOptionsProvider, useSelectNativeOptionsContext] = createSelectContext(SELECT_NAME);
+var Select$1 = (props) => {
+	const { __scopeSelect, children, open: openProp, defaultOpen, onOpenChange, value: valueProp, defaultValue, onValueChange, dir, name, autoComplete, disabled, required: required$1, form } = props;
+	const popperScope = usePopperScope$1(__scopeSelect);
+	const [trigger, setTrigger] = import_react.useState(null);
+	const [valueNode, setValueNode] = import_react.useState(null);
+	const [valueNodeHasChildren, setValueNodeHasChildren] = import_react.useState(false);
+	const direction = useDirection(dir);
+	const [open, setOpen] = useControllableState({
+		prop: openProp,
+		defaultProp: defaultOpen ?? false,
+		onChange: onOpenChange,
+		caller: SELECT_NAME
+	});
+	const [value, setValue] = useControllableState({
+		prop: valueProp,
+		defaultProp: defaultValue,
+		onChange: onValueChange,
+		caller: SELECT_NAME
+	});
+	const triggerPointerDownPosRef = import_react.useRef(null);
+	const isFormControl = trigger ? form || !!trigger.closest("form") : true;
+	const [nativeOptionsSet, setNativeOptionsSet] = import_react.useState(/* @__PURE__ */ new Set());
+	const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$5, {
+		...popperScope,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectProvider, {
+			required: required$1,
+			scope: __scopeSelect,
+			trigger,
+			onTriggerChange: setTrigger,
+			valueNode,
+			onValueNodeChange: setValueNode,
+			valueNodeHasChildren,
+			onValueNodeHasChildrenChange: setValueNodeHasChildren,
+			contentId: useId(),
+			value,
+			onValueChange: setValue,
+			open,
+			onOpenChange: setOpen,
+			dir: direction,
+			triggerPointerDownPosRef,
+			disabled,
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Provider, {
+				scope: __scopeSelect,
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectNativeOptionsProvider, {
+					scope: props.__scopeSelect,
+					onNativeOptionAdd: import_react.useCallback((option) => {
+						setNativeOptionsSet((prev) => new Set(prev).add(option));
+					}, []),
+					onNativeOptionRemove: import_react.useCallback((option) => {
+						setNativeOptionsSet((prev) => {
+							const optionsSet = new Set(prev);
+							optionsSet.delete(option);
+							return optionsSet;
+						});
+					}, []),
+					children
+				})
+			}), isFormControl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectBubbleInput, {
+				"aria-hidden": true,
+				required: required$1,
+				tabIndex: -1,
+				name,
+				autoComplete,
+				value,
+				onChange: (event) => setValue(event.target.value),
+				disabled,
+				form,
+				children: [value === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "" }) : null, Array.from(nativeOptionsSet)]
+			}, nativeSelectKey) : null]
+		})
+	});
+};
+Select$1.displayName = SELECT_NAME;
+var TRIGGER_NAME$4 = "SelectTrigger";
+var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, disabled = false, ...triggerProps } = props;
+	const popperScope = usePopperScope$1(__scopeSelect);
+	const context = useSelectContext(TRIGGER_NAME$4, __scopeSelect);
+	const isDisabled = context.disabled || disabled;
+	const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
+	const getItems = useCollection$3(__scopeSelect);
+	const pointerTypeRef = import_react.useRef("touch");
+	const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
+		const enabledItems = getItems().filter((item) => !item.disabled);
+		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.value === context.value));
+		if (nextItem !== void 0) context.onValueChange(nextItem.value);
+	});
+	const handleOpen = (pointerEvent) => {
+		if (!isDisabled) {
+			context.onOpenChange(true);
+			resetTypeahead();
+		}
+		if (pointerEvent) context.triggerPointerDownPosRef.current = {
+			x: Math.round(pointerEvent.pageX),
+			y: Math.round(pointerEvent.pageY)
+		};
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Anchor, {
+		asChild: true,
+		...popperScope,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+			type: "button",
+			role: "combobox",
+			"aria-controls": context.contentId,
+			"aria-expanded": context.open,
+			"aria-required": context.required,
+			"aria-autocomplete": "none",
+			dir: context.dir,
+			"data-state": context.open ? "open" : "closed",
+			disabled: isDisabled,
+			"data-disabled": isDisabled ? "" : void 0,
+			"data-placeholder": shouldShowPlaceholder(context.value) ? "" : void 0,
+			...triggerProps,
+			ref: composedRefs,
+			onClick: composeEventHandlers(triggerProps.onClick, (event) => {
+				event.currentTarget.focus();
+				if (pointerTypeRef.current !== "mouse") handleOpen(event);
+			}),
+			onPointerDown: composeEventHandlers(triggerProps.onPointerDown, (event) => {
+				pointerTypeRef.current = event.pointerType;
+				const target = event.target;
+				if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
+				if (event.button === 0 && event.ctrlKey === false && event.pointerType === "mouse") {
+					handleOpen(event);
+					event.preventDefault();
+				}
+			}),
+			onKeyDown: composeEventHandlers(triggerProps.onKeyDown, (event) => {
+				const isTypingAhead = searchRef.current !== "";
+				if (!(event.ctrlKey || event.altKey || event.metaKey) && event.key.length === 1) handleTypeaheadSearch(event.key);
+				if (isTypingAhead && event.key === " ") return;
+				if (OPEN_KEYS.includes(event.key)) {
+					handleOpen();
+					event.preventDefault();
+				}
+			})
+		})
+	});
+});
+SelectTrigger$1.displayName = TRIGGER_NAME$4;
+var VALUE_NAME = "SelectValue";
+var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
+	const context = useSelectContext(VALUE_NAME, __scopeSelect);
+	const { onValueNodeHasChildrenChange } = context;
+	const hasChildren = children !== void 0;
+	const composedRefs = useComposedRefs(forwardedRef, context.onValueNodeChange);
+	useLayoutEffect2(() => {
+		onValueNodeHasChildrenChange(hasChildren);
+	}, [onValueNodeHasChildrenChange, hasChildren]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		...valueProps,
+		ref: composedRefs,
+		style: { pointerEvents: "none" },
+		children: shouldShowPlaceholder(context.value) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: placeholder }) : children
+	});
+});
+SelectValue$1.displayName = VALUE_NAME;
+var ICON_NAME = "SelectIcon";
+var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, children, ...iconProps } = props;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		"aria-hidden": true,
+		...iconProps,
+		ref: forwardedRef,
+		children: children || "▼"
+	});
+});
+SelectIcon.displayName = ICON_NAME;
+var PORTAL_NAME$2 = "SelectPortal";
+var SelectPortal = (props) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, {
+		asChild: true,
+		...props
+	});
+};
+SelectPortal.displayName = PORTAL_NAME$2;
+var CONTENT_NAME$5 = "SelectContent";
+var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
+	const context = useSelectContext(CONTENT_NAME$5, props.__scopeSelect);
+	const [fragment, setFragment] = import_react.useState();
+	useLayoutEffect2(() => {
+		setFragment(new DocumentFragment());
+	}, []);
+	if (!context.open) {
+		const frag = fragment;
+		return frag ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
+			scope: props.__scopeSelect,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Slot, {
+				scope: props.__scopeSelect,
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: props.children })
+			})
+		}), frag) : null;
+	}
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentImpl, {
+		...props,
+		ref: forwardedRef
+	});
+});
+SelectContent$1.displayName = CONTENT_NAME$5;
+var CONTENT_MARGIN = 10;
+var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$5);
+var CONTENT_IMPL_NAME = "SelectContentImpl";
+var Slot$2 = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
+var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, position = "item-aligned", onCloseAutoFocus, onEscapeKeyDown, onPointerDownOutside, side, sideOffset, align, alignOffset, arrowPadding, collisionBoundary, collisionPadding, sticky, hideWhenDetached, avoidCollisions, ...contentProps } = props;
+	const context = useSelectContext(CONTENT_NAME$5, __scopeSelect);
+	const [content, setContent] = import_react.useState(null);
+	const [viewport, setViewport] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
+	const [selectedItem, setSelectedItem] = import_react.useState(null);
+	const [selectedItemText, setSelectedItemText] = import_react.useState(null);
+	const getItems = useCollection$3(__scopeSelect);
+	const [isPositioned, setIsPositioned] = import_react.useState(false);
+	const firstValidItemFoundRef = import_react.useRef(false);
+	import_react.useEffect(() => {
+		if (content) return hideOthers(content);
+	}, [content]);
+	useFocusGuards();
+	const focusFirst$4 = import_react.useCallback((candidates) => {
+		const [firstItem, ...restItems] = getItems().map((item) => item.ref.current);
+		const [lastItem] = restItems.slice(-1);
+		const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+		for (const candidate of candidates) {
+			if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+			candidate?.scrollIntoView({ block: "nearest" });
+			if (candidate === firstItem && viewport) viewport.scrollTop = 0;
+			if (candidate === lastItem && viewport) viewport.scrollTop = viewport.scrollHeight;
+			candidate?.focus();
+			if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+		}
+	}, [getItems, viewport]);
+	const focusSelectedItem = import_react.useCallback(() => focusFirst$4([selectedItem, content]), [
+		focusFirst$4,
+		selectedItem,
+		content
+	]);
+	import_react.useEffect(() => {
+		if (isPositioned) focusSelectedItem();
+	}, [isPositioned, focusSelectedItem]);
+	const { onOpenChange, triggerPointerDownPosRef } = context;
+	import_react.useEffect(() => {
+		if (content) {
+			let pointerMoveDelta = {
+				x: 0,
+				y: 0
+			};
+			const handlePointerMove = (event) => {
+				pointerMoveDelta = {
+					x: Math.abs(Math.round(event.pageX) - (triggerPointerDownPosRef.current?.x ?? 0)),
+					y: Math.abs(Math.round(event.pageY) - (triggerPointerDownPosRef.current?.y ?? 0))
+				};
+			};
+			const handlePointerUp = (event) => {
+				if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) event.preventDefault();
+				else if (!content.contains(event.target)) onOpenChange(false);
+				document.removeEventListener("pointermove", handlePointerMove);
+				triggerPointerDownPosRef.current = null;
+			};
+			if (triggerPointerDownPosRef.current !== null) {
+				document.addEventListener("pointermove", handlePointerMove);
+				document.addEventListener("pointerup", handlePointerUp, {
+					capture: true,
+					once: true
+				});
+			}
+			return () => {
+				document.removeEventListener("pointermove", handlePointerMove);
+				document.removeEventListener("pointerup", handlePointerUp, { capture: true });
+			};
+		}
+	}, [
+		content,
+		onOpenChange,
+		triggerPointerDownPosRef
+	]);
+	import_react.useEffect(() => {
+		const close = () => onOpenChange(false);
+		window.addEventListener("blur", close);
+		window.addEventListener("resize", close);
+		return () => {
+			window.removeEventListener("blur", close);
+			window.removeEventListener("resize", close);
+		};
+	}, [onOpenChange]);
+	const [searchRef, handleTypeaheadSearch] = useTypeaheadSearch((search) => {
+		const enabledItems = getItems().filter((item) => !item.disabled);
+		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.ref.current === document.activeElement));
+		if (nextItem) setTimeout(() => nextItem.ref.current.focus());
+	});
+	const itemRefCallback = import_react.useCallback((node, value, disabled) => {
+		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
+		if (context.value !== void 0 && context.value === value || isFirstValidItem) {
+			setSelectedItem(node);
+			if (isFirstValidItem) firstValidItemFoundRef.current = true;
+		}
+	}, [context.value]);
+	const handleItemLeave = import_react.useCallback(() => content?.focus(), [content]);
+	const itemTextRefCallback = import_react.useCallback((node, value, disabled) => {
+		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
+		if (context.value !== void 0 && context.value === value || isFirstValidItem) setSelectedItemText(node);
+	}, [context.value]);
+	const SelectPosition = position === "popper" ? SelectPopperPosition : SelectItemAlignedPosition;
+	const popperContentProps = SelectPosition === SelectPopperPosition ? {
+		side,
+		sideOffset,
+		align,
+		alignOffset,
+		arrowPadding,
+		collisionBoundary,
+		collisionPadding,
+		sticky,
+		hideWhenDetached,
+		avoidCollisions
+	} : {};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
+		scope: __scopeSelect,
+		content,
+		viewport,
+		onViewportChange: setViewport,
+		itemRefCallback,
+		selectedItem,
+		onItemLeave: handleItemLeave,
+		itemTextRefCallback,
+		focusSelectedItem,
+		selectedItemText,
+		position,
+		isPositioned,
+		searchRef,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Combination_default, {
+			as: Slot$2,
+			allowPinchZoom: true,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
+				asChild: true,
+				trapped: context.open,
+				onMountAutoFocus: (event) => {
+					event.preventDefault();
+				},
+				onUnmountAutoFocus: composeEventHandlers(onCloseAutoFocus, (event) => {
+					context.trigger?.focus({ preventScroll: true });
+					event.preventDefault();
+				}),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
+					asChild: true,
+					disableOutsidePointerEvents: true,
+					onEscapeKeyDown,
+					onPointerDownOutside,
+					onFocusOutside: (event) => event.preventDefault(),
+					onDismiss: () => context.onOpenChange(false),
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectPosition, {
+						role: "listbox",
+						id: context.contentId,
+						"data-state": context.open ? "open" : "closed",
+						dir: context.dir,
+						onContextMenu: (event) => event.preventDefault(),
+						...contentProps,
+						...popperContentProps,
+						onPlaced: () => setIsPositioned(true),
+						ref: composedRefs,
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							outline: "none",
+							...contentProps.style
+						},
+						onKeyDown: composeEventHandlers(contentProps.onKeyDown, (event) => {
+							const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
+							if (event.key === "Tab") event.preventDefault();
+							if (!isModifierKey && event.key.length === 1) handleTypeaheadSearch(event.key);
+							if ([
+								"ArrowUp",
+								"ArrowDown",
+								"Home",
+								"End"
+							].includes(event.key)) {
+								let candidateNodes = getItems().filter((item) => !item.disabled).map((item) => item.ref.current);
+								if (["ArrowUp", "End"].includes(event.key)) candidateNodes = candidateNodes.slice().reverse();
+								if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+									const currentElement = event.target;
+									const currentIndex = candidateNodes.indexOf(currentElement);
+									candidateNodes = candidateNodes.slice(currentIndex + 1);
+								}
+								setTimeout(() => focusFirst$4(candidateNodes));
+								event.preventDefault();
+							}
+						})
+					})
+				})
+			})
+		})
+	});
+});
+SelectContentImpl.displayName = CONTENT_IMPL_NAME;
+var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
+var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, onPlaced, ...popperProps } = props;
+	const context = useSelectContext(CONTENT_NAME$5, __scopeSelect);
+	const contentContext = useSelectContentContext(CONTENT_NAME$5, __scopeSelect);
+	const [contentWrapper, setContentWrapper] = import_react.useState(null);
+	const [content, setContent] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
+	const getItems = useCollection$3(__scopeSelect);
+	const shouldExpandOnScrollRef = import_react.useRef(false);
+	const shouldRepositionRef = import_react.useRef(true);
+	const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
+	const position = import_react.useCallback(() => {
+		if (context.trigger && context.valueNode && contentWrapper && content && viewport && selectedItem && selectedItemText) {
+			const triggerRect = context.trigger.getBoundingClientRect();
+			const contentRect = content.getBoundingClientRect();
+			const valueNodeRect = context.valueNode.getBoundingClientRect();
+			const itemTextRect = selectedItemText.getBoundingClientRect();
+			if (context.dir !== "rtl") {
+				const itemTextOffset = itemTextRect.left - contentRect.left;
+				const left = valueNodeRect.left - itemTextOffset;
+				const leftDelta = triggerRect.left - left;
+				const minContentWidth = triggerRect.width + leftDelta;
+				const contentWidth = Math.max(minContentWidth, contentRect.width);
+				const rightEdge = window.innerWidth - CONTENT_MARGIN;
+				const clampedLeft = clamp(left, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth)]);
+				contentWrapper.style.minWidth = minContentWidth + "px";
+				contentWrapper.style.left = clampedLeft + "px";
+			} else {
+				const itemTextOffset = contentRect.right - itemTextRect.right;
+				const right = window.innerWidth - valueNodeRect.right - itemTextOffset;
+				const rightDelta = window.innerWidth - triggerRect.right - right;
+				const minContentWidth = triggerRect.width + rightDelta;
+				const contentWidth = Math.max(minContentWidth, contentRect.width);
+				const leftEdge = window.innerWidth - CONTENT_MARGIN;
+				const clampedRight = clamp(right, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, leftEdge - contentWidth)]);
+				contentWrapper.style.minWidth = minContentWidth + "px";
+				contentWrapper.style.right = clampedRight + "px";
+			}
+			const items$1 = getItems();
+			const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
+			const itemsHeight = viewport.scrollHeight;
+			const contentStyles = window.getComputedStyle(content);
+			const contentBorderTopWidth = parseInt(contentStyles.borderTopWidth, 10);
+			const contentPaddingTop = parseInt(contentStyles.paddingTop, 10);
+			const contentBorderBottomWidth = parseInt(contentStyles.borderBottomWidth, 10);
+			const contentPaddingBottom = parseInt(contentStyles.paddingBottom, 10);
+			const fullContentHeight = contentBorderTopWidth + contentPaddingTop + itemsHeight + contentPaddingBottom + contentBorderBottomWidth;
+			const minContentHeight = Math.min(selectedItem.offsetHeight * 5, fullContentHeight);
+			const viewportStyles = window.getComputedStyle(viewport);
+			const viewportPaddingTop = parseInt(viewportStyles.paddingTop, 10);
+			const viewportPaddingBottom = parseInt(viewportStyles.paddingBottom, 10);
+			const topEdgeToTriggerMiddle = triggerRect.top + triggerRect.height / 2 - CONTENT_MARGIN;
+			const triggerMiddleToBottomEdge = availableHeight - topEdgeToTriggerMiddle;
+			const selectedItemHalfHeight = selectedItem.offsetHeight / 2;
+			const itemOffsetMiddle = selectedItem.offsetTop + selectedItemHalfHeight;
+			const contentTopToItemMiddle = contentBorderTopWidth + contentPaddingTop + itemOffsetMiddle;
+			const itemMiddleToContentBottom = fullContentHeight - contentTopToItemMiddle;
+			if (contentTopToItemMiddle <= topEdgeToTriggerMiddle) {
+				const isLastItem = items$1.length > 0 && selectedItem === items$1[items$1.length - 1].ref.current;
+				contentWrapper.style.bottom = "0px";
+				const viewportOffsetBottom = content.clientHeight - viewport.offsetTop - viewport.offsetHeight;
+				const height = contentTopToItemMiddle + Math.max(triggerMiddleToBottomEdge, selectedItemHalfHeight + (isLastItem ? viewportPaddingBottom : 0) + viewportOffsetBottom + contentBorderBottomWidth);
+				contentWrapper.style.height = height + "px";
+			} else {
+				const isFirstItem = items$1.length > 0 && selectedItem === items$1[0].ref.current;
+				contentWrapper.style.top = "0px";
+				const height = Math.max(topEdgeToTriggerMiddle, contentBorderTopWidth + viewport.offsetTop + (isFirstItem ? viewportPaddingTop : 0) + selectedItemHalfHeight) + itemMiddleToContentBottom;
+				contentWrapper.style.height = height + "px";
+				viewport.scrollTop = contentTopToItemMiddle - topEdgeToTriggerMiddle + viewport.offsetTop;
+			}
+			contentWrapper.style.margin = `${CONTENT_MARGIN}px 0`;
+			contentWrapper.style.minHeight = minContentHeight + "px";
+			contentWrapper.style.maxHeight = availableHeight + "px";
+			onPlaced?.();
+			requestAnimationFrame(() => shouldExpandOnScrollRef.current = true);
+		}
+	}, [
+		getItems,
+		context.trigger,
+		context.valueNode,
+		contentWrapper,
+		content,
+		viewport,
+		selectedItem,
+		selectedItemText,
+		context.dir,
+		onPlaced
+	]);
+	useLayoutEffect2(() => position(), [position]);
+	const [contentZIndex, setContentZIndex] = import_react.useState();
+	useLayoutEffect2(() => {
+		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
+	}, [content]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectViewportProvider, {
+		scope: __scopeSelect,
+		contentWrapper,
+		shouldExpandOnScrollRef,
+		onScrollButtonChange: import_react.useCallback((node) => {
+			if (node && shouldRepositionRef.current === true) {
+				position();
+				focusSelectedItem?.();
+				shouldRepositionRef.current = false;
+			}
+		}, [position, focusSelectedItem]),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			ref: setContentWrapper,
+			style: {
+				display: "flex",
+				flexDirection: "column",
+				position: "fixed",
+				zIndex: contentZIndex
+			},
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+				...popperProps,
+				ref: composedRefs,
+				style: {
+					boxSizing: "border-box",
+					maxHeight: "100%",
+					...popperProps.style
+				}
+			})
+		})
+	});
+});
+SelectItemAlignedPosition.displayName = ITEM_ALIGNED_POSITION_NAME;
+var POPPER_POSITION_NAME = "SelectPopperPosition";
+var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, align = "start", collisionPadding = CONTENT_MARGIN, ...popperProps } = props;
+	const popperScope = usePopperScope$1(__scopeSelect);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$3, {
+		...popperScope,
+		...popperProps,
+		ref: forwardedRef,
+		align,
+		collisionPadding,
+		style: {
+			boxSizing: "border-box",
+			...popperProps.style,
+			"--radix-select-content-transform-origin": "var(--radix-popper-transform-origin)",
+			"--radix-select-content-available-width": "var(--radix-popper-available-width)",
+			"--radix-select-content-available-height": "var(--radix-popper-available-height)",
+			"--radix-select-trigger-width": "var(--radix-popper-anchor-width)",
+			"--radix-select-trigger-height": "var(--radix-popper-anchor-height)"
+		}
+	});
+});
+SelectPopperPosition.displayName = POPPER_POSITION_NAME;
+var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$5, {});
+var VIEWPORT_NAME = "SelectViewport";
+var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, nonce, ...viewportProps } = props;
+	const contentContext = useSelectContentContext(VIEWPORT_NAME, __scopeSelect);
+	const viewportContext = useSelectViewportContext(VIEWPORT_NAME, __scopeSelect);
+	const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
+	const prevScrollTopRef = import_react.useRef(0);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", {
+		dangerouslySetInnerHTML: { __html: `[data-radix-select-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-select-viewport]::-webkit-scrollbar{display:none}` },
+		nonce
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Slot, {
+		scope: __scopeSelect,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			"data-radix-select-viewport": "",
+			role: "presentation",
+			...viewportProps,
+			ref: composedRefs,
+			style: {
+				position: "relative",
+				flex: 1,
+				overflow: "hidden auto",
+				...viewportProps.style
+			},
+			onScroll: composeEventHandlers(viewportProps.onScroll, (event) => {
+				const viewport = event.currentTarget;
+				const { contentWrapper, shouldExpandOnScrollRef } = viewportContext;
+				if (shouldExpandOnScrollRef?.current && contentWrapper) {
+					const scrolledBy = Math.abs(prevScrollTopRef.current - viewport.scrollTop);
+					if (scrolledBy > 0) {
+						const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
+						const cssMinHeight = parseFloat(contentWrapper.style.minHeight);
+						const cssHeight = parseFloat(contentWrapper.style.height);
+						const prevHeight = Math.max(cssMinHeight, cssHeight);
+						if (prevHeight < availableHeight) {
+							const nextHeight = prevHeight + scrolledBy;
+							const clampedNextHeight = Math.min(availableHeight, nextHeight);
+							const heightDiff = nextHeight - clampedNextHeight;
+							contentWrapper.style.height = clampedNextHeight + "px";
+							if (contentWrapper.style.bottom === "0px") {
+								viewport.scrollTop = heightDiff > 0 ? heightDiff : 0;
+								contentWrapper.style.justifyContent = "flex-end";
+							}
+						}
+					}
+				}
+				prevScrollTopRef.current = viewport.scrollTop;
+			})
+		})
+	})] });
+});
+SelectViewport.displayName = VIEWPORT_NAME;
+var GROUP_NAME$3 = "SelectGroup";
+var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME$3);
+var SelectGroup$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...groupProps } = props;
+	const groupId = useId();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, {
+		scope: __scopeSelect,
+		id: groupId,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			role: "group",
+			"aria-labelledby": groupId,
+			...groupProps,
+			ref: forwardedRef
+		})
+	});
+});
+SelectGroup$1.displayName = GROUP_NAME$3;
+var LABEL_NAME$2 = "SelectLabel";
+var SelectLabel$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...labelProps } = props;
+	const groupContext = useSelectGroupContext(LABEL_NAME$2, __scopeSelect);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		id: groupContext.id,
+		...labelProps,
+		ref: forwardedRef
+	});
+});
+SelectLabel$1.displayName = LABEL_NAME$2;
+var ITEM_NAME$4 = "SelectItem";
+var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$4);
+var SelectItem$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, value, disabled = false, textValue: textValueProp, ...itemProps } = props;
+	const context = useSelectContext(ITEM_NAME$4, __scopeSelect);
+	const contentContext = useSelectContentContext(ITEM_NAME$4, __scopeSelect);
+	const isSelected = context.value === value;
+	const [textValue, setTextValue] = import_react.useState(textValueProp ?? "");
+	const [isFocused, setIsFocused] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => contentContext.itemRefCallback?.(node, value, disabled));
+	const textId = useId();
+	const pointerTypeRef = import_react.useRef("touch");
+	const handleSelect = () => {
+		if (!disabled) {
+			context.onValueChange(value);
+			context.onOpenChange(false);
+		}
+	};
+	if (value === "") throw new Error("A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.");
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItemContextProvider, {
+		scope: __scopeSelect,
+		value,
+		disabled,
+		textId,
+		isSelected,
+		onItemTextChange: import_react.useCallback((node) => {
+			setTextValue((prevTextValue) => prevTextValue || (node?.textContent ?? "").trim());
+		}, []),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.ItemSlot, {
+			scope: __scopeSelect,
+			value,
+			disabled,
+			textValue,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+				role: "option",
+				"aria-labelledby": textId,
+				"data-highlighted": isFocused ? "" : void 0,
+				"aria-selected": isSelected && isFocused,
+				"data-state": isSelected ? "checked" : "unchecked",
+				"aria-disabled": disabled || void 0,
+				"data-disabled": disabled ? "" : void 0,
+				tabIndex: disabled ? void 0 : -1,
+				...itemProps,
+				ref: composedRefs,
+				onFocus: composeEventHandlers(itemProps.onFocus, () => setIsFocused(true)),
+				onBlur: composeEventHandlers(itemProps.onBlur, () => setIsFocused(false)),
+				onClick: composeEventHandlers(itemProps.onClick, () => {
+					if (pointerTypeRef.current !== "mouse") handleSelect();
+				}),
+				onPointerUp: composeEventHandlers(itemProps.onPointerUp, () => {
+					if (pointerTypeRef.current === "mouse") handleSelect();
+				}),
+				onPointerDown: composeEventHandlers(itemProps.onPointerDown, (event) => {
+					pointerTypeRef.current = event.pointerType;
+				}),
+				onPointerMove: composeEventHandlers(itemProps.onPointerMove, (event) => {
+					pointerTypeRef.current = event.pointerType;
+					if (disabled) contentContext.onItemLeave?.();
+					else if (pointerTypeRef.current === "mouse") event.currentTarget.focus({ preventScroll: true });
+				}),
+				onPointerLeave: composeEventHandlers(itemProps.onPointerLeave, (event) => {
+					if (event.currentTarget === document.activeElement) contentContext.onItemLeave?.();
+				}),
+				onKeyDown: composeEventHandlers(itemProps.onKeyDown, (event) => {
+					if (contentContext.searchRef?.current !== "" && event.key === " ") return;
+					if (SELECTION_KEYS$1.includes(event.key)) handleSelect();
+					if (event.key === " ") event.preventDefault();
+				})
+			})
+		})
+	});
+});
+SelectItem$1.displayName = ITEM_NAME$4;
+var ITEM_TEXT_NAME = "SelectItemText";
+var SelectItemText = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, className, style, ...itemTextProps } = props;
+	const context = useSelectContext(ITEM_TEXT_NAME, __scopeSelect);
+	const contentContext = useSelectContentContext(ITEM_TEXT_NAME, __scopeSelect);
+	const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
+	const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
+	const [itemTextNode, setItemTextNode] = import_react.useState(null);
+	const composedRefs = useComposedRefs(forwardedRef, (node) => setItemTextNode(node), itemContext.onItemTextChange, (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled));
+	const textContent = itemTextNode?.textContent;
+	const nativeOption = import_react.useMemo(() => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", {
+		value: itemContext.value,
+		disabled: itemContext.disabled,
+		children: textContent
+	}, itemContext.value), [
+		itemContext.disabled,
+		itemContext.value,
+		textContent
+	]);
+	const { onNativeOptionAdd, onNativeOptionRemove } = nativeOptionsContext;
+	useLayoutEffect2(() => {
+		onNativeOptionAdd(nativeOption);
+		return () => onNativeOptionRemove(nativeOption);
+	}, [
+		onNativeOptionAdd,
+		onNativeOptionRemove,
+		nativeOption
+	]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		id: itemContext.textId,
+		...itemTextProps,
+		ref: composedRefs
+	}), itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? import_react_dom.createPortal(itemTextProps.children, context.valueNode) : null] });
+});
+SelectItemText.displayName = ITEM_TEXT_NAME;
+var ITEM_INDICATOR_NAME$1 = "SelectItemIndicator";
+var SelectItemIndicator = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...itemIndicatorProps } = props;
+	return useSelectItemContext(ITEM_INDICATOR_NAME$1, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+		"aria-hidden": true,
+		...itemIndicatorProps,
+		ref: forwardedRef
+	}) : null;
+});
+SelectItemIndicator.displayName = ITEM_INDICATOR_NAME$1;
+var SCROLL_UP_BUTTON_NAME = "SelectScrollUpButton";
+var SelectScrollUpButton$1 = import_react.forwardRef((props, forwardedRef) => {
+	const contentContext = useSelectContentContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
+	const viewportContext = useSelectViewportContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
+	const [canScrollUp, setCanScrollUp] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
+	useLayoutEffect2(() => {
+		if (contentContext.viewport && contentContext.isPositioned) {
+			let handleScroll2 = function() {
+				setCanScrollUp(viewport.scrollTop > 0);
+			};
+			const viewport = contentContext.viewport;
+			handleScroll2();
+			viewport.addEventListener("scroll", handleScroll2);
+			return () => viewport.removeEventListener("scroll", handleScroll2);
+		}
+	}, [contentContext.viewport, contentContext.isPositioned]);
+	return canScrollUp ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
+		...props,
+		ref: composedRefs,
+		onAutoScroll: () => {
+			const { viewport, selectedItem } = contentContext;
+			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop - selectedItem.offsetHeight;
+		}
+	}) : null;
+});
+SelectScrollUpButton$1.displayName = SCROLL_UP_BUTTON_NAME;
+var SCROLL_DOWN_BUTTON_NAME = "SelectScrollDownButton";
+var SelectScrollDownButton$1 = import_react.forwardRef((props, forwardedRef) => {
+	const contentContext = useSelectContentContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
+	const viewportContext = useSelectViewportContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
+	const [canScrollDown, setCanScrollDown] = import_react.useState(false);
+	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
+	useLayoutEffect2(() => {
+		if (contentContext.viewport && contentContext.isPositioned) {
+			let handleScroll2 = function() {
+				const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+				setCanScrollDown(Math.ceil(viewport.scrollTop) < maxScroll);
+			};
+			const viewport = contentContext.viewport;
+			handleScroll2();
+			viewport.addEventListener("scroll", handleScroll2);
+			return () => viewport.removeEventListener("scroll", handleScroll2);
+		}
+	}, [contentContext.viewport, contentContext.isPositioned]);
+	return canScrollDown ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
+		...props,
+		ref: composedRefs,
+		onAutoScroll: () => {
+			const { viewport, selectedItem } = contentContext;
+			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop + selectedItem.offsetHeight;
+		}
+	}) : null;
+});
+SelectScrollDownButton$1.displayName = SCROLL_DOWN_BUTTON_NAME;
+var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
+	const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
+	const autoScrollTimerRef = import_react.useRef(null);
+	const getItems = useCollection$3(__scopeSelect);
+	const clearAutoScrollTimer = import_react.useCallback(() => {
+		if (autoScrollTimerRef.current !== null) {
+			window.clearInterval(autoScrollTimerRef.current);
+			autoScrollTimerRef.current = null;
+		}
+	}, []);
+	import_react.useEffect(() => {
+		return () => clearAutoScrollTimer();
+	}, [clearAutoScrollTimer]);
+	useLayoutEffect2(() => {
+		getItems().find((item) => item.ref.current === document.activeElement)?.ref.current?.scrollIntoView({ block: "nearest" });
+	}, [getItems]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		"aria-hidden": true,
+		...scrollIndicatorProps,
+		ref: forwardedRef,
+		style: {
+			flexShrink: 0,
+			...scrollIndicatorProps.style
+		},
+		onPointerDown: composeEventHandlers(scrollIndicatorProps.onPointerDown, () => {
+			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
+		}),
+		onPointerMove: composeEventHandlers(scrollIndicatorProps.onPointerMove, () => {
+			contentContext.onItemLeave?.();
+			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
+		}),
+		onPointerLeave: composeEventHandlers(scrollIndicatorProps.onPointerLeave, () => {
+			clearAutoScrollTimer();
+		})
+	});
+});
+var SEPARATOR_NAME$2 = "SelectSeparator";
+var SelectSeparator$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...separatorProps } = props;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+		"aria-hidden": true,
+		...separatorProps,
+		ref: forwardedRef
+	});
+});
+SelectSeparator$1.displayName = SEPARATOR_NAME$2;
+var ARROW_NAME$2 = "SelectArrow";
+var SelectArrow = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeSelect, ...arrowProps } = props;
+	const popperScope = usePopperScope$1(__scopeSelect);
+	const context = useSelectContext(ARROW_NAME$2, __scopeSelect);
+	const contentContext = useSelectContentContext(ARROW_NAME$2, __scopeSelect);
+	return context.open && contentContext.position === "popper" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Arrow, {
+		...popperScope,
+		...arrowProps,
+		ref: forwardedRef
+	}) : null;
+});
+SelectArrow.displayName = ARROW_NAME$2;
+var BUBBLE_INPUT_NAME = "SelectBubbleInput";
+var SelectBubbleInput = import_react.forwardRef(({ __scopeSelect, value, ...props }, forwardedRef) => {
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	const prevValue = usePrevious(value);
+	import_react.useEffect(() => {
+		const select = ref.current;
+		if (!select) return;
+		const selectProto = window.HTMLSelectElement.prototype;
+		const setValue = Object.getOwnPropertyDescriptor(selectProto, "value").set;
+		if (prevValue !== value && setValue) {
+			const event = new Event("change", { bubbles: true });
+			setValue.call(select, value);
+			select.dispatchEvent(event);
+		}
+	}, [prevValue, value]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.select, {
+		...props,
+		style: {
+			...VISUALLY_HIDDEN_STYLES,
+			...props.style
+		},
+		ref: composedRefs,
+		defaultValue: value
+	});
+});
+SelectBubbleInput.displayName = BUBBLE_INPUT_NAME;
+function shouldShowPlaceholder(value) {
+	return value === "" || value === void 0;
+}
+function useTypeaheadSearch(onSearchChange) {
+	const handleSearchChange = useCallbackRef(onSearchChange);
+	const searchRef = import_react.useRef("");
+	const timerRef = import_react.useRef(0);
+	const handleTypeaheadSearch = import_react.useCallback((key) => {
+		const search = searchRef.current + key;
+		handleSearchChange(search);
+		(function updateSearch(value) {
+			searchRef.current = value;
+			window.clearTimeout(timerRef.current);
+			if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
+		})(search);
+	}, [handleSearchChange]);
+	const resetTypeahead = import_react.useCallback(() => {
+		searchRef.current = "";
+		window.clearTimeout(timerRef.current);
+	}, []);
+	import_react.useEffect(() => {
+		return () => window.clearTimeout(timerRef.current);
+	}, []);
+	return [
+		searchRef,
+		handleTypeaheadSearch,
+		resetTypeahead
+	];
+}
+function findNextItem(items$1, search, currentItem) {
+	const normalizedSearch = search.length > 1 && Array.from(search).every((char) => char === search[0]) ? search[0] : search;
+	const currentItemIndex = currentItem ? items$1.indexOf(currentItem) : -1;
+	let wrappedItems = wrapArray$2(items$1, Math.max(currentItemIndex, 0));
+	if (normalizedSearch.length === 1) wrappedItems = wrappedItems.filter((v) => v !== currentItem);
+	const nextItem = wrappedItems.find((item) => item.textValue.toLowerCase().startsWith(normalizedSearch.toLowerCase()));
+	return nextItem !== currentItem ? nextItem : void 0;
+}
+function wrapArray$2(array$1, startIndex) {
+	return array$1.map((_$1, index$1) => array$1[(startIndex + index$1) % array$1.length]);
+}
+var Root2$3 = Select$1;
+var Trigger$3 = SelectTrigger$1;
+var Value = SelectValue$1;
+var Icon = SelectIcon;
+var Portal$2 = SelectPortal;
+var Content2$3 = SelectContent$1;
+var Viewport = SelectViewport;
+var Label$2 = SelectLabel$1;
+var Item$2 = SelectItem$1;
+var ItemText = SelectItemText;
+var ItemIndicator$1 = SelectItemIndicator;
+var ScrollUpButton = SelectScrollUpButton$1;
+var ScrollDownButton = SelectScrollDownButton$1;
+var Separator$3 = SelectSeparator$1;
+var Select = Root2$3;
+var SelectValue = Value;
+var SelectTrigger = import_react.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Trigger$3, {
+	ref,
+	className: cn("flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1", className),
+	...props,
+	children: [children, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
+		asChild: true,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "h-4 w-4 opacity-50" })
+	})]
+}));
+SelectTrigger.displayName = Trigger$3.displayName;
+var SelectScrollUpButton = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollUpButton, {
+	ref,
+	className: cn("flex cursor-default items-center justify-center py-1", className),
+	...props,
+	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, { className: "h-4 w-4" })
+}));
+SelectScrollUpButton.displayName = ScrollUpButton.displayName;
+var SelectScrollDownButton = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollDownButton, {
+	ref,
+	className: cn("flex cursor-default items-center justify-center py-1", className),
+	...props,
+	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "h-4 w-4" })
+}));
+SelectScrollDownButton.displayName = ScrollDownButton.displayName;
+var SelectContent = import_react.forwardRef(({ className, children, position = "popper", ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2$3, {
+	ref,
+	className: cn("relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className),
+	position,
+	...props,
+	children: [
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollUpButton, {}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Viewport, {
+			className: cn("p-1", position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"),
+			children
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollDownButton, {})
+	]
+}) }));
+SelectContent.displayName = Content2$3.displayName;
+var SelectLabel = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$2, {
+	ref,
+	className: cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className),
+	...props
+}));
+SelectLabel.displayName = Label$2.displayName;
+var SelectItem = import_react.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Item$2, {
+	ref,
+	className: cn("relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", className),
+	...props,
+	children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+		className: "absolute left-2 flex h-3.5 w-3.5 items-center justify-center",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemIndicator$1, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "h-4 w-4" }) })
+	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemText, { children })]
+}));
+SelectItem.displayName = Item$2.displayName;
+var SelectSeparator = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Separator$3, {
+	ref,
+	className: cn("-mx-1 my-1 h-px bg-muted", className),
+	...props
+}));
+SelectSeparator.displayName = Separator$3.displayName;
 function StreetDetail() {
 	const { id } = useParams();
-	const { streets, getLocationsByStreet, getPalletsByLocation, getLocationStatus, addLocation, updateLocation, deleteLocation } = useInventoryStore();
+	const { streets, getLocationsByStreet, getPalletsByLocation, getLocationStatus, addLocation, updateLocation, deleteLocation, moveLocation, changeLocationStreet } = useInventoryStore();
 	const { toast: toast$2 } = useToast();
 	const [showEmptyOnly, setShowEmptyOnly] = (0, import_react.useState)(false);
 	const [showOccupiedOnly, setShowOccupiedOnly] = (0, import_react.useState)(false);
 	const [isAddOpen, setIsAddOpen] = (0, import_react.useState)(false);
 	const [newLocationName, setNewLocationName] = (0, import_react.useState)("");
 	const [editLocation, setEditLocation] = (0, import_react.useState)(null);
+	const [moveLocationDialog, setMoveLocationDialog] = (0, import_react.useState)(null);
+	const [targetStreetId, setTargetStreetId] = (0, import_react.useState)("");
 	const street = streets.find((s$2) => s$2.id === id);
 	if (!street) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "p-8 text-center text-muted-foreground",
@@ -26878,6 +27995,7 @@ function StreetDetail() {
 		if (showOccupiedOnly && status !== "occupied") return false;
 		return true;
 	});
+	const isFiltering = showEmptyOnly || showOccupiedOnly;
 	const handleAddLocation = () => {
 		if (newLocationName.trim()) {
 			addLocation(street.id, newLocationName);
@@ -26894,6 +28012,22 @@ function StreetDetail() {
 			updateLocation(editLocation.id, editLocation.name);
 			setEditLocation(null);
 			toast$2({ title: "Localização atualizada" });
+		}
+	};
+	const handleMoveLocationOrder = (locationId, direction, e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		moveLocation(locationId, direction);
+	};
+	const handleChangeStreet = () => {
+		if (moveLocationDialog && targetStreetId) {
+			changeLocationStreet(moveLocationDialog.locationId, targetStreetId);
+			toast$2({
+				title: "Local Movido",
+				description: `${moveLocationDialog.locationName} movido para outra rua com sucesso.`
+			});
+			setMoveLocationDialog(null);
+			setTargetStreetId("");
 		}
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -26960,7 +28094,7 @@ function StreetDetail() {
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, {
 									htmlFor: "show-empty",
 									className: "text-sm cursor-pointer",
-									children: "Apenas Vazios (Vermelho)"
+									children: "Apenas Vazios"
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "h-4 w-[1px] bg-border hidden sm:block" }),
@@ -26976,7 +28110,7 @@ function StreetDetail() {
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, {
 									htmlFor: "show-occupied",
 									className: "text-sm cursor-pointer",
-									children: "Apenas Ocupados (Verde)"
+									children: "Apenas Ocupados"
 								})]
 							})
 						]
@@ -26985,39 +28119,84 @@ function StreetDetail() {
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				className: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4",
-				children: filteredLocations.map((location) => {
+				children: filteredLocations.map((location, index$1) => {
 					const status = getLocationStatus(location.id);
 					const pallets = getPalletsByLocation(location.id);
 					const isOccupied = status === "occupied";
+					const isFirst = index$1 === 0;
+					const isLast = index$1 === filteredLocations.length - 1;
 					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "relative group",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-								variant: "secondary",
-								size: "icon",
-								className: "h-6 w-6 shadow-sm",
-								onClick: (e) => {
-									e.preventDefault();
-									setEditLocation({
-										id: location.id,
-										name: location.name
-									});
-								},
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-3 w-3" })
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
-								asChild: true,
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-									variant: "destructive",
+							className: "absolute top-2 right-2 z-20 flex flex-wrap justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+							children: [
+								!isFiltering && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex bg-background/90 backdrop-blur-sm rounded-md border shadow-sm mr-1",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											className: "h-6 w-5 hover:bg-accent rounded-l-md rounded-r-none",
+											onClick: (e) => handleMoveLocationOrder(location.id, "up", e),
+											disabled: isFirst,
+											title: "Mover para trás",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { className: "h-3 w-3" })
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-[1px] bg-border h-full" }),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											className: "h-6 w-5 hover:bg-accent rounded-r-md rounded-l-none",
+											onClick: (e) => handleMoveLocationOrder(location.id, "down", e),
+											disabled: isLast,
+											title: "Mover para frente",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "h-3 w-3" })
+										})
+									]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									variant: "secondary",
 									size: "icon",
 									className: "h-6 w-6 shadow-sm",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-3 w-3" })
-								})
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Localização?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogDescription, { children: "Esta ação removerá o local e todos os materiais contidos nele." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
-								className: "bg-destructive",
-								onClick: () => deleteLocation(location.id),
-								children: "Excluir"
-							})] })] })] })]
+									title: "Mover para outra Rua",
+									onClick: (e) => {
+										e.preventDefault();
+										setMoveLocationDialog({
+											locationId: location.id,
+											locationName: location.name
+										});
+									},
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleArrowRight, { className: "h-3 w-3" })
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									variant: "secondary",
+									size: "icon",
+									className: "h-6 w-6 shadow-sm",
+									title: "Editar Nome",
+									onClick: (e) => {
+										e.preventDefault();
+										setEditLocation({
+											id: location.id,
+											name: location.name
+										});
+									},
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-3 w-3" })
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
+									asChild: true,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+										variant: "destructive",
+										size: "icon",
+										className: "h-6 w-6 shadow-sm",
+										title: "Excluir",
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-3 w-3" })
+									})
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Localização?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogDescription, { children: "Esta ação removerá o local e todos os materiais contidos nele." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+									className: "bg-destructive",
+									onClick: () => deleteLocation(location.id),
+									children: "Excluir"
+								})] })] })] })
+							]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
 							to: `/location/${location.id}`,
 							className: "block",
@@ -27072,6 +28251,40 @@ function StreetDetail() {
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
 						onClick: handleUpdateLocation,
 						children: "Salvar Alterações"
+					}) })
+				] })
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: !!moveLocationDialog,
+				onOpenChange: (open) => !open && setMoveLocationDialog(null),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Mover Local para outra Rua" }) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "py-4 space-y-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							className: "text-sm text-muted-foreground",
+							children: [
+								"Selecione a nova rua para o local",
+								" ",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: moveLocationDialog?.locationName }),
+								"."
+							]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nova Rua de Destino" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								value: targetStreetId,
+								onValueChange: setTargetStreetId,
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione a rua..." }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: streets.filter((s$2) => s$2.id !== street.id).map((s$2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: s$2.id,
+									children: s$2.name
+								}, s$2.id)) })]
+							})]
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						onClick: handleChangeStreet,
+						disabled: !targetStreetId,
+						children: "Confirmar Mudança"
 					}) })
 				] })
 			})
@@ -29061,1027 +30274,6 @@ function LocationDetail() {
 		})]
 	});
 }
-function clamp(value, [min$1, max$1]) {
-	return Math.min(max$1, Math.max(min$1, value));
-}
-var DirectionContext = import_react.createContext(void 0);
-function useDirection(localDir) {
-	const globalDir = import_react.useContext(DirectionContext);
-	return localDir || globalDir || "ltr";
-}
-var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);
-var OPEN_KEYS = [
-	" ",
-	"Enter",
-	"ArrowUp",
-	"ArrowDown"
-];
-var SELECTION_KEYS$1 = [" ", "Enter"];
-var SELECT_NAME = "Select";
-var [Collection$3, useCollection$3, createCollectionScope$3] = createCollection(SELECT_NAME);
-var [createSelectContext, createSelectScope] = createContextScope(SELECT_NAME, [createCollectionScope$3, createPopperScope]);
-var usePopperScope$1 = createPopperScope();
-var [SelectProvider, useSelectContext] = createSelectContext(SELECT_NAME);
-var [SelectNativeOptionsProvider, useSelectNativeOptionsContext] = createSelectContext(SELECT_NAME);
-var Select$1 = (props) => {
-	const { __scopeSelect, children, open: openProp, defaultOpen, onOpenChange, value: valueProp, defaultValue, onValueChange, dir, name, autoComplete, disabled, required: required$1, form } = props;
-	const popperScope = usePopperScope$1(__scopeSelect);
-	const [trigger, setTrigger] = import_react.useState(null);
-	const [valueNode, setValueNode] = import_react.useState(null);
-	const [valueNodeHasChildren, setValueNodeHasChildren] = import_react.useState(false);
-	const direction = useDirection(dir);
-	const [open, setOpen] = useControllableState({
-		prop: openProp,
-		defaultProp: defaultOpen ?? false,
-		onChange: onOpenChange,
-		caller: SELECT_NAME
-	});
-	const [value, setValue] = useControllableState({
-		prop: valueProp,
-		defaultProp: defaultValue,
-		onChange: onValueChange,
-		caller: SELECT_NAME
-	});
-	const triggerPointerDownPosRef = import_react.useRef(null);
-	const isFormControl = trigger ? form || !!trigger.closest("form") : true;
-	const [nativeOptionsSet, setNativeOptionsSet] = import_react.useState(/* @__PURE__ */ new Set());
-	const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root2$5, {
-		...popperScope,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectProvider, {
-			required: required$1,
-			scope: __scopeSelect,
-			trigger,
-			onTriggerChange: setTrigger,
-			valueNode,
-			onValueNodeChange: setValueNode,
-			valueNodeHasChildren,
-			onValueNodeHasChildrenChange: setValueNodeHasChildren,
-			contentId: useId(),
-			value,
-			onValueChange: setValue,
-			open,
-			onOpenChange: setOpen,
-			dir: direction,
-			triggerPointerDownPosRef,
-			disabled,
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Provider, {
-				scope: __scopeSelect,
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectNativeOptionsProvider, {
-					scope: props.__scopeSelect,
-					onNativeOptionAdd: import_react.useCallback((option) => {
-						setNativeOptionsSet((prev) => new Set(prev).add(option));
-					}, []),
-					onNativeOptionRemove: import_react.useCallback((option) => {
-						setNativeOptionsSet((prev) => {
-							const optionsSet = new Set(prev);
-							optionsSet.delete(option);
-							return optionsSet;
-						});
-					}, []),
-					children
-				})
-			}), isFormControl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectBubbleInput, {
-				"aria-hidden": true,
-				required: required$1,
-				tabIndex: -1,
-				name,
-				autoComplete,
-				value,
-				onChange: (event) => setValue(event.target.value),
-				disabled,
-				form,
-				children: [value === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "" }) : null, Array.from(nativeOptionsSet)]
-			}, nativeSelectKey) : null]
-		})
-	});
-};
-Select$1.displayName = SELECT_NAME;
-var TRIGGER_NAME$4 = "SelectTrigger";
-var SelectTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, disabled = false, ...triggerProps } = props;
-	const popperScope = usePopperScope$1(__scopeSelect);
-	const context = useSelectContext(TRIGGER_NAME$4, __scopeSelect);
-	const isDisabled = context.disabled || disabled;
-	const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
-	const getItems = useCollection$3(__scopeSelect);
-	const pointerTypeRef = import_react.useRef("touch");
-	const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
-		const enabledItems = getItems().filter((item) => !item.disabled);
-		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.value === context.value));
-		if (nextItem !== void 0) context.onValueChange(nextItem.value);
-	});
-	const handleOpen = (pointerEvent) => {
-		if (!isDisabled) {
-			context.onOpenChange(true);
-			resetTypeahead();
-		}
-		if (pointerEvent) context.triggerPointerDownPosRef.current = {
-			x: Math.round(pointerEvent.pageX),
-			y: Math.round(pointerEvent.pageY)
-		};
-	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Anchor, {
-		asChild: true,
-		...popperScope,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
-			type: "button",
-			role: "combobox",
-			"aria-controls": context.contentId,
-			"aria-expanded": context.open,
-			"aria-required": context.required,
-			"aria-autocomplete": "none",
-			dir: context.dir,
-			"data-state": context.open ? "open" : "closed",
-			disabled: isDisabled,
-			"data-disabled": isDisabled ? "" : void 0,
-			"data-placeholder": shouldShowPlaceholder(context.value) ? "" : void 0,
-			...triggerProps,
-			ref: composedRefs,
-			onClick: composeEventHandlers(triggerProps.onClick, (event) => {
-				event.currentTarget.focus();
-				if (pointerTypeRef.current !== "mouse") handleOpen(event);
-			}),
-			onPointerDown: composeEventHandlers(triggerProps.onPointerDown, (event) => {
-				pointerTypeRef.current = event.pointerType;
-				const target = event.target;
-				if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
-				if (event.button === 0 && event.ctrlKey === false && event.pointerType === "mouse") {
-					handleOpen(event);
-					event.preventDefault();
-				}
-			}),
-			onKeyDown: composeEventHandlers(triggerProps.onKeyDown, (event) => {
-				const isTypingAhead = searchRef.current !== "";
-				if (!(event.ctrlKey || event.altKey || event.metaKey) && event.key.length === 1) handleTypeaheadSearch(event.key);
-				if (isTypingAhead && event.key === " ") return;
-				if (OPEN_KEYS.includes(event.key)) {
-					handleOpen();
-					event.preventDefault();
-				}
-			})
-		})
-	});
-});
-SelectTrigger$1.displayName = TRIGGER_NAME$4;
-var VALUE_NAME = "SelectValue";
-var SelectValue$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
-	const context = useSelectContext(VALUE_NAME, __scopeSelect);
-	const { onValueNodeHasChildrenChange } = context;
-	const hasChildren = children !== void 0;
-	const composedRefs = useComposedRefs(forwardedRef, context.onValueNodeChange);
-	useLayoutEffect2(() => {
-		onValueNodeHasChildrenChange(hasChildren);
-	}, [onValueNodeHasChildrenChange, hasChildren]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-		...valueProps,
-		ref: composedRefs,
-		style: { pointerEvents: "none" },
-		children: shouldShowPlaceholder(context.value) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: placeholder }) : children
-	});
-});
-SelectValue$1.displayName = VALUE_NAME;
-var ICON_NAME = "SelectIcon";
-var SelectIcon = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, children, ...iconProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-		"aria-hidden": true,
-		...iconProps,
-		ref: forwardedRef,
-		children: children || "▼"
-	});
-});
-SelectIcon.displayName = ICON_NAME;
-var PORTAL_NAME$2 = "SelectPortal";
-var SelectPortal = (props) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal, {
-		asChild: true,
-		...props
-	});
-};
-SelectPortal.displayName = PORTAL_NAME$2;
-var CONTENT_NAME$5 = "SelectContent";
-var SelectContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const context = useSelectContext(CONTENT_NAME$5, props.__scopeSelect);
-	const [fragment, setFragment] = import_react.useState();
-	useLayoutEffect2(() => {
-		setFragment(new DocumentFragment());
-	}, []);
-	if (!context.open) {
-		const frag = fragment;
-		return frag ? import_react_dom.createPortal(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
-			scope: props.__scopeSelect,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Slot, {
-				scope: props.__scopeSelect,
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: props.children })
-			})
-		}), frag) : null;
-	}
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentImpl, {
-		...props,
-		ref: forwardedRef
-	});
-});
-SelectContent$1.displayName = CONTENT_NAME$5;
-var CONTENT_MARGIN = 10;
-var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME$5);
-var CONTENT_IMPL_NAME = "SelectContentImpl";
-var Slot$2 = /* @__PURE__ */ createSlot("SelectContent.RemoveScroll");
-var SelectContentImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, position = "item-aligned", onCloseAutoFocus, onEscapeKeyDown, onPointerDownOutside, side, sideOffset, align, alignOffset, arrowPadding, collisionBoundary, collisionPadding, sticky, hideWhenDetached, avoidCollisions, ...contentProps } = props;
-	const context = useSelectContext(CONTENT_NAME$5, __scopeSelect);
-	const [content, setContent] = import_react.useState(null);
-	const [viewport, setViewport] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-	const [selectedItem, setSelectedItem] = import_react.useState(null);
-	const [selectedItemText, setSelectedItemText] = import_react.useState(null);
-	const getItems = useCollection$3(__scopeSelect);
-	const [isPositioned, setIsPositioned] = import_react.useState(false);
-	const firstValidItemFoundRef = import_react.useRef(false);
-	import_react.useEffect(() => {
-		if (content) return hideOthers(content);
-	}, [content]);
-	useFocusGuards();
-	const focusFirst$4 = import_react.useCallback((candidates) => {
-		const [firstItem, ...restItems] = getItems().map((item) => item.ref.current);
-		const [lastItem] = restItems.slice(-1);
-		const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
-		for (const candidate of candidates) {
-			if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
-			candidate?.scrollIntoView({ block: "nearest" });
-			if (candidate === firstItem && viewport) viewport.scrollTop = 0;
-			if (candidate === lastItem && viewport) viewport.scrollTop = viewport.scrollHeight;
-			candidate?.focus();
-			if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
-		}
-	}, [getItems, viewport]);
-	const focusSelectedItem = import_react.useCallback(() => focusFirst$4([selectedItem, content]), [
-		focusFirst$4,
-		selectedItem,
-		content
-	]);
-	import_react.useEffect(() => {
-		if (isPositioned) focusSelectedItem();
-	}, [isPositioned, focusSelectedItem]);
-	const { onOpenChange, triggerPointerDownPosRef } = context;
-	import_react.useEffect(() => {
-		if (content) {
-			let pointerMoveDelta = {
-				x: 0,
-				y: 0
-			};
-			const handlePointerMove = (event) => {
-				pointerMoveDelta = {
-					x: Math.abs(Math.round(event.pageX) - (triggerPointerDownPosRef.current?.x ?? 0)),
-					y: Math.abs(Math.round(event.pageY) - (triggerPointerDownPosRef.current?.y ?? 0))
-				};
-			};
-			const handlePointerUp = (event) => {
-				if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) event.preventDefault();
-				else if (!content.contains(event.target)) onOpenChange(false);
-				document.removeEventListener("pointermove", handlePointerMove);
-				triggerPointerDownPosRef.current = null;
-			};
-			if (triggerPointerDownPosRef.current !== null) {
-				document.addEventListener("pointermove", handlePointerMove);
-				document.addEventListener("pointerup", handlePointerUp, {
-					capture: true,
-					once: true
-				});
-			}
-			return () => {
-				document.removeEventListener("pointermove", handlePointerMove);
-				document.removeEventListener("pointerup", handlePointerUp, { capture: true });
-			};
-		}
-	}, [
-		content,
-		onOpenChange,
-		triggerPointerDownPosRef
-	]);
-	import_react.useEffect(() => {
-		const close = () => onOpenChange(false);
-		window.addEventListener("blur", close);
-		window.addEventListener("resize", close);
-		return () => {
-			window.removeEventListener("blur", close);
-			window.removeEventListener("resize", close);
-		};
-	}, [onOpenChange]);
-	const [searchRef, handleTypeaheadSearch] = useTypeaheadSearch((search) => {
-		const enabledItems = getItems().filter((item) => !item.disabled);
-		const nextItem = findNextItem(enabledItems, search, enabledItems.find((item) => item.ref.current === document.activeElement));
-		if (nextItem) setTimeout(() => nextItem.ref.current.focus());
-	});
-	const itemRefCallback = import_react.useCallback((node, value, disabled) => {
-		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
-		if (context.value !== void 0 && context.value === value || isFirstValidItem) {
-			setSelectedItem(node);
-			if (isFirstValidItem) firstValidItemFoundRef.current = true;
-		}
-	}, [context.value]);
-	const handleItemLeave = import_react.useCallback(() => content?.focus(), [content]);
-	const itemTextRefCallback = import_react.useCallback((node, value, disabled) => {
-		const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
-		if (context.value !== void 0 && context.value === value || isFirstValidItem) setSelectedItemText(node);
-	}, [context.value]);
-	const SelectPosition = position === "popper" ? SelectPopperPosition : SelectItemAlignedPosition;
-	const popperContentProps = SelectPosition === SelectPopperPosition ? {
-		side,
-		sideOffset,
-		align,
-		alignOffset,
-		arrowPadding,
-		collisionBoundary,
-		collisionPadding,
-		sticky,
-		hideWhenDetached,
-		avoidCollisions
-	} : {};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContentProvider, {
-		scope: __scopeSelect,
-		content,
-		viewport,
-		onViewportChange: setViewport,
-		itemRefCallback,
-		selectedItem,
-		onItemLeave: handleItemLeave,
-		itemTextRefCallback,
-		focusSelectedItem,
-		selectedItemText,
-		position,
-		isPositioned,
-		searchRef,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Combination_default, {
-			as: Slot$2,
-			allowPinchZoom: true,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FocusScope, {
-				asChild: true,
-				trapped: context.open,
-				onMountAutoFocus: (event) => {
-					event.preventDefault();
-				},
-				onUnmountAutoFocus: composeEventHandlers(onCloseAutoFocus, (event) => {
-					context.trigger?.focus({ preventScroll: true });
-					event.preventDefault();
-				}),
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DismissableLayer, {
-					asChild: true,
-					disableOutsidePointerEvents: true,
-					onEscapeKeyDown,
-					onPointerDownOutside,
-					onFocusOutside: (event) => event.preventDefault(),
-					onDismiss: () => context.onOpenChange(false),
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectPosition, {
-						role: "listbox",
-						id: context.contentId,
-						"data-state": context.open ? "open" : "closed",
-						dir: context.dir,
-						onContextMenu: (event) => event.preventDefault(),
-						...contentProps,
-						...popperContentProps,
-						onPlaced: () => setIsPositioned(true),
-						ref: composedRefs,
-						style: {
-							display: "flex",
-							flexDirection: "column",
-							outline: "none",
-							...contentProps.style
-						},
-						onKeyDown: composeEventHandlers(contentProps.onKeyDown, (event) => {
-							const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
-							if (event.key === "Tab") event.preventDefault();
-							if (!isModifierKey && event.key.length === 1) handleTypeaheadSearch(event.key);
-							if ([
-								"ArrowUp",
-								"ArrowDown",
-								"Home",
-								"End"
-							].includes(event.key)) {
-								let candidateNodes = getItems().filter((item) => !item.disabled).map((item) => item.ref.current);
-								if (["ArrowUp", "End"].includes(event.key)) candidateNodes = candidateNodes.slice().reverse();
-								if (["ArrowUp", "ArrowDown"].includes(event.key)) {
-									const currentElement = event.target;
-									const currentIndex = candidateNodes.indexOf(currentElement);
-									candidateNodes = candidateNodes.slice(currentIndex + 1);
-								}
-								setTimeout(() => focusFirst$4(candidateNodes));
-								event.preventDefault();
-							}
-						})
-					})
-				})
-			})
-		})
-	});
-});
-SelectContentImpl.displayName = CONTENT_IMPL_NAME;
-var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
-var SelectItemAlignedPosition = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, onPlaced, ...popperProps } = props;
-	const context = useSelectContext(CONTENT_NAME$5, __scopeSelect);
-	const contentContext = useSelectContentContext(CONTENT_NAME$5, __scopeSelect);
-	const [contentWrapper, setContentWrapper] = import_react.useState(null);
-	const [content, setContent] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-	const getItems = useCollection$3(__scopeSelect);
-	const shouldExpandOnScrollRef = import_react.useRef(false);
-	const shouldRepositionRef = import_react.useRef(true);
-	const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
-	const position = import_react.useCallback(() => {
-		if (context.trigger && context.valueNode && contentWrapper && content && viewport && selectedItem && selectedItemText) {
-			const triggerRect = context.trigger.getBoundingClientRect();
-			const contentRect = content.getBoundingClientRect();
-			const valueNodeRect = context.valueNode.getBoundingClientRect();
-			const itemTextRect = selectedItemText.getBoundingClientRect();
-			if (context.dir !== "rtl") {
-				const itemTextOffset = itemTextRect.left - contentRect.left;
-				const left = valueNodeRect.left - itemTextOffset;
-				const leftDelta = triggerRect.left - left;
-				const minContentWidth = triggerRect.width + leftDelta;
-				const contentWidth = Math.max(minContentWidth, contentRect.width);
-				const rightEdge = window.innerWidth - CONTENT_MARGIN;
-				const clampedLeft = clamp(left, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth)]);
-				contentWrapper.style.minWidth = minContentWidth + "px";
-				contentWrapper.style.left = clampedLeft + "px";
-			} else {
-				const itemTextOffset = contentRect.right - itemTextRect.right;
-				const right = window.innerWidth - valueNodeRect.right - itemTextOffset;
-				const rightDelta = window.innerWidth - triggerRect.right - right;
-				const minContentWidth = triggerRect.width + rightDelta;
-				const contentWidth = Math.max(minContentWidth, contentRect.width);
-				const leftEdge = window.innerWidth - CONTENT_MARGIN;
-				const clampedRight = clamp(right, [CONTENT_MARGIN, Math.max(CONTENT_MARGIN, leftEdge - contentWidth)]);
-				contentWrapper.style.minWidth = minContentWidth + "px";
-				contentWrapper.style.right = clampedRight + "px";
-			}
-			const items$1 = getItems();
-			const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
-			const itemsHeight = viewport.scrollHeight;
-			const contentStyles = window.getComputedStyle(content);
-			const contentBorderTopWidth = parseInt(contentStyles.borderTopWidth, 10);
-			const contentPaddingTop = parseInt(contentStyles.paddingTop, 10);
-			const contentBorderBottomWidth = parseInt(contentStyles.borderBottomWidth, 10);
-			const contentPaddingBottom = parseInt(contentStyles.paddingBottom, 10);
-			const fullContentHeight = contentBorderTopWidth + contentPaddingTop + itemsHeight + contentPaddingBottom + contentBorderBottomWidth;
-			const minContentHeight = Math.min(selectedItem.offsetHeight * 5, fullContentHeight);
-			const viewportStyles = window.getComputedStyle(viewport);
-			const viewportPaddingTop = parseInt(viewportStyles.paddingTop, 10);
-			const viewportPaddingBottom = parseInt(viewportStyles.paddingBottom, 10);
-			const topEdgeToTriggerMiddle = triggerRect.top + triggerRect.height / 2 - CONTENT_MARGIN;
-			const triggerMiddleToBottomEdge = availableHeight - topEdgeToTriggerMiddle;
-			const selectedItemHalfHeight = selectedItem.offsetHeight / 2;
-			const itemOffsetMiddle = selectedItem.offsetTop + selectedItemHalfHeight;
-			const contentTopToItemMiddle = contentBorderTopWidth + contentPaddingTop + itemOffsetMiddle;
-			const itemMiddleToContentBottom = fullContentHeight - contentTopToItemMiddle;
-			if (contentTopToItemMiddle <= topEdgeToTriggerMiddle) {
-				const isLastItem = items$1.length > 0 && selectedItem === items$1[items$1.length - 1].ref.current;
-				contentWrapper.style.bottom = "0px";
-				const viewportOffsetBottom = content.clientHeight - viewport.offsetTop - viewport.offsetHeight;
-				const height = contentTopToItemMiddle + Math.max(triggerMiddleToBottomEdge, selectedItemHalfHeight + (isLastItem ? viewportPaddingBottom : 0) + viewportOffsetBottom + contentBorderBottomWidth);
-				contentWrapper.style.height = height + "px";
-			} else {
-				const isFirstItem = items$1.length > 0 && selectedItem === items$1[0].ref.current;
-				contentWrapper.style.top = "0px";
-				const height = Math.max(topEdgeToTriggerMiddle, contentBorderTopWidth + viewport.offsetTop + (isFirstItem ? viewportPaddingTop : 0) + selectedItemHalfHeight) + itemMiddleToContentBottom;
-				contentWrapper.style.height = height + "px";
-				viewport.scrollTop = contentTopToItemMiddle - topEdgeToTriggerMiddle + viewport.offsetTop;
-			}
-			contentWrapper.style.margin = `${CONTENT_MARGIN}px 0`;
-			contentWrapper.style.minHeight = minContentHeight + "px";
-			contentWrapper.style.maxHeight = availableHeight + "px";
-			onPlaced?.();
-			requestAnimationFrame(() => shouldExpandOnScrollRef.current = true);
-		}
-	}, [
-		getItems,
-		context.trigger,
-		context.valueNode,
-		contentWrapper,
-		content,
-		viewport,
-		selectedItem,
-		selectedItemText,
-		context.dir,
-		onPlaced
-	]);
-	useLayoutEffect2(() => position(), [position]);
-	const [contentZIndex, setContentZIndex] = import_react.useState();
-	useLayoutEffect2(() => {
-		if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
-	}, [content]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectViewportProvider, {
-		scope: __scopeSelect,
-		contentWrapper,
-		shouldExpandOnScrollRef,
-		onScrollButtonChange: import_react.useCallback((node) => {
-			if (node && shouldRepositionRef.current === true) {
-				position();
-				focusSelectedItem?.();
-				shouldRepositionRef.current = false;
-			}
-		}, [position, focusSelectedItem]),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			ref: setContentWrapper,
-			style: {
-				display: "flex",
-				flexDirection: "column",
-				position: "fixed",
-				zIndex: contentZIndex
-			},
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-				...popperProps,
-				ref: composedRefs,
-				style: {
-					boxSizing: "border-box",
-					maxHeight: "100%",
-					...popperProps.style
-				}
-			})
-		})
-	});
-});
-SelectItemAlignedPosition.displayName = ITEM_ALIGNED_POSITION_NAME;
-var POPPER_POSITION_NAME = "SelectPopperPosition";
-var SelectPopperPosition = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, align = "start", collisionPadding = CONTENT_MARGIN, ...popperProps } = props;
-	const popperScope = usePopperScope$1(__scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content$3, {
-		...popperScope,
-		...popperProps,
-		ref: forwardedRef,
-		align,
-		collisionPadding,
-		style: {
-			boxSizing: "border-box",
-			...popperProps.style,
-			"--radix-select-content-transform-origin": "var(--radix-popper-transform-origin)",
-			"--radix-select-content-available-width": "var(--radix-popper-available-width)",
-			"--radix-select-content-available-height": "var(--radix-popper-available-height)",
-			"--radix-select-trigger-width": "var(--radix-popper-anchor-width)",
-			"--radix-select-trigger-height": "var(--radix-popper-anchor-height)"
-		}
-	});
-});
-SelectPopperPosition.displayName = POPPER_POSITION_NAME;
-var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME$5, {});
-var VIEWPORT_NAME = "SelectViewport";
-var SelectViewport = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, nonce, ...viewportProps } = props;
-	const contentContext = useSelectContentContext(VIEWPORT_NAME, __scopeSelect);
-	const viewportContext = useSelectViewportContext(VIEWPORT_NAME, __scopeSelect);
-	const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
-	const prevScrollTopRef = import_react.useRef(0);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("style", {
-		dangerouslySetInnerHTML: { __html: `[data-radix-select-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-select-viewport]::-webkit-scrollbar{display:none}` },
-		nonce
-	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.Slot, {
-		scope: __scopeSelect,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			"data-radix-select-viewport": "",
-			role: "presentation",
-			...viewportProps,
-			ref: composedRefs,
-			style: {
-				position: "relative",
-				flex: 1,
-				overflow: "hidden auto",
-				...viewportProps.style
-			},
-			onScroll: composeEventHandlers(viewportProps.onScroll, (event) => {
-				const viewport = event.currentTarget;
-				const { contentWrapper, shouldExpandOnScrollRef } = viewportContext;
-				if (shouldExpandOnScrollRef?.current && contentWrapper) {
-					const scrolledBy = Math.abs(prevScrollTopRef.current - viewport.scrollTop);
-					if (scrolledBy > 0) {
-						const availableHeight = window.innerHeight - CONTENT_MARGIN * 2;
-						const cssMinHeight = parseFloat(contentWrapper.style.minHeight);
-						const cssHeight = parseFloat(contentWrapper.style.height);
-						const prevHeight = Math.max(cssMinHeight, cssHeight);
-						if (prevHeight < availableHeight) {
-							const nextHeight = prevHeight + scrolledBy;
-							const clampedNextHeight = Math.min(availableHeight, nextHeight);
-							const heightDiff = nextHeight - clampedNextHeight;
-							contentWrapper.style.height = clampedNextHeight + "px";
-							if (contentWrapper.style.bottom === "0px") {
-								viewport.scrollTop = heightDiff > 0 ? heightDiff : 0;
-								contentWrapper.style.justifyContent = "flex-end";
-							}
-						}
-					}
-				}
-				prevScrollTopRef.current = viewport.scrollTop;
-			})
-		})
-	})] });
-});
-SelectViewport.displayName = VIEWPORT_NAME;
-var GROUP_NAME$3 = "SelectGroup";
-var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME$3);
-var SelectGroup$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...groupProps } = props;
-	const groupId = useId();
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, {
-		scope: __scopeSelect,
-		id: groupId,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			role: "group",
-			"aria-labelledby": groupId,
-			...groupProps,
-			ref: forwardedRef
-		})
-	});
-});
-SelectGroup$1.displayName = GROUP_NAME$3;
-var LABEL_NAME$2 = "SelectLabel";
-var SelectLabel$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...labelProps } = props;
-	const groupContext = useSelectGroupContext(LABEL_NAME$2, __scopeSelect);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		id: groupContext.id,
-		...labelProps,
-		ref: forwardedRef
-	});
-});
-SelectLabel$1.displayName = LABEL_NAME$2;
-var ITEM_NAME$4 = "SelectItem";
-var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME$4);
-var SelectItem$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, value, disabled = false, textValue: textValueProp, ...itemProps } = props;
-	const context = useSelectContext(ITEM_NAME$4, __scopeSelect);
-	const contentContext = useSelectContentContext(ITEM_NAME$4, __scopeSelect);
-	const isSelected = context.value === value;
-	const [textValue, setTextValue] = import_react.useState(textValueProp ?? "");
-	const [isFocused, setIsFocused] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => contentContext.itemRefCallback?.(node, value, disabled));
-	const textId = useId();
-	const pointerTypeRef = import_react.useRef("touch");
-	const handleSelect = () => {
-		if (!disabled) {
-			context.onValueChange(value);
-			context.onOpenChange(false);
-		}
-	};
-	if (value === "") throw new Error("A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.");
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItemContextProvider, {
-		scope: __scopeSelect,
-		value,
-		disabled,
-		textId,
-		isSelected,
-		onItemTextChange: import_react.useCallback((node) => {
-			setTextValue((prevTextValue) => prevTextValue || (node?.textContent ?? "").trim());
-		}, []),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$3.ItemSlot, {
-			scope: __scopeSelect,
-			value,
-			disabled,
-			textValue,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-				role: "option",
-				"aria-labelledby": textId,
-				"data-highlighted": isFocused ? "" : void 0,
-				"aria-selected": isSelected && isFocused,
-				"data-state": isSelected ? "checked" : "unchecked",
-				"aria-disabled": disabled || void 0,
-				"data-disabled": disabled ? "" : void 0,
-				tabIndex: disabled ? void 0 : -1,
-				...itemProps,
-				ref: composedRefs,
-				onFocus: composeEventHandlers(itemProps.onFocus, () => setIsFocused(true)),
-				onBlur: composeEventHandlers(itemProps.onBlur, () => setIsFocused(false)),
-				onClick: composeEventHandlers(itemProps.onClick, () => {
-					if (pointerTypeRef.current !== "mouse") handleSelect();
-				}),
-				onPointerUp: composeEventHandlers(itemProps.onPointerUp, () => {
-					if (pointerTypeRef.current === "mouse") handleSelect();
-				}),
-				onPointerDown: composeEventHandlers(itemProps.onPointerDown, (event) => {
-					pointerTypeRef.current = event.pointerType;
-				}),
-				onPointerMove: composeEventHandlers(itemProps.onPointerMove, (event) => {
-					pointerTypeRef.current = event.pointerType;
-					if (disabled) contentContext.onItemLeave?.();
-					else if (pointerTypeRef.current === "mouse") event.currentTarget.focus({ preventScroll: true });
-				}),
-				onPointerLeave: composeEventHandlers(itemProps.onPointerLeave, (event) => {
-					if (event.currentTarget === document.activeElement) contentContext.onItemLeave?.();
-				}),
-				onKeyDown: composeEventHandlers(itemProps.onKeyDown, (event) => {
-					if (contentContext.searchRef?.current !== "" && event.key === " ") return;
-					if (SELECTION_KEYS$1.includes(event.key)) handleSelect();
-					if (event.key === " ") event.preventDefault();
-				})
-			})
-		})
-	});
-});
-SelectItem$1.displayName = ITEM_NAME$4;
-var ITEM_TEXT_NAME = "SelectItemText";
-var SelectItemText = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, className, style, ...itemTextProps } = props;
-	const context = useSelectContext(ITEM_TEXT_NAME, __scopeSelect);
-	const contentContext = useSelectContentContext(ITEM_TEXT_NAME, __scopeSelect);
-	const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
-	const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
-	const [itemTextNode, setItemTextNode] = import_react.useState(null);
-	const composedRefs = useComposedRefs(forwardedRef, (node) => setItemTextNode(node), itemContext.onItemTextChange, (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled));
-	const textContent = itemTextNode?.textContent;
-	const nativeOption = import_react.useMemo(() => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", {
-		value: itemContext.value,
-		disabled: itemContext.disabled,
-		children: textContent
-	}, itemContext.value), [
-		itemContext.disabled,
-		itemContext.value,
-		textContent
-	]);
-	const { onNativeOptionAdd, onNativeOptionRemove } = nativeOptionsContext;
-	useLayoutEffect2(() => {
-		onNativeOptionAdd(nativeOption);
-		return () => onNativeOptionRemove(nativeOption);
-	}, [
-		onNativeOptionAdd,
-		onNativeOptionRemove,
-		nativeOption
-	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-		id: itemContext.textId,
-		...itemTextProps,
-		ref: composedRefs
-	}), itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? import_react_dom.createPortal(itemTextProps.children, context.valueNode) : null] });
-});
-SelectItemText.displayName = ITEM_TEXT_NAME;
-var ITEM_INDICATOR_NAME$1 = "SelectItemIndicator";
-var SelectItemIndicator = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...itemIndicatorProps } = props;
-	return useSelectItemContext(ITEM_INDICATOR_NAME$1, __scopeSelect).isSelected ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-		"aria-hidden": true,
-		...itemIndicatorProps,
-		ref: forwardedRef
-	}) : null;
-});
-SelectItemIndicator.displayName = ITEM_INDICATOR_NAME$1;
-var SCROLL_UP_BUTTON_NAME = "SelectScrollUpButton";
-var SelectScrollUpButton$1 = import_react.forwardRef((props, forwardedRef) => {
-	const contentContext = useSelectContentContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
-	const viewportContext = useSelectViewportContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
-	const [canScrollUp, setCanScrollUp] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
-	useLayoutEffect2(() => {
-		if (contentContext.viewport && contentContext.isPositioned) {
-			let handleScroll2 = function() {
-				setCanScrollUp(viewport.scrollTop > 0);
-			};
-			const viewport = contentContext.viewport;
-			handleScroll2();
-			viewport.addEventListener("scroll", handleScroll2);
-			return () => viewport.removeEventListener("scroll", handleScroll2);
-		}
-	}, [contentContext.viewport, contentContext.isPositioned]);
-	return canScrollUp ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
-		...props,
-		ref: composedRefs,
-		onAutoScroll: () => {
-			const { viewport, selectedItem } = contentContext;
-			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop - selectedItem.offsetHeight;
-		}
-	}) : null;
-});
-SelectScrollUpButton$1.displayName = SCROLL_UP_BUTTON_NAME;
-var SCROLL_DOWN_BUTTON_NAME = "SelectScrollDownButton";
-var SelectScrollDownButton$1 = import_react.forwardRef((props, forwardedRef) => {
-	const contentContext = useSelectContentContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
-	const viewportContext = useSelectViewportContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
-	const [canScrollDown, setCanScrollDown] = import_react.useState(false);
-	const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
-	useLayoutEffect2(() => {
-		if (contentContext.viewport && contentContext.isPositioned) {
-			let handleScroll2 = function() {
-				const maxScroll = viewport.scrollHeight - viewport.clientHeight;
-				setCanScrollDown(Math.ceil(viewport.scrollTop) < maxScroll);
-			};
-			const viewport = contentContext.viewport;
-			handleScroll2();
-			viewport.addEventListener("scroll", handleScroll2);
-			return () => viewport.removeEventListener("scroll", handleScroll2);
-		}
-	}, [contentContext.viewport, contentContext.isPositioned]);
-	return canScrollDown ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollButtonImpl, {
-		...props,
-		ref: composedRefs,
-		onAutoScroll: () => {
-			const { viewport, selectedItem } = contentContext;
-			if (viewport && selectedItem) viewport.scrollTop = viewport.scrollTop + selectedItem.offsetHeight;
-		}
-	}) : null;
-});
-SelectScrollDownButton$1.displayName = SCROLL_DOWN_BUTTON_NAME;
-var SelectScrollButtonImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
-	const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
-	const autoScrollTimerRef = import_react.useRef(null);
-	const getItems = useCollection$3(__scopeSelect);
-	const clearAutoScrollTimer = import_react.useCallback(() => {
-		if (autoScrollTimerRef.current !== null) {
-			window.clearInterval(autoScrollTimerRef.current);
-			autoScrollTimerRef.current = null;
-		}
-	}, []);
-	import_react.useEffect(() => {
-		return () => clearAutoScrollTimer();
-	}, [clearAutoScrollTimer]);
-	useLayoutEffect2(() => {
-		getItems().find((item) => item.ref.current === document.activeElement)?.ref.current?.scrollIntoView({ block: "nearest" });
-	}, [getItems]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		"aria-hidden": true,
-		...scrollIndicatorProps,
-		ref: forwardedRef,
-		style: {
-			flexShrink: 0,
-			...scrollIndicatorProps.style
-		},
-		onPointerDown: composeEventHandlers(scrollIndicatorProps.onPointerDown, () => {
-			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
-		}),
-		onPointerMove: composeEventHandlers(scrollIndicatorProps.onPointerMove, () => {
-			contentContext.onItemLeave?.();
-			if (autoScrollTimerRef.current === null) autoScrollTimerRef.current = window.setInterval(onAutoScroll, 50);
-		}),
-		onPointerLeave: composeEventHandlers(scrollIndicatorProps.onPointerLeave, () => {
-			clearAutoScrollTimer();
-		})
-	});
-});
-var SEPARATOR_NAME$2 = "SelectSeparator";
-var SelectSeparator$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...separatorProps } = props;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-		"aria-hidden": true,
-		...separatorProps,
-		ref: forwardedRef
-	});
-});
-SelectSeparator$1.displayName = SEPARATOR_NAME$2;
-var ARROW_NAME$2 = "SelectArrow";
-var SelectArrow = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeSelect, ...arrowProps } = props;
-	const popperScope = usePopperScope$1(__scopeSelect);
-	const context = useSelectContext(ARROW_NAME$2, __scopeSelect);
-	const contentContext = useSelectContentContext(ARROW_NAME$2, __scopeSelect);
-	return context.open && contentContext.position === "popper" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Arrow, {
-		...popperScope,
-		...arrowProps,
-		ref: forwardedRef
-	}) : null;
-});
-SelectArrow.displayName = ARROW_NAME$2;
-var BUBBLE_INPUT_NAME = "SelectBubbleInput";
-var SelectBubbleInput = import_react.forwardRef(({ __scopeSelect, value, ...props }, forwardedRef) => {
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	const prevValue = usePrevious(value);
-	import_react.useEffect(() => {
-		const select = ref.current;
-		if (!select) return;
-		const selectProto = window.HTMLSelectElement.prototype;
-		const setValue = Object.getOwnPropertyDescriptor(selectProto, "value").set;
-		if (prevValue !== value && setValue) {
-			const event = new Event("change", { bubbles: true });
-			setValue.call(select, value);
-			select.dispatchEvent(event);
-		}
-	}, [prevValue, value]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.select, {
-		...props,
-		style: {
-			...VISUALLY_HIDDEN_STYLES,
-			...props.style
-		},
-		ref: composedRefs,
-		defaultValue: value
-	});
-});
-SelectBubbleInput.displayName = BUBBLE_INPUT_NAME;
-function shouldShowPlaceholder(value) {
-	return value === "" || value === void 0;
-}
-function useTypeaheadSearch(onSearchChange) {
-	const handleSearchChange = useCallbackRef(onSearchChange);
-	const searchRef = import_react.useRef("");
-	const timerRef = import_react.useRef(0);
-	const handleTypeaheadSearch = import_react.useCallback((key) => {
-		const search = searchRef.current + key;
-		handleSearchChange(search);
-		(function updateSearch(value) {
-			searchRef.current = value;
-			window.clearTimeout(timerRef.current);
-			if (value !== "") timerRef.current = window.setTimeout(() => updateSearch(""), 1e3);
-		})(search);
-	}, [handleSearchChange]);
-	const resetTypeahead = import_react.useCallback(() => {
-		searchRef.current = "";
-		window.clearTimeout(timerRef.current);
-	}, []);
-	import_react.useEffect(() => {
-		return () => window.clearTimeout(timerRef.current);
-	}, []);
-	return [
-		searchRef,
-		handleTypeaheadSearch,
-		resetTypeahead
-	];
-}
-function findNextItem(items$1, search, currentItem) {
-	const normalizedSearch = search.length > 1 && Array.from(search).every((char) => char === search[0]) ? search[0] : search;
-	const currentItemIndex = currentItem ? items$1.indexOf(currentItem) : -1;
-	let wrappedItems = wrapArray$2(items$1, Math.max(currentItemIndex, 0));
-	if (normalizedSearch.length === 1) wrappedItems = wrappedItems.filter((v) => v !== currentItem);
-	const nextItem = wrappedItems.find((item) => item.textValue.toLowerCase().startsWith(normalizedSearch.toLowerCase()));
-	return nextItem !== currentItem ? nextItem : void 0;
-}
-function wrapArray$2(array$1, startIndex) {
-	return array$1.map((_$1, index$1) => array$1[(startIndex + index$1) % array$1.length]);
-}
-var Root2$3 = Select$1;
-var Trigger$3 = SelectTrigger$1;
-var Value = SelectValue$1;
-var Icon = SelectIcon;
-var Portal$2 = SelectPortal;
-var Content2$3 = SelectContent$1;
-var Viewport = SelectViewport;
-var Label$2 = SelectLabel$1;
-var Item$2 = SelectItem$1;
-var ItemText = SelectItemText;
-var ItemIndicator$1 = SelectItemIndicator;
-var ScrollUpButton = SelectScrollUpButton$1;
-var ScrollDownButton = SelectScrollDownButton$1;
-var Separator$3 = SelectSeparator$1;
-var Select = Root2$3;
-var SelectValue = Value;
-var SelectTrigger = import_react.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Trigger$3, {
-	ref,
-	className: cn("flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1", className),
-	...props,
-	children: [children, /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Icon, {
-		asChild: true,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "h-4 w-4 opacity-50" })
-	})]
-}));
-SelectTrigger.displayName = Trigger$3.displayName;
-var SelectScrollUpButton = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollUpButton, {
-	ref,
-	className: cn("flex cursor-default items-center justify-center py-1", className),
-	...props,
-	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronUp, { className: "h-4 w-4" })
-}));
-SelectScrollUpButton.displayName = ScrollUpButton.displayName;
-var SelectScrollDownButton = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ScrollDownButton, {
-	ref,
-	className: cn("flex cursor-default items-center justify-center py-1", className),
-	...props,
-	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronDown, { className: "h-4 w-4" })
-}));
-SelectScrollDownButton.displayName = ScrollDownButton.displayName;
-var SelectContent = import_react.forwardRef(({ className, children, position = "popper", ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Portal$2, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Content2$3, {
-	ref,
-	className: cn("relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className),
-	position,
-	...props,
-	children: [
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollUpButton, {}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Viewport, {
-			className: cn("p-1", position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"),
-			children
-		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectScrollDownButton, {})
-	]
-}) }));
-SelectContent.displayName = Content2$3.displayName;
-var SelectLabel = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$2, {
-	ref,
-	className: cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className),
-	...props
-}));
-SelectLabel.displayName = Label$2.displayName;
-var SelectItem = import_react.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Item$2, {
-	ref,
-	className: cn("relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", className),
-	...props,
-	children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-		className: "absolute left-2 flex h-3.5 w-3.5 items-center justify-center",
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemIndicator$1, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "h-4 w-4" }) })
-	}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ItemText, { children })]
-}));
-SelectItem.displayName = Item$2.displayName;
-var SelectSeparator = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Separator$3, {
-	ref,
-	className: cn("-mx-1 my-1 h-px bg-muted", className),
-	...props
-}));
-SelectSeparator.displayName = Separator$3.displayName;
 function GeneralSpreadsheet() {
 	const { pallets, locations, streets, getLocationName, removePallet } = useInventoryStore();
 	const [searchTerm, setSearchTerm] = (0, import_react.useState)("");
@@ -39854,4 +40046,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-D0gYfXxN.js.map
+//# sourceMappingURL=index-BCWxQmVa.js.map

@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Layers, Plus, Pencil, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Layers,
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRightCircle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
@@ -13,6 +22,13 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
@@ -39,6 +55,8 @@ export default function StreetDetail() {
     addLocation,
     updateLocation,
     deleteLocation,
+    moveLocation,
+    changeLocationStreet,
   } = useInventoryStore()
   const { toast } = useToast()
 
@@ -50,6 +68,11 @@ export default function StreetDetail() {
     id: string
     name: string
   } | null>(null)
+  const [moveLocationDialog, setMoveLocationDialog] = useState<{
+    locationId: string
+    locationName: string
+  } | null>(null)
+  const [targetStreetId, setTargetStreetId] = useState<string>('')
 
   const street = streets.find((s) => s.id === id)
 
@@ -70,6 +93,9 @@ export default function StreetDetail() {
     return true
   })
 
+  // Check if filtering is active to disable reordering
+  const isFiltering = showEmptyOnly || showOccupiedOnly
+
   const handleAddLocation = () => {
     if (newLocationName.trim()) {
       addLocation(street.id, newLocationName)
@@ -87,6 +113,28 @@ export default function StreetDetail() {
       updateLocation(editLocation.id, editLocation.name)
       setEditLocation(null)
       toast({ title: 'Localização atualizada' })
+    }
+  }
+
+  const handleMoveLocationOrder = (
+    locationId: string,
+    direction: 'up' | 'down',
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault()
+    e.stopPropagation()
+    moveLocation(locationId, direction)
+  }
+
+  const handleChangeStreet = () => {
+    if (moveLocationDialog && targetStreetId) {
+      changeLocationStreet(moveLocationDialog.locationId, targetStreetId)
+      toast({
+        title: 'Local Movido',
+        description: `${moveLocationDialog.locationName} movido para outra rua com sucesso.`,
+      })
+      setMoveLocationDialog(null)
+      setTargetStreetId('')
     }
   }
 
@@ -146,7 +194,7 @@ export default function StreetDetail() {
                 }}
               />
               <Label htmlFor="show-empty" className="text-sm cursor-pointer">
-                Apenas Vazios (Vermelho)
+                Apenas Vazios
               </Label>
             </div>
             <div className="h-4 w-[1px] bg-border hidden sm:block" />
@@ -160,7 +208,7 @@ export default function StreetDetail() {
                 }}
               />
               <Label htmlFor="show-occupied" className="text-sm cursor-pointer">
-                Apenas Ocupados (Verde)
+                Apenas Ocupados
               </Label>
             </div>
           </div>
@@ -168,18 +216,68 @@ export default function StreetDetail() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-        {filteredLocations.map((location) => {
+        {filteredLocations.map((location, index) => {
           const status = getLocationStatus(location.id)
           const pallets = getPalletsByLocation(location.id)
           const isOccupied = status === 'occupied'
+          const isFirst = index === 0
+          const isLast = index === filteredLocations.length - 1
 
           return (
             <div key={location.id} className="relative group">
-              <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 z-20 flex flex-wrap justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Reordering Controls */}
+                {!isFiltering && (
+                  <div className="flex bg-background/90 backdrop-blur-sm rounded-md border shadow-sm mr-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-5 hover:bg-accent rounded-l-md rounded-r-none"
+                      onClick={(e) =>
+                        handleMoveLocationOrder(location.id, 'up', e)
+                      }
+                      disabled={isFirst}
+                      title="Mover para trás"
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </Button>
+                    <div className="w-[1px] bg-border h-full" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-5 hover:bg-accent rounded-r-md rounded-l-none"
+                      onClick={(e) =>
+                        handleMoveLocationOrder(location.id, 'down', e)
+                      }
+                      disabled={isLast}
+                      title="Mover para frente"
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+
                 <Button
                   variant="secondary"
                   size="icon"
                   className="h-6 w-6 shadow-sm"
+                  title="Mover para outra Rua"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setMoveLocationDialog({
+                      locationId: location.id,
+                      locationName: location.name,
+                    })
+                  }}
+                >
+                  <ArrowRightCircle className="h-3 w-3" />
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-6 w-6 shadow-sm"
+                  title="Editar Nome"
                   onClick={(e) => {
                     e.preventDefault()
                     setEditLocation({
@@ -196,6 +294,7 @@ export default function StreetDetail() {
                       variant="destructive"
                       size="icon"
                       className="h-6 w-6 shadow-sm"
+                      title="Excluir"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -262,6 +361,7 @@ export default function StreetDetail() {
         })}
       </div>
 
+      {/* Edit Location Dialog */}
       <Dialog
         open={!!editLocation}
         onOpenChange={(open) => !open && setEditLocation(null)}
@@ -285,6 +385,46 @@ export default function StreetDetail() {
           </div>
           <DialogFooter>
             <Button onClick={handleUpdateLocation}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Location Dialog */}
+      <Dialog
+        open={!!moveLocationDialog}
+        onOpenChange={(open) => !open && setMoveLocationDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mover Local para outra Rua</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione a nova rua para o local{' '}
+              <strong>{moveLocationDialog?.locationName}</strong>.
+            </p>
+            <div className="space-y-2">
+              <Label>Nova Rua de Destino</Label>
+              <Select value={targetStreetId} onValueChange={setTargetStreetId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a rua..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {streets
+                    .filter((s) => s.id !== street.id)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleChangeStreet} disabled={!targetStreetId}>
+              Confirmar Mudança
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -38,11 +38,14 @@ interface InventoryContextType {
   addStreet: (name: string) => void
   updateStreet: (id: string, name: string) => void
   deleteStreet: (id: string) => void
+  moveStreet: (id: string, direction: 'up' | 'down') => void
 
   // Location CRUD
   addLocation: (streetId: string, name: string) => void
   updateLocation: (id: string, name: string) => void
   deleteLocation: (id: string) => void
+  moveLocation: (locationId: string, direction: 'up' | 'down') => void
+  changeLocationStreet: (locationId: string, newStreetId: string) => void
 
   // Material CRUD
   addMaterial: (material: Omit<Material, 'id'>) => void
@@ -244,6 +247,22 @@ export const InventoryProvider = ({
     inventoryService.savePallets(newPallets)
   }
 
+  const moveStreet = (id: string, direction: 'up' | 'down') => {
+    const index = streets.findIndex((s) => s.id === id)
+    if (index === -1) return
+    if (direction === 'up' && index === 0) return
+    if (direction === 'down' && index === streets.length - 1) return
+
+    const newStreets = [...streets]
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    ;[newStreets[index], newStreets[swapIndex]] = [
+      newStreets[swapIndex],
+      newStreets[index],
+    ]
+    setStreets(newStreets)
+    inventoryService.saveStreets(newStreets)
+  }
+
   // Location CRUD
   const addLocation = (streetId: string, name: string) => {
     const newLocations = [
@@ -270,6 +289,45 @@ export const InventoryProvider = ({
     const newPallets = pallets.filter((p) => p.locationId !== id)
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+  }
+
+  const moveLocation = (locationId: string, direction: 'up' | 'down') => {
+    const location = locations.find((l) => l.id === locationId)
+    if (!location) return
+
+    const streetLocations = locations.filter(
+      (l) => l.streetId === location.streetId,
+    )
+    const indexInStreet = streetLocations.findIndex((l) => l.id === locationId)
+
+    if (direction === 'up' && indexInStreet === 0) return
+    if (direction === 'down' && indexInStreet === streetLocations.length - 1)
+      return
+
+    const swapIndex = direction === 'up' ? indexInStreet - 1 : indexInStreet + 1
+
+    // Swap within the streetLocations array copy
+    const temp = streetLocations[indexInStreet]
+    streetLocations[indexInStreet] = streetLocations[swapIndex]
+    streetLocations[swapIndex] = temp
+
+    // To persist this order globally, we can reconstruct the global list
+    // by filtering out this street's items and appending the reordered list.
+    const otherLocations = locations.filter(
+      (l) => l.streetId !== location.streetId,
+    )
+    const newLocations = [...otherLocations, ...streetLocations]
+
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
+  }
+
+  const changeLocationStreet = (locationId: string, newStreetId: string) => {
+    const newLocations = locations.map((l) =>
+      l.id === locationId ? { ...l, streetId: newStreetId } : l,
+    )
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
   }
 
   // Material CRUD
@@ -394,9 +452,12 @@ export const InventoryProvider = ({
       addStreet,
       updateStreet,
       deleteStreet,
+      moveStreet,
       addLocation,
       updateLocation,
       deleteLocation,
+      moveLocation,
+      changeLocationStreet,
       addMaterial,
       updateMaterial,
       deleteMaterial,
@@ -426,9 +487,12 @@ export const InventoryProvider = ({
       addStreet,
       updateStreet,
       deleteStreet,
+      moveStreet,
       addLocation,
       updateLocation,
       deleteLocation,
+      moveLocation,
+      changeLocationStreet,
       addMaterial,
       updateMaterial,
       deleteMaterial,

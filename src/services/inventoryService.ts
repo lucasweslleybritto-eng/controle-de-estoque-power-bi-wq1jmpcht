@@ -7,6 +7,7 @@ import {
   SystemSettings,
   Equipment,
   User,
+  SyncStatus,
 } from '@/types'
 
 const KEYS = {
@@ -26,6 +27,7 @@ export type NotificationCategory = 'movement' | 'low-stock' | 'system'
 
 export type ServiceEvent =
   | { type: 'UPDATE'; key: string }
+  | { type: 'SYNC_STATUS'; status: SyncStatus; lastSync?: Date }
   | {
       type: 'NOTIFICATION'
       message: string
@@ -134,9 +136,41 @@ const INITIAL_PALLETS: Pallet[] = [
 
 class InventoryService {
   private channel: BroadcastChannel
+  private syncStatus: SyncStatus = 'synced'
+  private isOnline: boolean = navigator.onLine
+  private lastSync: Date = new Date()
 
   constructor() {
     this.channel = new BroadcastChannel(CHANNEL_NAME)
+    this.setupNetworkListeners()
+    this.setupStorageListener()
+  }
+
+  private setupNetworkListeners() {
+    window.addEventListener('online', () => {
+      this.isOnline = true
+      this.setSyncStatus('syncing')
+      setTimeout(() => this.setSyncStatus('synced'), 1500) // Reconnect simulation
+    })
+    window.addEventListener('offline', () => {
+      this.isOnline = false
+      this.setSyncStatus('offline')
+    })
+  }
+
+  private setupStorageListener() {
+    window.addEventListener('storage', (event) => {
+      if (event.key && Object.values(KEYS).includes(event.key)) {
+        this.notifyChange(event.key)
+      }
+    })
+    this.channel.addEventListener('message', (event) => {
+      if (event.data?.type === 'UPDATE') {
+        // Trigger UI update
+        // We re-dispatch this to the subscription
+        // The subscription handles the state update
+      }
+    })
   }
 
   private get<T>(key: string, defaultValue: T): T {
@@ -153,6 +187,7 @@ class InventoryService {
     try {
       localStorage.setItem(key, JSON.stringify(value))
       this.notifyChange(key)
+      this.simulateCloudSync() // Trigger "Cloud" sync on every local write
     } catch (error) {
       console.error(`Error writing key ${key}:`, error)
     }
@@ -160,6 +195,105 @@ class InventoryService {
 
   private notifyChange(key: string) {
     this.channel.postMessage({ type: 'UPDATE', key })
+    // Also notify current window subscribers (needed for single window reactivity if not using storage event)
+    // Actually, useInventoryStore subscribes to this service.
+  }
+
+  private setSyncStatus(status: SyncStatus) {
+    this.syncStatus = status
+    if (status === 'synced') {
+      this.lastSync = new Date()
+    }
+    this.channel.postMessage({
+      type: 'SYNC_STATUS',
+      status,
+      lastSync: this.lastSync,
+    })
+  }
+
+  /**
+   * Simulates a network request to synchronize data with a backend.
+   * Prioritizes recent transactions (Last Write Wins strategy implicit in overwrite)
+   */
+  private simulateCloudSync() {
+    if (!this.isOnline) {
+      this.setSyncStatus('offline')
+      return
+    }
+
+    this.setSyncStatus('syncing')
+
+    // Simulate network delay (300ms - 800ms)
+    const delay = Math.floor(Math.random() * 500) + 300
+
+    setTimeout(() => {
+      // 99% success rate simulation
+      const success = Math.random() > 0.01
+
+      if (success) {
+        this.setSyncStatus('synced')
+      } else {
+        this.setSyncStatus('error')
+        // Retry logic could be here
+        setTimeout(() => this.simulateCloudSync(), 2000)
+      }
+    }, delay)
+  }
+
+  /**
+   * Simulates an incoming update from another device/user.
+   * For Demo purposes.
+   */
+  public simulateRemoteUpdate() {
+    if (!this.isOnline) return
+
+    this.setSyncStatus('syncing')
+    setTimeout(() => {
+      // Simulate adding a pallet remotely
+      const currentPallets = this.getPallets()
+      const materials = this.getMaterials()
+      const material = materials[0] || INITIAL_MATERIALS[0]
+
+      const newPallet: Pallet = {
+        id: crypto.randomUUID(),
+        locationId: 'TRP_AREA',
+        materialName: material.name,
+        description: 'Recebido Remotamente (Simulação)',
+        quantity: Math.floor(Math.random() * 50) + 1,
+        entryDate: new Date().toISOString(),
+        type: 'TRP',
+        materialId: material.id,
+      }
+
+      const updatedPallets = [newPallet, ...currentPallets]
+      localStorage.setItem(KEYS.PALLETS, JSON.stringify(updatedPallets))
+
+      // Also simulate a log entry
+      const currentHistory = this.getHistory()
+      const newLog: MovementLog = {
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+        user: 'Sistema Remoto',
+        type: 'ENTRY',
+        materialName: material.name,
+        quantity: newPallet.quantity,
+        description: 'Sincronização Cloud',
+        locationName: 'Zona TRP',
+      }
+      localStorage.setItem(
+        KEYS.HISTORY,
+        JSON.stringify([newLog, ...currentHistory]),
+      )
+
+      this.notifyChange(KEYS.PALLETS)
+      this.notifyChange(KEYS.HISTORY)
+      this.setSyncStatus('synced')
+
+      this.notifyEvent(
+        `Atualização remota recebida: ${material.name} (+${newPallet.quantity})`,
+        'system',
+      )
+    }, 1500)
   }
 
   public notifyEvent(
@@ -179,7 +313,8 @@ class InventoryService {
     const handleMessage = (event: MessageEvent) => {
       if (
         event.data?.type === 'UPDATE' ||
-        event.data?.type === 'NOTIFICATION'
+        event.data?.type === 'NOTIFICATION' ||
+        event.data?.type === 'SYNC_STATUS'
       ) {
         callback(event.data)
       }
@@ -193,6 +328,13 @@ class InventoryService {
 
     this.channel.addEventListener('message', handleMessage)
     window.addEventListener('storage', handleStorage)
+
+    // Initial status
+    callback({
+      type: 'SYNC_STATUS',
+      status: this.syncStatus,
+      lastSync: this.lastSync,
+    })
 
     return () => {
       this.channel.removeEventListener('message', handleMessage)
@@ -221,14 +363,12 @@ class InventoryService {
       }
     }
 
-    // Fallback if no user is preserved (e.g. somehow deleted or not found)
     if (newUsers.length === 0) {
-      newUsers = [INITIAL_USERS[0]] // Default Admin
+      newUsers = [INITIAL_USERS[0]]
     }
 
     this.set(KEYS.USERS, newUsers)
 
-    // Notify all keys to update UI
     Object.values(KEYS).forEach((key) => this.notifyChange(key))
 
     this.notifyEvent(
@@ -296,6 +436,14 @@ class InventoryService {
 
   public get keys() {
     return KEYS
+  }
+
+  public getStatus() {
+    return {
+      status: this.syncStatus,
+      isOnline: this.isOnline,
+      lastSync: this.lastSync,
+    }
   }
 }
 

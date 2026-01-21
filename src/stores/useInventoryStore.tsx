@@ -18,6 +18,7 @@ import {
   User,
   UserRole,
   UserPreferences,
+  SyncStatus,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -33,6 +34,9 @@ interface InventoryContextType {
   users: User[]
   currentUser: User | null
   alerts: Array<{ id: string; message: string; type: 'low-stock' | 'system' }>
+  syncStatus: SyncStatus
+  lastSync: Date
+  isOnline: boolean
 
   // Getters
   getLocationsByStreet: (streetId: string) => Location[]
@@ -80,6 +84,7 @@ interface InventoryContextType {
   // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
   resetSystem: () => void
+  simulateRemoteUpdate: () => void
 
   // Pallet/Movement Actions
   addPallet: (
@@ -128,6 +133,16 @@ export const InventoryProvider = ({
   const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
   const [currentUser, setCurrentUser] = useState<User | null>(null)
 
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    inventoryService.getStatus().status,
+  )
+  const [lastSync, setLastSync] = useState<Date>(
+    inventoryService.getStatus().lastSync,
+  )
+  const [isOnline, setIsOnline] = useState<boolean>(
+    inventoryService.getStatus().isOnline,
+  )
+
   // Subscription to Service Updates
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
@@ -156,7 +171,6 @@ export const InventoryProvider = ({
             break
           case inventoryService.keys.USERS:
             setUsers(inventoryService.getUsers())
-            // Also update current user if their data changed
             if (currentUser) {
               const updatedUser = inventoryService
                 .getUsers()
@@ -165,8 +179,11 @@ export const InventoryProvider = ({
             }
             break
         }
+      } else if (event.type === 'SYNC_STATUS') {
+        setSyncStatus(event.status)
+        if (event.lastSync) setLastSync(event.lastSync)
+        setIsOnline(event.status !== 'offline')
       } else if (event.type === 'NOTIFICATION') {
-        // Filter notifications based on user preferences
         if (currentUser) {
           const { preferences } = currentUser
           if (event.category === 'low-stock' && !preferences.lowStockAlerts)
@@ -236,8 +253,6 @@ export const InventoryProvider = ({
   const isLowStock = useCallback(
     (materialId: string) => {
       const material = materials.find((m) => m.id === materialId)
-      // Use material specific minStock or fallback to global setting if not set (optional enhancement, but keeping per material for now)
-      // If minStock is undefined, we could use settings.lowStockThreshold
       const threshold =
         material?.minStock !== undefined
           ? material.minStock
@@ -545,22 +560,18 @@ export const InventoryProvider = ({
     const importedLogs: MovementLog[] = []
 
     data.forEach(({ material, initialQuantity }) => {
-      // Check if material already exists by name
       const existing = newMaterials.find((m) => m.name === material.name)
       let materialId = existing?.id
 
       if (!existing) {
         materialId = crypto.randomUUID()
         newMaterials.push({ ...material, id: materialId })
-      } else {
-        // Option: Update existing material or skip? For bulk import, we usually just ensure it exists
-        // If needed we can update descriptions/minStock here
       }
 
       if (initialQuantity > 0 && materialId) {
         const pallet: Pallet = {
           id: crypto.randomUUID(),
-          locationId: 'TRP_AREA', // Default to TRP for bulk imports
+          locationId: 'TRP_AREA',
           materialName: material.name,
           description: 'Importação em Massa',
           quantity: initialQuantity,
@@ -570,7 +581,6 @@ export const InventoryProvider = ({
         }
         newPallets.push(pallet)
 
-        // Generate Log
         importedLogs.push({
           id: crypto.randomUUID(),
           date: new Date().toISOString(),
@@ -631,6 +641,10 @@ export const InventoryProvider = ({
   const resetSystem = () => {
     if (!currentUser) return
     inventoryService.resetDatabase(currentUser.id)
+  }
+
+  const simulateRemoteUpdate = () => {
+    inventoryService.simulateRemoteUpdate()
   }
 
   const addPallet = (
@@ -720,6 +734,9 @@ export const InventoryProvider = ({
       users,
       currentUser,
       alerts,
+      syncStatus,
+      lastSync,
+      isOnline,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
@@ -751,6 +768,7 @@ export const InventoryProvider = ({
       updateUserPreferences,
       updateSettings,
       resetSystem,
+      simulateRemoteUpdate,
       addPallet,
       updatePallet,
       movePallet,
@@ -768,6 +786,9 @@ export const InventoryProvider = ({
       users,
       currentUser,
       alerts,
+      syncStatus,
+      lastSync,
+      isOnline,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
@@ -799,6 +820,7 @@ export const InventoryProvider = ({
       updateUserPreferences,
       updateSettings,
       resetSystem,
+      simulateRemoteUpdate,
       addPallet,
       updatePallet,
       movePallet,

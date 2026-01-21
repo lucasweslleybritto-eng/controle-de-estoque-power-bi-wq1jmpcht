@@ -77,6 +77,8 @@ export interface User {
   name: string
   email: string
   role: UserRole
-  avatar?: string // Deprecated in UI but kept for type compatibility if needed, or we can ignore it
+  avatar?: string
   preferences: UserPreferences
 }
+
+export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'

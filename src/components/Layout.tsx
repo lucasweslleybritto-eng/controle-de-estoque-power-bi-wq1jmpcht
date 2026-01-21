@@ -19,6 +19,7 @@ import useInventoryStore from '@/stores/useInventoryStore'
 import Login from '@/pages/Login'
 import { UserNav } from './UserNav'
 import { Notifications } from './Notifications'
+import { ConnectionStatus } from './ConnectionStatus'
 
 export default function Layout() {
   const { currentUser } = useInventoryStore()
@@ -87,6 +88,7 @@ export default function Layout() {
             </Breadcrumb>
           </div>
           <div className="mr-4 flex items-center gap-2">
+            <ConnectionStatus />
             <Notifications />
             <ThemeToggle />
             <UserNav />

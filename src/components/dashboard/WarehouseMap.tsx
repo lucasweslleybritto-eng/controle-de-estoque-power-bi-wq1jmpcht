@@ -35,6 +35,7 @@ export function WarehouseMap() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  // Initialize with sorted streets
   const [orderedStreets, setOrderedStreets] = useState(streets)
   const [newStreetName, setNewStreetName] = useState('')
   const [isAddStreetOpen, setIsAddStreetOpen] = useState(false)
@@ -44,8 +45,13 @@ export function WarehouseMap() {
     currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   useEffect(() => {
+    // Sync local state when streets update from store (unless dragging)
     if (!draggedId) {
-      setOrderedStreets(streets)
+      // Sort by order before setting
+      const sorted = [...streets].sort(
+        (a, b) => (a.order || 0) - (b.order || 0),
+      )
+      setOrderedStreets(sorted)
     }
   }, [streets, draggedId])
 
@@ -65,7 +71,6 @@ export function WarehouseMap() {
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id)
     e.dataTransfer.effectAllowed = 'move'
-    // Optional: Set custom drag image if needed, but default is usually fine
   }
 
   const handleDragOver = (e: React.DragEvent, targetId: string) => {
@@ -79,7 +84,7 @@ export function WarehouseMap() {
 
     if (oldIndex === -1 || newIndex === -1) return
 
-    // Optimistic reorder
+    // Optimistic reorder in UI
     const newOrder = [...orderedStreets]
     const [movedItem] = newOrder.splice(oldIndex, 1)
     newOrder.splice(newIndex, 0, movedItem)
@@ -89,6 +94,7 @@ export function WarehouseMap() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     if (draggedId) {
+      // Commit new order to store/DB
       reorderStreets(orderedStreets)
       setDraggedId(null)
     }
@@ -100,7 +106,6 @@ export function WarehouseMap() {
   const handleTouchStart = (id: string) => {
     touchStartItemRef.current = id
     setDraggedId(id)
-    // Prevent scrolling during drag
     document.body.style.overflow = 'hidden'
   }
 
@@ -113,7 +118,6 @@ export function WarehouseMap() {
     if (card) {
       const targetId = card.getAttribute('data-street-id')
       if (targetId && targetId !== touchStartItemRef.current) {
-        // Swap logic similar to dragOver
         const oldIndex = orderedStreets.findIndex(
           (s) => s.id === touchStartItemRef.current,
         )

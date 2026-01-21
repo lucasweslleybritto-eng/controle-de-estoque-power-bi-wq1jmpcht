@@ -10,6 +10,7 @@ import Equipment from './pages/Equipment'
 import HowItWorks from './pages/HowItWorks'
 import EntryExit from './pages/EntryExit'
 import History from './pages/History'
+import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/movements" element={<EntryExit />} />
             <Route path="/history" element={<History />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

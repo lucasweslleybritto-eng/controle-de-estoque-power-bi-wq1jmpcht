@@ -18949,6 +18949,56 @@ var Box = createLucideIcon("box", [
 		key: "d0xqtd"
 	}]
 ]);
+var Building = createLucideIcon("building", [
+	["path", {
+		d: "M12 10h.01",
+		key: "1nrarc"
+	}],
+	["path", {
+		d: "M12 14h.01",
+		key: "1etili"
+	}],
+	["path", {
+		d: "M12 6h.01",
+		key: "1vi96p"
+	}],
+	["path", {
+		d: "M16 10h.01",
+		key: "1m94wz"
+	}],
+	["path", {
+		d: "M16 14h.01",
+		key: "1gbofw"
+	}],
+	["path", {
+		d: "M16 6h.01",
+		key: "1x0f13"
+	}],
+	["path", {
+		d: "M8 10h.01",
+		key: "19clt8"
+	}],
+	["path", {
+		d: "M8 14h.01",
+		key: "6423bh"
+	}],
+	["path", {
+		d: "M8 6h.01",
+		key: "1dz90k"
+	}],
+	["path", {
+		d: "M9 22v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3",
+		key: "cabbwy"
+	}],
+	["rect", {
+		x: "4",
+		y: "2",
+		width: "16",
+		height: "20",
+		rx: "2",
+		key: "1uxh74"
+	}]
+]);
 var Check = createLucideIcon("check", [["path", {
 	d: "M20 6 9 17l-5-5",
 	key: "1gmf2c"
@@ -19036,6 +19086,23 @@ var Clock = createLucideIcon("clock", [["path", {
 	r: "10",
 	key: "1mglay"
 }]]);
+var Database = createLucideIcon("database", [
+	["ellipse", {
+		cx: "12",
+		cy: "5",
+		rx: "9",
+		ry: "3",
+		key: "msslwz"
+	}],
+	["path", {
+		d: "M3 5V19A9 3 0 0 0 21 19V5",
+		key: "1wlel7"
+	}],
+	["path", {
+		d: "M3 12A9 3 0 0 0 21 12",
+		key: "mv7ke4"
+	}]
+]);
 var Download = createLucideIcon("download", [
 	["path", {
 		d: "M12 15V3",
@@ -19169,6 +19236,40 @@ var LayoutDashboard = createLucideIcon("layout-dashboard", [
 		key: "ldoo1y"
 	}]
 ]);
+var LayoutGrid = createLucideIcon("layout-grid", [
+	["rect", {
+		width: "7",
+		height: "7",
+		x: "3",
+		y: "3",
+		rx: "1",
+		key: "1g98yp"
+	}],
+	["rect", {
+		width: "7",
+		height: "7",
+		x: "14",
+		y: "3",
+		rx: "1",
+		key: "6d4xhi"
+	}],
+	["rect", {
+		width: "7",
+		height: "7",
+		x: "14",
+		y: "14",
+		rx: "1",
+		key: "nxv5o0"
+	}],
+	["rect", {
+		width: "7",
+		height: "7",
+		x: "3",
+		y: "14",
+		rx: "1",
+		key: "1bb6yr"
+	}]
+]);
 var MousePointerClick = createLucideIcon("mouse-pointer-click", [
 	["path", {
 		d: "M14 4.1 12 6",
@@ -19238,6 +19339,20 @@ var Plus = createLucideIcon("plus", [["path", {
 	d: "M12 5v14",
 	key: "s699le"
 }]]);
+var Save = createLucideIcon("save", [
+	["path", {
+		d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+		key: "1c8476"
+	}],
+	["path", {
+		d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7",
+		key: "1ydtos"
+	}],
+	["path", {
+		d: "M7 3v4a1 1 0 0 0 1 1h7",
+		key: "t51u73"
+	}]
+]);
 var Search = createLucideIcon("search", [["path", {
 	d: "m21 21-4.34-4.34",
 	key: "14j7rj"
@@ -19247,6 +19362,53 @@ var Search = createLucideIcon("search", [["path", {
 	r: "8",
 	key: "4ej97u"
 }]]);
+var Settings$1 = createLucideIcon("settings", [["path", {
+	d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915",
+	key: "1i5ecw"
+}], ["circle", {
+	cx: "12",
+	cy: "12",
+	r: "3",
+	key: "1v7zrd"
+}]]);
+var SlidersVertical = createLucideIcon("sliders-vertical", [
+	["path", {
+		d: "M10 8h4",
+		key: "1sr2af"
+	}],
+	["path", {
+		d: "M12 21v-9",
+		key: "17s77i"
+	}],
+	["path", {
+		d: "M12 8V3",
+		key: "13r4qs"
+	}],
+	["path", {
+		d: "M17 16h4",
+		key: "h1uq16"
+	}],
+	["path", {
+		d: "M19 12V3",
+		key: "o1uvq1"
+	}],
+	["path", {
+		d: "M19 21v-5",
+		key: "qua636"
+	}],
+	["path", {
+		d: "M3 14h4",
+		key: "bcjad9"
+	}],
+	["path", {
+		d: "M5 10V3",
+		key: "cb8scm"
+	}],
+	["path", {
+		d: "M5 21v-7",
+		key: "1w1uti"
+	}]
+]);
 var Trash2 = createLucideIcon("trash-2", [
 	["path", {
 		d: "M10 11v6",
@@ -25680,6 +25842,31 @@ var INITIAL_LOCATIONS = [
 		needsVerification: false
 	}
 ];
+var INITIAL_MATERIALS = [
+	{
+		id: "mat-1",
+		name: "Motor WEG",
+		type: "TRD",
+		description: "Motor 5CV"
+	},
+	{
+		id: "mat-2",
+		name: "Cabo 5mm",
+		type: "TRP",
+		description: "Bobina"
+	},
+	{
+		id: "mat-3",
+		name: "Conector RJ45",
+		type: "TRP",
+		description: "Caixa"
+	}
+];
+var INITIAL_SETTINGS = {
+	systemName: "Estoque Classe 2",
+	lowStockThreshold: 10,
+	highOccupancyThreshold: 80
+};
 var INITIAL_PALLETS = [{
 	id: "plt-1",
 	locationId: "loc-a-1",
@@ -25699,10 +25886,36 @@ var INITIAL_PALLETS = [{
 }];
 var InventoryContext = (0, import_react.createContext)(void 0);
 const InventoryProvider = ({ children }) => {
-	const [streets, setStreets] = (0, import_react.useState)(INITIAL_STREETS);
-	const [locations, setLocations] = (0, import_react.useState)(INITIAL_LOCATIONS);
+	const [streets, setStreets] = (0, import_react.useState)(() => {
+		const saved = localStorage.getItem("inventory_streets");
+		return saved ? JSON.parse(saved) : INITIAL_STREETS;
+	});
+	const [locations, setLocations] = (0, import_react.useState)(() => {
+		const saved = localStorage.getItem("inventory_locations");
+		return saved ? JSON.parse(saved) : INITIAL_LOCATIONS;
+	});
+	const [materials, setMaterials] = (0, import_react.useState)(() => {
+		const saved = localStorage.getItem("inventory_materials");
+		return saved ? JSON.parse(saved) : INITIAL_MATERIALS;
+	});
+	const [settings, setSettings] = (0, import_react.useState)(() => {
+		const saved = localStorage.getItem("inventory_settings");
+		return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+	});
 	const [pallets, setPallets] = (0, import_react.useState)(INITIAL_PALLETS);
 	const [history, setHistory] = (0, import_react.useState)([]);
+	(0, import_react.useEffect)(() => {
+		localStorage.setItem("inventory_streets", JSON.stringify(streets));
+	}, [streets]);
+	(0, import_react.useEffect)(() => {
+		localStorage.setItem("inventory_locations", JSON.stringify(locations));
+	}, [locations]);
+	(0, import_react.useEffect)(() => {
+		localStorage.setItem("inventory_materials", JSON.stringify(materials));
+	}, [materials]);
+	(0, import_react.useEffect)(() => {
+		localStorage.setItem("inventory_settings", JSON.stringify(settings));
+	}, [settings]);
 	const getLocationsByStreet = (0, import_react.useCallback)((streetId) => locations.filter((l) => l.streetId === streetId), [locations]);
 	const getPalletsByLocation = (0, import_react.useCallback)((locationId) => pallets.filter((p) => p.locationId === locationId), [pallets]);
 	const getLocationStatus = (0, import_react.useCallback)((locationId) => {
@@ -25765,6 +25978,27 @@ const InventoryProvider = ({ children }) => {
 		setLocations((prev) => prev.filter((l) => l.id !== id));
 		setPallets((prev) => prev.filter((p) => p.locationId !== id));
 	};
+	const addMaterial = (material) => {
+		setMaterials((prev) => [...prev, {
+			...material,
+			id: crypto.randomUUID()
+		}]);
+	};
+	const updateMaterial = (id, updates) => {
+		setMaterials((prev) => prev.map((m) => m.id === id ? {
+			...m,
+			...updates
+		} : m));
+	};
+	const deleteMaterial = (id) => {
+		setMaterials((prev) => prev.filter((m) => m.id !== id));
+	};
+	const updateSettings = (updates) => {
+		setSettings((prev) => ({
+			...prev,
+			...updates
+		}));
+	};
 	const addPallet = (palletData) => {
 		const newPallet = {
 			...palletData,
@@ -25781,13 +26015,10 @@ const InventoryProvider = ({ children }) => {
 		} : p));
 	};
 	const movePallet = (id, newLocationId) => {
-		setPallets((prev) => prev.map((p) => {
-			if (p.id === id) return {
-				...p,
-				locationId: newLocationId
-			};
-			return p;
-		}));
+		setPallets((prev) => prev.map((p) => p.id === id ? {
+			...p,
+			locationId: newLocationId
+		} : p));
 	};
 	const removePallet = (id, user) => {
 		const pallet = pallets.find((p) => p.id === id);
@@ -25805,6 +26036,8 @@ const InventoryProvider = ({ children }) => {
 		locations,
 		pallets,
 		history,
+		materials,
+		settings,
 		getLocationsByStreet,
 		getPalletsByLocation,
 		getLocationStatus,
@@ -25816,6 +26049,10 @@ const InventoryProvider = ({ children }) => {
 		addLocation,
 		updateLocation,
 		deleteLocation,
+		addMaterial,
+		updateMaterial,
+		deleteMaterial,
+		updateSettings,
 		addPallet,
 		updatePallet,
 		movePallet,
@@ -25826,6 +26063,8 @@ const InventoryProvider = ({ children }) => {
 		locations,
 		pallets,
 		history,
+		materials,
+		settings,
 		getLocationsByStreet,
 		getPalletsByLocation,
 		getLocationStatus,
@@ -25837,6 +26076,10 @@ const InventoryProvider = ({ children }) => {
 		addLocation,
 		updateLocation,
 		deleteLocation,
+		addMaterial,
+		updateMaterial,
+		deleteMaterial,
+		updateSettings,
 		addPallet,
 		updatePallet,
 		movePallet,
@@ -36492,6 +36735,597 @@ function History() {
 		})] })]
 	});
 }
+function WarehouseTab() {
+	const { streets, getLocationsByStreet, addStreet, updateStreet, deleteStreet, addLocation, updateLocation, deleteLocation } = useInventoryStore();
+	const { toast: toast$2 } = useToast();
+	const [editStreet, setEditStreet] = (0, import_react.useState)(null);
+	const [newStreetName, setNewStreetName] = (0, import_react.useState)("");
+	const [isAddStreetOpen, setIsAddStreetOpen] = (0, import_react.useState)(false);
+	const [editingLocation, setEditingLocation] = (0, import_react.useState)(null);
+	const [newLocation, setNewLocation] = (0, import_react.useState)(null);
+	const handleAddStreet = () => {
+		if (newStreetName.trim()) {
+			addStreet(newStreetName);
+			setNewStreetName("");
+			setIsAddStreetOpen(false);
+			toast$2({ title: "Rua adicionada com sucesso" });
+		}
+	};
+	const handleUpdateStreet = () => {
+		if (editStreet && editStreet.name.trim()) {
+			updateStreet(editStreet.id, editStreet.name);
+			setEditStreet(null);
+			toast$2({ title: "Rua atualizada" });
+		}
+	};
+	const handleAddLocation = () => {
+		if (newLocation && newLocation.name.trim()) {
+			addLocation(newLocation.streetId, newLocation.name);
+			setNewLocation(null);
+			toast$2({ title: "Local adicionado" });
+		}
+	};
+	const handleUpdateLocation = () => {
+		if (editingLocation && editingLocation.name.trim()) {
+			updateLocation(editingLocation.id, editingLocation.name, editingLocation.needsVerification);
+			setEditingLocation(null);
+			toast$2({ title: "Local atualizado" });
+		}
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex justify-between items-center",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+					className: "text-lg font-medium",
+					children: "Estrutura do Armazém"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm text-muted-foreground",
+					children: "Gerencie ruas, prédios e locais de armazenamento."
+				})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
+					open: isAddStreetOpen,
+					onOpenChange: setIsAddStreetOpen,
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTrigger, {
+						asChild: true,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "mr-2 h-4 w-4" }), " Nova Rua"] })
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Adicionar Nova Rua" }) }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "py-4 space-y-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome da Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								value: newStreetName,
+								onChange: (e) => setNewStreetName(e.target.value),
+								placeholder: "Ex: Rua C"
+							})]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+							onClick: handleAddStreet,
+							children: "Salvar"
+						}) })
+					] })]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Accordion, {
+				type: "multiple",
+				className: "w-full space-y-4",
+				children: streets.map((street) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AccordionItem, {
+					value: street.id,
+					className: "border rounded-lg px-4 bg-white",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center justify-between py-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, {
+							className: "hover:no-underline py-2",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								className: "font-semibold text-lg flex items-center",
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Building, { className: "mr-2 h-5 w-5 text-muted-foreground" }),
+									street.name,
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+										className: "ml-2 text-xs font-normal text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-full",
+										children: [getLocationsByStreet(street.id).length, " Locais"]
+									})
+								]
+							})
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center gap-2 mr-4",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								variant: "ghost",
+								size: "icon",
+								onClick: (e) => {
+									e.stopPropagation();
+									setEditStreet(street);
+								},
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-4 w-4" })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
+								asChild: true,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									variant: "ghost",
+									size: "icon",
+									className: "text-destructive hover:text-destructive",
+									onClick: (e) => e.stopPropagation(),
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4" })
+								})
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Rua?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogDescription, { children: [
+								"Esta ação excluirá a rua ",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: street.name }),
+								" ",
+								"e todos os seus locais e materiais associados. Essa ação não pode ser desfeita."
+							] })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+								className: "bg-destructive hover:bg-destructive/90",
+								onClick: () => deleteStreet(street.id),
+								children: "Sim, Excluir"
+							})] })] })] })]
+						})]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, {
+						className: "pb-4 pt-2",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-2 pl-4 border-l-2 border-slate-100 ml-2",
+							children: [getLocationsByStreet(street.id).map((location) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "flex items-center justify-between group p-2 hover:bg-slate-50 rounded-md transition-colors",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex items-center gap-3",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "font-medium",
+										children: location.name
+									}), location.needsVerification && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "ml-2 text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded border border-yellow-200",
+										children: "Verificar"
+									})] })]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+										variant: "ghost",
+										size: "icon",
+										className: "h-8 w-8",
+										onClick: () => setEditingLocation(location),
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-3 w-3" })
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
+										asChild: true,
+										children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+											variant: "ghost",
+											size: "icon",
+											className: "h-8 w-8 text-destructive hover:text-destructive",
+											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-3 w-3" })
+										})
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Local?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogDescription, { children: [
+										"Remover o local ",
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: location.name }),
+										"? Materiais neste local serão perdidos."
+									] })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+										className: "bg-destructive",
+										onClick: () => deleteLocation(location.id),
+										children: "Excluir"
+									})] })] })] })]
+								})]
+							}, location.id)), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+								variant: "outline",
+								size: "sm",
+								className: "w-full mt-2 border-dashed text-muted-foreground hover:text-primary",
+								onClick: () => setNewLocation({
+									streetId: street.id,
+									name: ""
+								}),
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "mr-2 h-3 w-3" }),
+									" Adicionar Local em",
+									" ",
+									street.name
+								]
+							})]
+						})
+					})]
+				}, street.id))
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: !!editStreet,
+				onOpenChange: (open) => !open && setEditStreet(null),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Editar Rua" }) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "py-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome da Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							value: editStreet?.name || "",
+							onChange: (e) => setEditStreet((prev) => prev ? {
+								...prev,
+								name: e.target.value
+							} : null),
+							className: "mt-2"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						onClick: handleUpdateStreet,
+						children: "Salvar Alterações"
+					}) })
+				] })
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: !!newLocation,
+				onOpenChange: (open) => !open && setNewLocation(null),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Novo Local" }) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "py-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome do Local" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							value: newLocation?.name || "",
+							onChange: (e) => setNewLocation((prev) => prev ? {
+								...prev,
+								name: e.target.value
+							} : null),
+							placeholder: "Ex: A-101",
+							className: "mt-2"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						onClick: handleAddLocation,
+						children: "Adicionar"
+					}) })
+				] })
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: !!editingLocation,
+				onOpenChange: (open) => !open && setEditingLocation(null),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Editar Local" }) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "py-4 space-y-4",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								value: editingLocation?.name || "",
+								onChange: (e) => setEditingLocation((prev) => prev ? {
+									...prev,
+									name: e.target.value
+								} : null)
+							})]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center space-x-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Checkbox, {
+								id: "verify-mode",
+								checked: editingLocation?.needsVerification || false,
+								onCheckedChange: (checked) => setEditingLocation((prev) => prev ? {
+									...prev,
+									needsVerification: !!checked
+								} : null)
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, {
+								htmlFor: "verify-mode",
+								children: "Necessita Verificação (Amarelo)"
+							})]
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						onClick: handleUpdateLocation,
+						children: "Salvar Alterações"
+					}) })
+				] })
+			})
+		]
+	});
+}
+function MaterialsTab() {
+	const { materials, addMaterial, updateMaterial, deleteMaterial } = useInventoryStore();
+	const { toast: toast$2 } = useToast();
+	const [searchTerm, setSearchTerm] = (0, import_react.useState)("");
+	const [isAddOpen, setIsAddOpen] = (0, import_react.useState)(false);
+	const [editingMaterial, setEditingMaterial] = (0, import_react.useState)(null);
+	const [formData, setFormData] = (0, import_react.useState)({
+		name: "",
+		type: "TRP",
+		description: ""
+	});
+	const filteredMaterials = materials.filter((m) => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+	const handleSave = () => {
+		if (!formData.name.trim()) return;
+		if (editingMaterial) {
+			updateMaterial(editingMaterial.id, formData);
+			toast$2({ title: "Material atualizado" });
+		} else {
+			addMaterial(formData);
+			toast$2({ title: "Material criado" });
+		}
+		closeDialog();
+	};
+	const closeDialog = () => {
+		setIsAddOpen(false);
+		setEditingMaterial(null);
+		setFormData({
+			name: "",
+			type: "TRP",
+			description: ""
+		});
+	};
+	const openEdit = (material) => {
+		setEditingMaterial(material);
+		setFormData({
+			name: material.name,
+			type: material.type,
+			description: material.description || ""
+		});
+		setIsAddOpen(true);
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col md:flex-row justify-between items-end md:items-center gap-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+					className: "text-lg font-medium",
+					children: "Catálogo de Materiais"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm text-muted-foreground",
+					children: "Base de dados mestre para itens de estoque (TRP/TRD)."
+				})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					onClick: () => setIsAddOpen(true),
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "mr-2 h-4 w-4" }), " Novo Material"]
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-center space-x-2 bg-white p-2 rounded-md border",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { className: "h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+					placeholder: "Buscar material...",
+					value: searchTerm,
+					onChange: (e) => setSearchTerm(e.target.value),
+					className: "border-0 focus-visible:ring-0"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "border rounded-md bg-white",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Table, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableRow, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Nome" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Descrição Padrão" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Tipo" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, {
+						className: "text-right",
+						children: "Ações"
+					})
+				] }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableBody, { children: filteredMaterials.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableRow, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
+					colSpan: 4,
+					className: "text-center py-8 text-muted-foreground",
+					children: "Nenhum material encontrado."
+				}) }) : filteredMaterials.map((material) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableRow, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
+						className: "font-medium",
+						children: material.name
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: material.description }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: `px-2 py-1 rounded text-xs font-bold ${material.type === "TRD" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`,
+						children: material.type
+					}) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
+						className: "text-right",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex justify-end gap-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								variant: "ghost",
+								size: "icon",
+								onClick: () => openEdit(material),
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Pencil, { className: "h-4 w-4" })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialog, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTrigger, {
+								asChild: true,
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+									variant: "ghost",
+									size: "icon",
+									className: "text-destructive",
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { className: "h-4 w-4" })
+								})
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogTitle, { children: "Excluir Material?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogDescription, { children: [
+								"Isso removerá ",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: material.name }),
+								" do catálogo. Itens em estoque não serão afetados, mas a referência será perdida."
+							] })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AlertDialogFooter, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogCancel, { children: "Cancelar" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AlertDialogAction, {
+								className: "bg-destructive",
+								onClick: () => {
+									deleteMaterial(material.id);
+									toast$2({ title: "Material removido" });
+								},
+								children: "Excluir"
+							})] })] })] })]
+						})
+					})
+				] }, material.id)) })] })
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+				open: isAddOpen,
+				onOpenChange: (open) => !open && closeDialog(),
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: editingMaterial ? "Editar Material" : "Novo Material" }) }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-4 py-4",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "space-y-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome do Material" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									value: formData.name,
+									onChange: (e) => setFormData({
+										...formData,
+										name: e.target.value
+									}),
+									placeholder: "Ex: Motor Elétrico"
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "space-y-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Descrição Padrão" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+									value: formData.description,
+									onChange: (e) => setFormData({
+										...formData,
+										description: e.target.value
+									}),
+									placeholder: "Ex: Especificações técnicas..."
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "space-y-2",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Tipo Padrão" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+									value: formData.type,
+									onValueChange: (v) => setFormData({
+										...formData,
+										type: v
+									}),
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, {}) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: "TRP",
+										children: "TRP (Entrada)"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+										value: "TRD",
+										children: "TRD (Rua)"
+									})] })]
+								})]
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogFooter, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						onClick: handleSave,
+						children: "Salvar"
+					}) })
+				] })
+			})
+		]
+	});
+}
+function SystemTab() {
+	const { settings, updateSettings } = useInventoryStore();
+	const { toast: toast$2 } = useToast();
+	const [formData, setFormData] = (0, import_react.useState)(settings);
+	const handleSave = () => {
+		updateSettings(formData);
+		toast$2({
+			title: "Configurações Salvas",
+			description: "As alterações foram aplicadas ao sistema."
+		});
+	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
+				className: "text-lg font-medium",
+				children: "Preferências do Sistema"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-sm text-muted-foreground",
+				children: "Configurações globais e parâmetros de alerta."
+			})] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "grid md:grid-cols-2 gap-6",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Identidade" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Nome exibido no cabeçalho e relatórios." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
+					className: "space-y-4",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Nome do Sistema" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							value: formData.systemName,
+							onChange: (e) => setFormData({
+								...formData,
+								systemName: e.target.value
+							})
+						})]
+					})
+				})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Limites e Alertas" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Defina quando o sistema deve alertar os operadores." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
+					className: "space-y-4",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Alerta de Estoque Baixo (Qtd)" }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								type: "number",
+								value: formData.lowStockThreshold,
+								onChange: (e) => setFormData({
+									...formData,
+									lowStockThreshold: parseInt(e.target.value) || 0
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: "Materiais com quantidade abaixo deste valor serão marcados em vermelho."
+							})
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label, { children: "Alerta de Ocupação da Rua (%)" }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								type: "number",
+								value: formData.highOccupancyThreshold,
+								onChange: (e) => setFormData({
+									...formData,
+									highOccupancyThreshold: parseInt(e.target.value) || 0
+								})
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground",
+								children: "Ruas com ocupação acima deste valor serão marcadas como críticas."
+							})
+						]
+					})]
+				})] })]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "flex justify-end",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					onClick: handleSave,
+					size: "lg",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Save, { className: "mr-2 h-4 w-4" }), " Salvar Configurações Globais"]
+				})
+			})
+		]
+	});
+}
+function Settings() {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		className: "space-y-6 animate-fade-in pb-10",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-3 border-b pb-6",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "p-2 bg-slate-100 rounded-lg",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Settings$1, { className: "h-8 w-8 text-primary" })
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+				className: "text-3xl font-bold tracking-tight text-slate-900",
+				children: "Configurações Globais"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-muted-foreground",
+				children: "Gerenciamento centralizado do sistema Estoque Classe 2."
+			})] })]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Tabs, {
+			defaultValue: "warehouse",
+			className: "space-y-6",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsList, {
+					className: "grid w-full grid-cols-3 h-14 bg-slate-100 p-1",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
+							value: "warehouse",
+							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LayoutGrid, { className: "mr-2 h-4 w-4" }), " Ruas e Prédios"]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
+							value: "materials",
+							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Database, { className: "mr-2 h-4 w-4" }), " Catálogo de Materiais"]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
+							value: "system",
+							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, { className: "mr-2 h-4 w-4" }), " Preferências"]
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
+					value: "warehouse",
+					className: "animate-fade-in-up",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(WarehouseTab, {})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
+					value: "materials",
+					className: "animate-fade-in-up",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MaterialsTab, {})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
+					value: "system",
+					className: "animate-fade-in-up",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SystemTab, {})
+				})
+			]
+		})]
+	});
+}
 var NotFound = () => {
 	const location = useLocation();
 	(0, import_react.useEffect)(() => {
@@ -37011,6 +37845,11 @@ var items = [
 		icon: Truck
 	},
 	{
+		title: "Configurações",
+		url: "/settings",
+		icon: Settings$1
+	},
+	{
 		title: "Como Funciona",
 		url: "/how-it-works",
 		icon: Info
@@ -37112,6 +37951,7 @@ function Layout() {
 		if (decoded === "location") return "Localização";
 		if (decoded === "movements") return "Entrada/Saída";
 		if (decoded === "history") return "Histórico";
+		if (decoded === "settings") return "Configurações";
 		return decoded.charAt(0).toUpperCase() + decoded.slice(1);
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SidebarProvider, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AppSidebar, {}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SidebarInset, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("header", {
@@ -37198,6 +38038,10 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(InventoryProvider, {
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
 					path: "/history",
 					element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(History, {})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
+					path: "/settings",
+					element: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Settings, {})
 				})
 			]
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Route, {
@@ -37209,4 +38053,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(InventoryProvider, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-CwAa-GPo.js.map
+//# sourceMappingURL=index-Clr2igsp.js.map

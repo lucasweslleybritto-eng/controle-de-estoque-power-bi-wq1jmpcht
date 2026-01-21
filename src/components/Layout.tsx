@@ -28,6 +28,7 @@ export default function Layout() {
     if (decoded === 'location') return 'Localização'
     if (decoded === 'movements') return 'Entrada/Saída'
     if (decoded === 'history') return 'Histórico'
+    if (decoded === 'settings') return 'Configurações'
     return decoded.charAt(0).toUpperCase() + decoded.slice(1)
   }
 

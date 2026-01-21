@@ -732,11 +732,17 @@ section[aria-label='Notifications alt+T'] {
 .ml-1{
   margin-left: 0.25rem;
 }
+.ml-2{
+  margin-left: 0.5rem;
+}
 .ml-auto{
   margin-left: auto;
 }
 .mr-2{
   margin-right: 0.5rem;
+}
+.mr-4{
+  margin-right: 1rem;
 }
 .mt-1{
   margin-top: 0.25rem;
@@ -1136,6 +1142,9 @@ section[aria-label='Notifications alt+T'] {
 .grid-cols-2{
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.grid-cols-3{
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .flex-row{
   flex-direction: row;
 }
@@ -1162,6 +1171,9 @@ section[aria-label='Notifications alt+T'] {
 }
 .justify-start{
   justify-content: flex-start;
+}
+.justify-end{
+  justify-content: flex-end;
 }
 .justify-center{
   justify-content: center;
@@ -1316,6 +1328,9 @@ section[aria-label='Notifications alt+T'] {
 .border-l{
   border-left-width: 1px;
 }
+.border-l-2{
+  border-left-width: 2px;
+}
 .border-l-4{
   border-left-width: 4px;
 }
@@ -1360,8 +1375,16 @@ section[aria-label='Notifications alt+T'] {
 .border-sidebar-border{
   border-color: hsl(var(--sidebar-border));
 }
+.border-slate-100{
+  --tw-border-opacity: 1;
+  border-color: rgb(241 245 249 / var(--tw-border-opacity, 1));
+}
 .border-transparent{
   border-color: transparent;
+}
+.border-yellow-200{
+  --tw-border-opacity: 1;
+  border-color: rgb(254 240 138 / var(--tw-border-opacity, 1));
 }
 .border-yellow-300{
   --tw-border-opacity: 1;
@@ -2377,17 +2400,26 @@ section[aria-label='Notifications alt+T'] {
   --tw-text-opacity: 1;
   color: rgb(29 78 216 / var(--tw-text-opacity, 1));
 }
+.hover\:text-destructive:hover{
+  color: hsl(var(--destructive));
+}
 .hover\:text-foreground:hover{
   color: hsl(var(--foreground));
 }
 .hover\:text-muted-foreground:hover{
   color: hsl(var(--muted-foreground));
 }
+.hover\:text-primary:hover{
+  color: hsl(var(--primary));
+}
 .hover\:text-sidebar-accent-foreground:hover{
   color: hsl(var(--sidebar-accent-foreground));
 }
 .hover\:underline:hover{
   text-decoration-line: underline;
+}
+.hover\:no-underline:hover{
+  text-decoration-line: none;
 }
 .hover\:opacity-100:hover{
   opacity: 1;
@@ -2438,6 +2470,11 @@ section[aria-label='Notifications alt+T'] {
 .focus-visible\:outline-none:focus-visible{
   outline: 2px solid transparent;
   outline-offset: 2px;
+}
+.focus-visible\:ring-0:focus-visible{
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
 .focus-visible\:ring-1:focus-visible{
   --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
@@ -2672,6 +2709,10 @@ section[aria-label='Notifications alt+T'] {
 .data-\[state\=active\]\:bg-red-100[data-state="active"]{
   --tw-bg-opacity: 1;
   background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+.data-\[state\=active\]\:bg-white[data-state="active"]{
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 .data-\[state\=checked\]\:bg-primary[data-state="checked"]{
   background-color: hsl(var(--primary));

@@ -4,8 +4,16 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from 'react'
-import { Street, Location, Pallet, MovementLog, MaterialType } from '@/types'
+import {
+  Street,
+  Location,
+  Pallet,
+  MovementLog,
+  Material,
+  SystemSettings,
+} from '@/types'
 
 // Mock Data Setup
 const INITIAL_STREETS: Street[] = [
@@ -18,6 +26,18 @@ const INITIAL_LOCATIONS: Location[] = [
   { id: 'loc-a-2', streetId: 'rua-a', name: 'A-002', needsVerification: true },
   { id: 'loc-b-1', streetId: 'rua-b', name: 'B-001', needsVerification: false },
 ]
+
+const INITIAL_MATERIALS: Material[] = [
+  { id: 'mat-1', name: 'Motor WEG', type: 'TRD', description: 'Motor 5CV' },
+  { id: 'mat-2', name: 'Cabo 5mm', type: 'TRP', description: 'Bobina' },
+  { id: 'mat-3', name: 'Conector RJ45', type: 'TRP', description: 'Caixa' },
+]
+
+const INITIAL_SETTINGS: SystemSettings = {
+  systemName: 'Estoque Classe 2',
+  lowStockThreshold: 10,
+  highOccupancyThreshold: 80,
+}
 
 const INITIAL_PALLETS: Pallet[] = [
   {
@@ -45,6 +65,8 @@ interface InventoryContextType {
   locations: Location[]
   pallets: Pallet[]
   history: MovementLog[]
+  materials: Material[]
+  settings: SystemSettings
 
   // Getters
   getLocationsByStreet: (streetId: string) => Location[]
@@ -65,11 +87,19 @@ interface InventoryContextType {
   updateLocation: (id: string, name: string, needsVerification: boolean) => void
   deleteLocation: (id: string) => void
 
+  // Material CRUD
+  addMaterial: (material: Omit<Material, 'id'>) => void
+  updateMaterial: (id: string, material: Partial<Material>) => void
+  deleteMaterial: (id: string) => void
+
+  // System Settings
+  updateSettings: (settings: Partial<SystemSettings>) => void
+
   // Pallet/Movement Actions
   addPallet: (pallet: Omit<Pallet, 'id' | 'entryDate'>) => void
   updatePallet: (id: string, updates: Partial<Pallet>) => void
   movePallet: (id: string, newLocationId: string) => void
-  removePallet: (id: string, user: string) => void // Exit
+  removePallet: (id: string, user: string) => void
   clearLocation: (locationId: string) => void
 }
 
@@ -82,10 +112,42 @@ export const InventoryProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  const [streets, setStreets] = useState<Street[]>(INITIAL_STREETS)
-  const [locations, setLocations] = useState<Location[]>(INITIAL_LOCATIONS)
+  // Initialize state from localStorage or defaults
+  const [streets, setStreets] = useState<Street[]>(() => {
+    const saved = localStorage.getItem('inventory_streets')
+    return saved ? JSON.parse(saved) : INITIAL_STREETS
+  })
+  const [locations, setLocations] = useState<Location[]>(() => {
+    const saved = localStorage.getItem('inventory_locations')
+    return saved ? JSON.parse(saved) : INITIAL_LOCATIONS
+  })
+  const [materials, setMaterials] = useState<Material[]>(() => {
+    const saved = localStorage.getItem('inventory_materials')
+    return saved ? JSON.parse(saved) : INITIAL_MATERIALS
+  })
+  const [settings, setSettings] = useState<SystemSettings>(() => {
+    const saved = localStorage.getItem('inventory_settings')
+    return saved ? JSON.parse(saved) : INITIAL_SETTINGS
+  })
   const [pallets, setPallets] = useState<Pallet[]>(INITIAL_PALLETS)
   const [history, setHistory] = useState<MovementLog[]>([])
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem('inventory_streets', JSON.stringify(streets))
+  }, [streets])
+
+  useEffect(() => {
+    localStorage.setItem('inventory_locations', JSON.stringify(locations))
+  }, [locations])
+
+  useEffect(() => {
+    localStorage.setItem('inventory_materials', JSON.stringify(materials))
+  }, [materials])
+
+  useEffect(() => {
+    localStorage.setItem('inventory_settings', JSON.stringify(settings))
+  }, [settings])
 
   // Getters
   const getLocationsByStreet = useCallback(
@@ -155,7 +217,6 @@ export const InventoryProvider = ({
 
   const deleteStreet = (id: string) => {
     setStreets((prev) => prev.filter((s) => s.id !== id))
-    // Cascade delete locations and pallets
     const streetLocations = locations.filter((l) => l.streetId === id)
     const streetLocationIds = streetLocations.map((l) => l.id)
     setLocations((prev) => prev.filter((l) => l.streetId !== id))
@@ -187,6 +248,26 @@ export const InventoryProvider = ({
     setPallets((prev) => prev.filter((p) => p.locationId !== id))
   }
 
+  // Material CRUD
+  const addMaterial = (material: Omit<Material, 'id'>) => {
+    setMaterials((prev) => [...prev, { ...material, id: crypto.randomUUID() }])
+  }
+
+  const updateMaterial = (id: string, updates: Partial<Material>) => {
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+    )
+  }
+
+  const deleteMaterial = (id: string) => {
+    setMaterials((prev) => prev.filter((m) => m.id !== id))
+  }
+
+  // Settings
+  const updateSettings = (updates: Partial<SystemSettings>) => {
+    setSettings((prev) => ({ ...prev, ...updates }))
+  }
+
   // Pallet Actions
   const addPallet = (palletData: Omit<Pallet, 'id' | 'entryDate'>) => {
     const newPallet: Pallet = {
@@ -206,15 +287,7 @@ export const InventoryProvider = ({
 
   const movePallet = (id: string, newLocationId: string) => {
     setPallets((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          // Ideally log move? Requirement says Movement History for Entry/Exit.
-          // We can treat move as simple update for now or specialized log if needed.
-          // But strict requirement is Entry/Exit.
-          return { ...p, locationId: newLocationId }
-        }
-        return p
-      }),
+      prev.map((p) => (p.id === id ? { ...p, locationId: newLocationId } : p)),
     )
   }
 
@@ -238,6 +311,8 @@ export const InventoryProvider = ({
       locations,
       pallets,
       history,
+      materials,
+      settings,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
@@ -249,6 +324,10 @@ export const InventoryProvider = ({
       addLocation,
       updateLocation,
       deleteLocation,
+      addMaterial,
+      updateMaterial,
+      deleteMaterial,
+      updateSettings,
       addPallet,
       updatePallet,
       movePallet,
@@ -260,6 +339,8 @@ export const InventoryProvider = ({
       locations,
       pallets,
       history,
+      materials,
+      settings,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
@@ -271,6 +352,10 @@ export const InventoryProvider = ({
       addLocation,
       updateLocation,
       deleteLocation,
+      addMaterial,
+      updateMaterial,
+      deleteMaterial,
+      updateSettings,
       addPallet,
       updatePallet,
       movePallet,

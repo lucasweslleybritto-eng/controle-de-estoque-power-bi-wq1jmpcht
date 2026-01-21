@@ -5,6 +5,7 @@ import {
   Truck,
   ArrowLeftRight,
   History,
+  Settings,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -45,6 +46,11 @@ const items = [
     title: 'Equipamentos',
     url: '/equipment',
     icon: Truck,
+  },
+  {
+    title: 'Configurações',
+    url: '/settings',
+    icon: Settings,
   },
   {
     title: 'Como Funciona',

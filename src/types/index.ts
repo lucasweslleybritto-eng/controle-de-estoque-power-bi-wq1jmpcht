@@ -1,7 +1,6 @@
 export interface Street {
   id: string
   name: string
-  // Removing fixed totalSlots in favor of dynamic locations
 }
 
 export interface Location {
@@ -12,6 +11,19 @@ export interface Location {
 }
 
 export type MaterialType = 'TRP' | 'TRD'
+
+export interface Material {
+  id: string
+  name: string
+  type: MaterialType
+  description?: string
+}
+
+export interface SystemSettings {
+  systemName: string
+  lowStockThreshold: number
+  highOccupancyThreshold: number
+}
 
 export interface Pallet {
   id: string

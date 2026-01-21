@@ -15,6 +15,8 @@ import {
   SystemSettings,
   Equipment,
   LogType,
+  User,
+  UserRole,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -27,6 +29,9 @@ interface InventoryContextType {
   materials: Material[]
   equipments: Equipment[]
   settings: SystemSettings
+  users: User[]
+  currentUser: User | null
+  alerts: Array<{ id: string; message: string; type: 'low-stock' | 'system' }>
 
   // Getters
   getLocationsByStreet: (streetId: string) => Location[]
@@ -35,6 +40,8 @@ interface InventoryContextType {
   getStreetName: (streetId: string) => string
   getLocationName: (locationId: string) => string
   getMaterialImage: (materialName: string) => string | undefined
+  getMaterialTotalStock: (materialId: string) => number
+  isLowStock: (materialId: string) => boolean
 
   // Street CRUD
   addStreet: (name: string) => void
@@ -58,6 +65,13 @@ interface InventoryContextType {
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void
   deleteEquipment: (id: string) => void
 
+  // User CRUD & Auth
+  login: (userId: string) => void
+  logout: () => void
+  addUser: (user: Omit<User, 'id'>) => void
+  updateUser: (id: string, user: Partial<User>) => void
+  deleteUser: (id: string) => void
+
   // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
 
@@ -80,7 +94,7 @@ export const InventoryProvider = ({
 }) => {
   const { toast } = useToast()
 
-  // Initialize state from Service
+  // Initialize state
   const [streets, setStreets] = useState<Street[]>(() =>
     inventoryService.getStreets(),
   )
@@ -102,8 +116,10 @@ export const InventoryProvider = ({
   const [history, setHistory] = useState<MovementLog[]>(() =>
     inventoryService.getHistory(),
   )
+  const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
-  // Subscription to Service Updates (Real-Time Sync)
+  // Subscription to Service Updates
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
       if (event.type === 'UPDATE') {
@@ -129,10 +145,13 @@ export const InventoryProvider = ({
           case inventoryService.keys.HISTORY:
             setHistory(inventoryService.getHistory())
             break
+          case inventoryService.keys.USERS:
+            setUsers(inventoryService.getUsers())
+            break
         }
       } else if (event.type === 'NOTIFICATION') {
         toast({
-          title: 'Atualização Remota',
+          title: 'Notificação',
           description: event.message,
           variant: event.variant,
         })
@@ -141,7 +160,7 @@ export const InventoryProvider = ({
     return unsubscribe
   }, [toast])
 
-  // Getters
+  // Getters & Helpers
   const getLocationsByStreet = useCallback(
     (streetId: string) => locations.filter((l) => l.streetId === streetId),
     [locations],
@@ -180,18 +199,44 @@ export const InventoryProvider = ({
     [materials],
   )
 
+  const getMaterialTotalStock = useCallback(
+    (materialId: string) => {
+      return pallets
+        .filter((p) => p.materialId === materialId)
+        .reduce((sum, p) => sum + p.quantity, 0)
+    },
+    [pallets],
+  )
+
+  const isLowStock = useCallback(
+    (materialId: string) => {
+      const material = materials.find((m) => m.id === materialId)
+      if (!material || material.minStock === undefined) return false
+      const total = getMaterialTotalStock(materialId)
+      return total <= material.minStock
+    },
+    [materials, getMaterialTotalStock],
+  )
+
+  const alerts = useMemo(() => {
+    const stockAlerts = materials
+      .filter((m) => isLowStock(m.id))
+      .map((m) => ({
+        id: `low-${m.id}`,
+        message: `Estoque baixo: ${m.name} (${getMaterialTotalStock(m.id)} unidades)`,
+        type: 'low-stock' as const,
+      }))
+    return stockAlerts
+  }, [materials, isLowStock, getMaterialTotalStock])
+
   const _persistHistory = (logs: MovementLog[]) => {
     setHistory(logs)
     inventoryService.saveHistory(logs)
   }
 
-  // Helper to add logs (Internal)
   const addLog = (
     type: LogType,
-    params: {
-      pallet?: Pallet
-      details?: string
-    },
+    params: { pallet?: Pallet; details?: string },
     user: string = 'Sistema',
   ) => {
     const { pallet, details } = params
@@ -238,12 +283,48 @@ export const InventoryProvider = ({
     _persistHistory(newHistory)
   }
 
-  // Street CRUD
+  // Auth Actions
+  const login = (userId: string) => {
+    const user = users.find((u) => u.id === userId)
+    if (user) {
+      setCurrentUser(user)
+      toast({ title: `Bem-vindo, ${user.name}` })
+    }
+  }
+
+  const logout = () => {
+    setCurrentUser(null)
+    toast({ title: 'Logout realizado' })
+  }
+
+  const addUser = (userData: Omit<User, 'id'>) => {
+    const newUsers = [...users, { ...userData, id: crypto.randomUUID() }]
+    setUsers(newUsers)
+    inventoryService.saveUsers(newUsers)
+  }
+
+  const updateUser = (id: string, updates: Partial<User>) => {
+    const newUsers = users.map((u) => (u.id === id ? { ...u, ...updates } : u))
+    setUsers(newUsers)
+    inventoryService.saveUsers(newUsers)
+  }
+
+  const deleteUser = (id: string) => {
+    const newUsers = users.filter((u) => u.id !== id)
+    setUsers(newUsers)
+    inventoryService.saveUsers(newUsers)
+  }
+
+  // CRUD Actions
   const addStreet = (name: string) => {
     const newStreets = [...streets, { id: crypto.randomUUID(), name }]
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
-    addLog('SYSTEM', { details: `Rua criada: ${name}` }, 'Gerente')
+    addLog(
+      'SYSTEM',
+      { details: `Rua criada: ${name}` },
+      currentUser?.name || 'Gerente',
+    )
     inventoryService.notifyEvent(`Nova rua criada: ${name}`)
   }
 
@@ -255,9 +336,8 @@ export const InventoryProvider = ({
     addLog(
       'SYSTEM',
       { details: `Rua renomeada: ${oldName} -> ${name}` },
-      'Gerente',
+      currentUser?.name || 'Gerente',
     )
-    inventoryService.notifyEvent(`Rua ${oldName} renomeada para ${name}`)
   }
 
   const deleteStreet = (id: string) => {
@@ -266,7 +346,6 @@ export const InventoryProvider = ({
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
 
-    // Cleanup dependencies
     const streetLocations = locations.filter((l) => l.streetId === id)
     const streetLocationIds = streetLocations.map((l) => l.id)
     const newLocations = locations.filter((l) => l.streetId !== id)
@@ -279,7 +358,11 @@ export const InventoryProvider = ({
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
 
-    addLog('SYSTEM', { details: `Rua excluída: ${streetName}` }, 'Gerente')
+    addLog(
+      'SYSTEM',
+      { details: `Rua excluída: ${streetName}` },
+      currentUser?.name || 'Gerente',
+    )
     inventoryService.notifyEvent(`Rua ${streetName} excluída`, 'destructive')
   }
 
@@ -297,16 +380,8 @@ export const InventoryProvider = ({
     ]
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
-    addLog(
-      'SYSTEM',
-      {
-        details: `Rua ${newStreets[swapIndex].name} reordenada (${direction})`,
-      },
-      'Gerente',
-    )
   }
 
-  // Location CRUD
   const addLocation = (streetId: string, name: string) => {
     const street = streets.find((s) => s.id === streetId)
     const newLocations = [
@@ -318,9 +393,8 @@ export const InventoryProvider = ({
     addLog(
       'SYSTEM',
       { details: `Local ${name} criado na rua ${street?.name}` },
-      'Gerente',
+      currentUser?.name || 'Gerente',
     )
-    inventoryService.notifyEvent(`Novo local ${name} em ${street?.name}`)
   }
 
   const updateLocation = (id: string, name: string) => {
@@ -333,7 +407,7 @@ export const InventoryProvider = ({
     addLog(
       'SYSTEM',
       { details: `Local renomeado: ${oldName} -> ${name}` },
-      'Gerente',
+      currentUser?.name || 'Gerente',
     )
   }
 
@@ -346,8 +420,11 @@ export const InventoryProvider = ({
     const newPallets = pallets.filter((p) => p.locationId !== id)
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
-    addLog('SYSTEM', { details: `Local excluído: ${locName}` }, 'Gerente')
-    inventoryService.notifyEvent(`Local ${locName} excluído`, 'destructive')
+    addLog(
+      'SYSTEM',
+      { details: `Local excluído: ${locName}` },
+      currentUser?.name || 'Gerente',
+    )
   }
 
   const moveLocation = (locationId: string, direction: 'up' | 'down') => {
@@ -372,11 +449,6 @@ export const InventoryProvider = ({
     const newLocations = [...otherLocations, ...streetLocations]
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
-    addLog(
-      'SYSTEM',
-      { details: `Local ${location.name} reordenado (${direction})` },
-      'Gerente',
-    )
   }
 
   const changeLocationStreet = (locationId: string, newStreetId: string) => {
@@ -392,14 +464,10 @@ export const InventoryProvider = ({
       {
         details: `Local ${loc?.name} movido para rua ${newStreet?.name}`,
       },
-      'Gerente',
-    )
-    inventoryService.notifyEvent(
-      `Local ${loc?.name} movido para ${newStreet?.name}`,
+      currentUser?.name || 'Gerente',
     )
   }
 
-  // Material CRUD
   const addMaterial = (material: Omit<Material, 'id'>) => {
     const newMaterials = [
       ...materials,
@@ -423,7 +491,6 @@ export const InventoryProvider = ({
     inventoryService.saveMaterials(newMaterials)
   }
 
-  // Equipment CRUD
   const addEquipment = (equipment: Omit<Equipment, 'id'>) => {
     const newEquipments = [
       ...equipments,
@@ -439,7 +506,6 @@ export const InventoryProvider = ({
     inventoryService.saveEquipments(newEquipments)
   }
 
-  // Settings
   const updateSettings = (updates: Partial<SystemSettings>) => {
     const newSettings = { ...settings, ...updates }
     setSettings(newSettings)
@@ -447,11 +513,10 @@ export const InventoryProvider = ({
     addLog(
       'SYSTEM',
       { details: 'Configurações do sistema atualizadas' },
-      'Admin',
+      currentUser?.name || 'Admin',
     )
   }
 
-  // Pallet Actions
   const addPallet = (
     palletData: Omit<Pallet, 'id' | 'entryDate'>,
     user: string = 'Operador',
@@ -484,7 +549,6 @@ export const InventoryProvider = ({
     )
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
-    // Could log update if needed
   }
 
   const movePallet = (id: string, newLocationId: string) => {
@@ -512,7 +576,7 @@ export const InventoryProvider = ({
   const clearLocation = (locationId: string) => {
     const locationPallets = pallets.filter((p) => p.locationId === locationId)
     locationPallets.forEach((p) =>
-      addLog('EXIT', { pallet: p }, 'Sistema - Esvaziar'),
+      addLog('EXIT', { pallet: p }, currentUser?.name || 'Sistema - Esvaziar'),
     )
 
     const newPallets = pallets.filter((p) => p.locationId !== locationId)
@@ -530,12 +594,17 @@ export const InventoryProvider = ({
       materials,
       equipments,
       settings,
+      users,
+      currentUser,
+      alerts,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
       getStreetName,
       getLocationName,
       getMaterialImage,
+      getMaterialTotalStock,
+      isLowStock,
       addStreet,
       updateStreet,
       deleteStreet,
@@ -550,6 +619,11 @@ export const InventoryProvider = ({
       deleteMaterial,
       addEquipment,
       deleteEquipment,
+      login,
+      logout,
+      addUser,
+      updateUser,
+      deleteUser,
       updateSettings,
       addPallet,
       updatePallet,
@@ -565,12 +639,17 @@ export const InventoryProvider = ({
       materials,
       equipments,
       settings,
+      users,
+      currentUser,
+      alerts,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
       getStreetName,
       getLocationName,
       getMaterialImage,
+      getMaterialTotalStock,
+      isLowStock,
       addStreet,
       updateStreet,
       deleteStreet,
@@ -585,6 +664,11 @@ export const InventoryProvider = ({
       deleteMaterial,
       addEquipment,
       deleteEquipment,
+      login,
+      logout,
+      addUser,
+      updateUser,
+      deleteUser,
       updateSettings,
       addPallet,
       updatePallet,

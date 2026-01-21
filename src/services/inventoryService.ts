@@ -6,6 +6,7 @@ import {
   Material,
   SystemSettings,
   Equipment,
+  User,
 } from '@/types'
 
 const KEYS = {
@@ -16,6 +17,7 @@ const KEYS = {
   HISTORY: 'inventory_history',
   EQUIPMENTS: 'inventory_equipments',
   SETTINGS: 'inventory_settings',
+  USERS: 'inventory_users',
 }
 
 const CHANNEL_NAME = 'inventory_sync_channel'
@@ -47,6 +49,7 @@ const INITIAL_MATERIALS: Material[] = [
     type: 'TRD',
     description: 'Tamanho M - Padrão Exército',
     image: 'https://img.usecurling.com/p/200/200?q=camo%20jacket',
+    minStock: 20,
   },
   {
     id: 'mat-2',
@@ -54,6 +57,7 @@ const INITIAL_MATERIALS: Material[] = [
     type: 'TRP',
     description: 'Preto - Tamanho 42',
     image: 'https://img.usecurling.com/p/200/200?q=combat%20boots',
+    minStock: 10,
   },
   {
     id: 'mat-3',
@@ -61,6 +65,7 @@ const INITIAL_MATERIALS: Material[] = [
     type: 'TRP',
     description: 'Verde Oliva',
     image: 'https://img.usecurling.com/p/200/200?q=military%20belt',
+    minStock: 50,
   },
 ]
 
@@ -73,14 +78,29 @@ const INITIAL_EQUIPMENTS: Equipment[] = [
     image: 'https://img.usecurling.com/p/300/200?q=forklift&color=yellow',
     operator: null,
   },
+]
+
+const INITIAL_USERS: User[] = [
   {
-    id: '2',
-    name: 'Paleteira Manual 05',
-    model: 'Standard',
-    status: 'in-use',
-    image:
-      'https://img.usecurling.com/p/300/200?q=hand%20pallet%20truck&color=blue',
-    operator: 'Sd. Silva',
+    id: 'admin-1',
+    name: 'Administrador',
+    email: 'admin@sistema.com',
+    role: 'ADMIN',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1',
+  },
+  {
+    id: 'op-1',
+    name: 'Operador Padrão',
+    email: 'operador@sistema.com',
+    role: 'OPERATOR',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=2',
+  },
+  {
+    id: 'viewer-1',
+    name: 'Visitante',
+    email: 'visitante@sistema.com',
+    role: 'VIEWER',
+    avatar: 'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=3',
   },
 ]
 
@@ -101,16 +121,6 @@ const INITIAL_PALLETS: Pallet[] = [
     type: 'TRD',
     materialId: 'mat-1',
   },
-  {
-    id: 'plt-2',
-    locationId: 'TRP_AREA',
-    materialName: 'Coturno Tático',
-    description: 'Recebimento Pendente',
-    quantity: 20,
-    entryDate: new Date().toISOString(),
-    type: 'TRP',
-    materialId: 'mat-2',
-  },
 ]
 
 class InventoryService {
@@ -120,9 +130,6 @@ class InventoryService {
     this.channel = new BroadcastChannel(CHANNEL_NAME)
   }
 
-  /**
-   * Reads data from storage or returns default
-   */
   private get<T>(key: string, defaultValue: T): T {
     try {
       const data = localStorage.getItem(key)
@@ -133,9 +140,6 @@ class InventoryService {
     }
   }
 
-  /**
-   * Writes data to storage and notifies other instances
-   */
   private set<T>(key: string, value: T) {
     try {
       localStorage.setItem(key, JSON.stringify(value))
@@ -160,9 +164,6 @@ class InventoryService {
     })
   }
 
-  /**
-   * Subscribes to changes from other instances
-   */
   public subscribe(callback: (event: ServiceEvent) => void) {
     const handleMessage = (event: MessageEvent) => {
       if (
@@ -188,7 +189,6 @@ class InventoryService {
     }
   }
 
-  // --- Streets ---
   getStreets(): Street[] {
     return this.get(KEYS.STREETS, INITIAL_STREETS)
   }
@@ -196,7 +196,6 @@ class InventoryService {
     this.set(KEYS.STREETS, data)
   }
 
-  // --- Locations ---
   getLocations(): Location[] {
     return this.get(KEYS.LOCATIONS, INITIAL_LOCATIONS)
   }
@@ -204,7 +203,6 @@ class InventoryService {
     this.set(KEYS.LOCATIONS, data)
   }
 
-  // --- Materials ---
   getMaterials(): Material[] {
     return this.get(KEYS.MATERIALS, INITIAL_MATERIALS)
   }
@@ -212,7 +210,6 @@ class InventoryService {
     this.set(KEYS.MATERIALS, data)
   }
 
-  // --- Pallets (Inventory) ---
   getPallets(): Pallet[] {
     return this.get(KEYS.PALLETS, INITIAL_PALLETS)
   }
@@ -220,7 +217,6 @@ class InventoryService {
     this.set(KEYS.PALLETS, data)
   }
 
-  // --- History ---
   getHistory(): MovementLog[] {
     return this.get(KEYS.HISTORY, [])
   }
@@ -228,7 +224,6 @@ class InventoryService {
     this.set(KEYS.HISTORY, data)
   }
 
-  // --- Equipments ---
   getEquipments(): Equipment[] {
     return this.get(KEYS.EQUIPMENTS, INITIAL_EQUIPMENTS)
   }
@@ -236,7 +231,6 @@ class InventoryService {
     this.set(KEYS.EQUIPMENTS, data)
   }
 
-  // --- Settings ---
   getSettings(): SystemSettings {
     return this.get(KEYS.SETTINGS, INITIAL_SETTINGS)
   }
@@ -244,7 +238,13 @@ class InventoryService {
     this.set(KEYS.SETTINGS, data)
   }
 
-  // Expose Keys for subscription matching
+  getUsers(): User[] {
+    return this.get(KEYS.USERS, INITIAL_USERS)
+  }
+  saveUsers(data: User[]) {
+    this.set(KEYS.USERS, data)
+  }
+
   public get keys() {
     return KEYS
   }

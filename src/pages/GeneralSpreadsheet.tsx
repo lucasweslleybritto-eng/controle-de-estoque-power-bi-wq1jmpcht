@@ -17,7 +17,14 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
-import { Download, Search, FilterX, Trash2 } from 'lucide-react'
+import {
+  Download,
+  Search,
+  FilterX,
+  Trash2,
+  AlertTriangle,
+  ArrowDownCircle,
+} from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -31,16 +38,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { exportToCSV } from '@/lib/utils'
+import { exportToCSV, cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export default function GeneralSpreadsheet() {
-  const { pallets, locations, streets, getLocationName, removePallet } =
-    useInventoryStore()
+  const {
+    pallets,
+    locations,
+    streets,
+    getLocationName,
+    removePallet,
+    currentUser,
+    isLowStock,
+  } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [streetFilter, setStreetFilter] = useState('all')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const { toast } = useToast()
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const getStreetName = (locId: string) => {
     if (locId === 'TRP_AREA') return 'Entrada'
@@ -65,7 +87,7 @@ export default function GeneralSpreadsheet() {
 
   const handleDelete = () => {
     if (deleteId) {
-      removePallet(deleteId, 'Gerente')
+      removePallet(deleteId, currentUser?.name || 'Gerente')
       setDeleteId(null)
     }
   }
@@ -194,46 +216,85 @@ export default function GeneralSpreadsheet() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPallets.map((pallet) => (
-                    <TableRow key={pallet.id} className="hover:bg-slate-50">
-                      <TableCell>
-                        <span className="font-bold text-xs border px-1 rounded bg-slate-100">
-                          {pallet.type}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{pallet.materialName}</div>
-                        <div className="text-xs text-muted-foreground max-w-[200px] truncate">
-                          {pallet.description}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStreetName(pallet.locationId)}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {getLocationName(pallet.locationId)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
-                        {pallet.quantity}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {format(new Date(pallet.entryDate), 'dd/MM/yy HH:mm', {
-                          locale: ptBR,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                          onClick={() => setDeleteId(pallet.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Excluir</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredPallets.map((pallet) => {
+                    const lowStock =
+                      pallet.materialId && isLowStock(pallet.materialId)
+                    return (
+                      <TableRow
+                        key={pallet.id}
+                        className={cn(
+                          'hover:bg-slate-50',
+                          lowStock && 'bg-red-50 hover:bg-red-100/50',
+                        )}
+                      >
+                        <TableCell>
+                          <span className="font-bold text-xs border px-1 rounded bg-slate-100">
+                            {pallet.type}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {lowStock && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Estoque total abaixo do mínimo!</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <div>
+                              <div
+                                className={cn(
+                                  'font-medium',
+                                  lowStock && 'text-red-700',
+                                )}
+                              >
+                                {pallet.materialName}
+                              </div>
+                              <div className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                {pallet.description}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStreetName(pallet.locationId)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {getLocationName(pallet.locationId)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {pallet.quantity}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                          {format(
+                            new Date(pallet.entryDate),
+                            'dd/MM/yy HH:mm',
+                            {
+                              locale: ptBR,
+                            },
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                              onClick={() => setDeleteId(pallet.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>

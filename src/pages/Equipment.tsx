@@ -50,7 +50,8 @@ import { useToast } from '@/hooks/use-toast'
 import logo8BSup from '@/assets/8-b-sup.jpg'
 
 export default function Equipment() {
-  const { equipments, addEquipment, deleteEquipment } = useInventoryStore()
+  const { equipments, addEquipment, deleteEquipment, currentUser } =
+    useInventoryStore()
   const { toast } = useToast()
 
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -60,6 +61,9 @@ export default function Equipment() {
     image: '',
     status: 'available',
   })
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const handleAdd = () => {
     if (!newEquipment.name) {
@@ -110,71 +114,79 @@ export default function Equipment() {
             </p>
           </div>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="shadow-sm">
-              <Plus className="mr-2 h-5 w-5" /> Adicionar Equipamento
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Equipamento</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Nome do Equipamento</Label>
-                <Input
-                  value={newEquipment.name}
-                  onChange={(e) =>
-                    setNewEquipment({ ...newEquipment, name: e.target.value })
-                  }
-                  placeholder="Ex: Empilhadeira Elétrica 03"
-                />
+        {canEdit && (
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="shadow-sm">
+                <Plus className="mr-2 h-5 w-5" /> Adicionar Equipamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Equipamento</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Nome do Equipamento</Label>
+                  <Input
+                    value={newEquipment.name}
+                    onChange={(e) =>
+                      setNewEquipment({ ...newEquipment, name: e.target.value })
+                    }
+                    placeholder="Ex: Empilhadeira Elétrica 03"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Modelo / Detalhes</Label>
+                  <Input
+                    value={newEquipment.model}
+                    onChange={(e) =>
+                      setNewEquipment({
+                        ...newEquipment,
+                        model: e.target.value,
+                      })
+                    }
+                    placeholder="Ex: Toyota 8FBE"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>URL da Imagem</Label>
+                  <Input
+                    value={newEquipment.image}
+                    onChange={(e) =>
+                      setNewEquipment({
+                        ...newEquipment,
+                        image: e.target.value,
+                      })
+                    }
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Status Inicial</Label>
+                  <Select
+                    value={newEquipment.status}
+                    onValueChange={(v) =>
+                      setNewEquipment({ ...newEquipment, status: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Disponível</SelectItem>
+                      <SelectItem value="in-use">Em Uso</SelectItem>
+                      <SelectItem value="maintenance">Manutenção</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Modelo / Detalhes</Label>
-                <Input
-                  value={newEquipment.model}
-                  onChange={(e) =>
-                    setNewEquipment({ ...newEquipment, model: e.target.value })
-                  }
-                  placeholder="Ex: Toyota 8FBE"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>URL da Imagem</Label>
-                <Input
-                  value={newEquipment.image}
-                  onChange={(e) =>
-                    setNewEquipment({ ...newEquipment, image: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Status Inicial</Label>
-                <Select
-                  value={newEquipment.status}
-                  onValueChange={(v) =>
-                    setNewEquipment({ ...newEquipment, status: v })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="available">Disponível</SelectItem>
-                    <SelectItem value="in-use">Em Uso</SelectItem>
-                    <SelectItem value="maintenance">Manutenção</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAdd}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button onClick={handleAdd}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -183,40 +195,42 @@ export default function Equipment() {
             key={eq.id}
             className="overflow-hidden hover:shadow-lg transition-all duration-300 group relative border-muted bg-card"
           >
-            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8 shadow-sm"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Remover Equipamento?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Isso excluirá permanentemente o equipamento{' '}
-                      <strong>{eq.name}</strong>.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive"
-                      onClick={() => {
-                        deleteEquipment(eq.id)
-                        toast({ title: 'Equipamento removido' })
-                      }}
+            {canEdit && (
+              <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-8 w-8 shadow-sm"
                     >
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remover Equipamento?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso excluirá permanentemente o equipamento{' '}
+                        <strong>{eq.name}</strong>.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive"
+                        onClick={() => {
+                          deleteEquipment(eq.id)
+                          toast({ title: 'Equipamento removido' })
+                        }}
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
 
             <div className="aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-900 flex items-center justify-center border-b">
               {eq.image ? (
@@ -302,13 +316,15 @@ export default function Equipment() {
           <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/50">
             <Truck className="h-12 w-12 mx-auto mb-3 opacity-20" />
             <p>Nenhum equipamento cadastrado.</p>
-            <Button
-              variant="link"
-              onClick={() => setIsAddOpen(true)}
-              className="mt-2"
-            >
-              Adicionar o primeiro
-            </Button>
+            {canEdit && (
+              <Button
+                variant="link"
+                onClick={() => setIsAddOpen(true)}
+                className="mt-2"
+              >
+                Adicionar o primeiro
+              </Button>
+            )}
           </div>
         )}
       </div>

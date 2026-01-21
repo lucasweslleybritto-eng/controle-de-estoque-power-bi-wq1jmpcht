@@ -41,6 +41,7 @@ export function WarehouseTab() {
     addLocation,
     updateLocation,
     deleteLocation,
+    currentUser,
   } = useInventoryStore()
   const { toast } = useToast()
 
@@ -59,6 +60,9 @@ export function WarehouseTab() {
     streetId: string
     name: string
   } | null>(null)
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const handleAddStreet = () => {
     if (newStreetName.trim()) {
@@ -102,29 +106,31 @@ export function WarehouseTab() {
             Gerencie ruas, prédios e locais de armazenamento.
           </p>
         </div>
-        <Dialog open={isAddStreetOpen} onOpenChange={setIsAddStreetOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Nova Rua
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Adicionar Nova Rua</DialogTitle>
-            </DialogHeader>
-            <div className="py-4 space-y-2">
-              <Label>Nome da Rua</Label>
-              <Input
-                value={newStreetName}
-                onChange={(e) => setNewStreetName(e.target.value)}
-                placeholder="Ex: Rua C"
-              />
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddStreet}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {canEdit && (
+          <Dialog open={isAddStreetOpen} onOpenChange={setIsAddStreetOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Nova Rua
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Nova Rua</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 space-y-2">
+                <Label>Nome da Rua</Label>
+                <Input
+                  value={newStreetName}
+                  onChange={(e) => setNewStreetName(e.target.value)}
+                  placeholder="Ex: Rua C"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddStreet}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Accordion type="multiple" className="w-full space-y-4">
@@ -144,49 +150,52 @@ export function WarehouseTab() {
                   </span>
                 </span>
               </AccordionTrigger>
-              <div className="flex items-center gap-2 mr-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setEditStreet(street)
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir Rua?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação excluirá a rua <strong>{street.name}</strong>{' '}
-                        e todos os seus locais e materiais associados. Essa ação
-                        não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive hover:bg-destructive/90"
-                        onClick={() => deleteStreet(street.id)}
+              {canEdit && (
+                <div className="flex items-center gap-2 mr-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditStreet(street)
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        Sim, Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Rua?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação excluirá a rua{' '}
+                          <strong>{street.name}</strong> e todos os seus locais
+                          e materiais associados. Essa ação não pode ser
+                          desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive hover:bg-destructive/90"
+                          onClick={() => deleteStreet(street.id)}
+                        >
+                          Sim, Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </div>
             <AccordionContent className="pb-4 pt-2">
               <div className="space-y-2 pl-4 border-l-2 border-slate-100 dark:border-slate-800 ml-2">
@@ -201,58 +210,64 @@ export function WarehouseTab() {
                         <span className="font-medium">{location.name}</span>
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setEditingLocation(location)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir Local?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Remover o local <strong>{location.name}</strong>?
-                              Materiais neste local serão perdidos.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive"
-                              onClick={() => deleteLocation(location.id)}
+                    {canEdit && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setEditingLocation(location)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
                             >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Excluir Local?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Remover o local <strong>{location.name}</strong>
+                                ? Materiais neste local serão perdidos.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive"
+                                onClick={() => deleteLocation(location.id)}
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </div>
                 ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2 border-dashed text-muted-foreground hover:text-primary"
-                  onClick={() =>
-                    setNewLocation({ streetId: street.id, name: '' })
-                  }
-                >
-                  <Plus className="mr-2 h-3 w-3" /> Adicionar Local em{' '}
-                  {street.name}
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 border-dashed text-muted-foreground hover:text-primary"
+                    onClick={() =>
+                      setNewLocation({ streetId: street.id, name: '' })
+                    }
+                  >
+                    <Plus className="mr-2 h-3 w-3" /> Adicionar Local em{' '}
+                    {street.name}
+                  </Button>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

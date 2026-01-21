@@ -15,9 +15,19 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from './ThemeToggle'
+import useInventoryStore from '@/stores/useInventoryStore'
+import Login from '@/pages/Login'
+import { UserNav } from './UserNav'
+import { Notifications } from './Notifications'
 
 export default function Layout() {
+  const { currentUser } = useInventoryStore()
   const location = useLocation()
+
+  if (!currentUser) {
+    return <Login />
+  }
+
   const pathSegments = location.pathname.split('/').filter(Boolean)
 
   const getBreadcrumbName = (segment: string) => {
@@ -30,6 +40,8 @@ export default function Layout() {
     if (decoded === 'movements') return 'Entrada/Saída'
     if (decoded === 'history') return 'Histórico'
     if (decoded === 'settings') return 'Configurações'
+    if (decoded === 'users') return 'Usuários'
+    if (decoded === 'reports') return 'Relatórios'
     return decoded.charAt(0).toUpperCase() + decoded.slice(1)
   }
 
@@ -74,8 +86,10 @@ export default function Layout() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="mr-4">
+          <div className="mr-4 flex items-center gap-2">
+            <Notifications />
             <ThemeToggle />
+            <UserNav />
           </div>
         </header>
         <div className="flex-1 flex flex-col p-4 md:p-8 max-w-[100vw] overflow-x-hidden bg-background">

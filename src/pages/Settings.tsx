@@ -8,8 +8,12 @@ import {
   LayoutGrid,
   Sliders,
 } from 'lucide-react'
+import useInventoryStore from '@/stores/useInventoryStore'
 
 export default function Settings() {
+  const { currentUser } = useInventoryStore()
+  const isAdmin = currentUser?.role === 'ADMIN'
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex items-center gap-3 border-b pb-6">
@@ -27,7 +31,6 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="warehouse" className="space-y-6">
-        {/* Improved mobile responsiveness for TabsList */}
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto md:h-14 bg-muted p-1 gap-1">
           <TabsTrigger
             value="warehouse"
@@ -41,12 +44,14 @@ export default function Settings() {
           >
             <Database className="mr-2 h-4 w-4" /> Catálogo de Materiais
           </TabsTrigger>
-          <TabsTrigger
-            value="system"
-            className="text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0"
-          >
-            <Sliders className="mr-2 h-4 w-4" /> Preferências
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="system"
+              className="text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0"
+            >
+              <Sliders className="mr-2 h-4 w-4" /> Preferências
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="warehouse" className="animate-fade-in-up">
@@ -57,9 +62,11 @@ export default function Settings() {
           <MaterialsTab />
         </TabsContent>
 
-        <TabsContent value="system" className="animate-fade-in-up">
-          <SystemTab />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="system" className="animate-fade-in-up">
+            <SystemTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

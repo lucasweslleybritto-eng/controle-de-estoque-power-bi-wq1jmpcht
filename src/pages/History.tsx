@@ -26,10 +26,15 @@ import { useToast } from '@/hooks/use-toast'
 import { LogType } from '@/types'
 
 export default function History() {
-  const { history } = useInventoryStore()
+  const { history, currentUser } = useInventoryStore()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | LogType>('ALL')
+
+  // RBAC: Maybe allow only Admin/Operator to export?
+  // User Story says Viewer has "Read-only access to inventory and reports".
+  // So Viewer can see history, but typically export is also read-access. We'll allow it.
+  const canExport = true
 
   const filteredHistory = history.filter((log) => {
     // Search in relevant fields including new description
@@ -98,11 +103,11 @@ export default function History() {
   const getTypeBadgeColor = (type: LogType) => {
     switch (type) {
       case 'ENTRY':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
       case 'EXIT':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
       case 'SYSTEM':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -132,9 +137,11 @@ export default function History() {
             Log completo de Entradas, Saídas e Alterações do Sistema.
           </p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={handleExport}>
-          <Download className="h-4 w-4" /> Exportar Histórico
-        </Button>
+        {canExport && (
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
+            <Download className="h-4 w-4" /> Exportar Histórico
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -181,7 +188,7 @@ export default function History() {
         <CardContent className="p-0">
           <div className="rounded-md border-0">
             <Table>
-              <TableHeader className="bg-slate-50/50">
+              <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
                 <TableRow>
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Usuário</TableHead>
@@ -203,7 +210,10 @@ export default function History() {
                   </TableRow>
                 ) : (
                   filteredHistory.map((log) => (
-                    <TableRow key={log.id} className="hover:bg-slate-50">
+                    <TableRow
+                      key={log.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                    >
                       <TableCell className="text-xs font-medium whitespace-nowrap">
                         {format(new Date(log.date), 'dd/MM/yy HH:mm', {
                           locale: ptBR,
@@ -224,7 +234,7 @@ export default function History() {
                       </TableCell>
                       <TableCell className="max-w-[300px]">
                         {log.type === 'SYSTEM' ? (
-                          <span className="flex items-center text-sm text-slate-700">
+                          <span className="flex items-center text-sm text-slate-700 dark:text-slate-300">
                             <AlertCircle className="h-3 w-3 mr-2 text-blue-500" />
                             {log.description}
                           </span>

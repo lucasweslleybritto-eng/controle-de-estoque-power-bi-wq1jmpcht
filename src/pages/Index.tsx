@@ -49,6 +49,7 @@ export default function Index() {
     updateStreet,
     deleteStreet,
     moveStreet,
+    currentUser,
   } = useInventoryStore()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
@@ -58,6 +59,9 @@ export default function Index() {
     id: string
     name: string
   } | null>(null)
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const totalCapacity = locations.length
   const occupiedSlots = pallets.filter(
@@ -123,30 +127,32 @@ export default function Index() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" /> Nova Rua
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Nova Rua</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <Label>Nome da Rua</Label>
-                <Input
-                  value={newStreetName}
-                  onChange={(e) => setNewStreetName(e.target.value)}
-                  placeholder="Ex: Rua A"
-                  className="mt-2"
-                />
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddStreet}>Salvar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {canEdit && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" /> Nova Rua
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar Nova Rua</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <Label>Nome da Rua</Label>
+                  <Input
+                    value={newStreetName}
+                    onChange={(e) => setNewStreetName(e.target.value)}
+                    placeholder="Ex: Rua A"
+                    className="mt-2"
+                  />
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleAddStreet}>Salvar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -214,104 +220,106 @@ export default function Index() {
 
           return (
             <div key={street.id} className="group relative block h-full">
-              <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1">
-                {/* Reordering Controls */}
-                <div className="flex bg-background/80 backdrop-blur-sm rounded-md border shadow-sm mr-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-6 hover:bg-accent rounded-l-md rounded-r-none"
-                    onClick={(e) => handleMoveStreet(street.id, 'up', e)}
-                    disabled={isFirst || searchQuery !== ''}
-                    title="Mover para trás"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="w-[1px] bg-border h-full" />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-6 hover:bg-accent rounded-r-md rounded-l-none"
-                    onClick={(e) => handleMoveStreet(street.id, 'down', e)}
-                    disabled={isLast || searchQuery !== ''}
-                    title="Mover para frente"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              {canEdit && (
+                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap justify-end gap-1">
+                  {/* Reordering Controls */}
+                  <div className="flex bg-background/80 backdrop-blur-sm rounded-md border shadow-sm mr-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-6 hover:bg-accent rounded-l-md rounded-r-none"
+                      onClick={(e) => handleMoveStreet(street.id, 'up', e)}
+                      disabled={isFirst || searchQuery !== ''}
+                      title="Mover para trás"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="w-[1px] bg-border h-full" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-6 hover:bg-accent rounded-r-md rounded-l-none"
+                      onClick={(e) => handleMoveStreet(street.id, 'down', e)}
+                      disabled={isLast || searchQuery !== ''}
+                      title="Mover para frente"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                <Dialog
-                  open={editStreet?.id === street.id}
-                  onOpenChange={(open) => !open && setEditStreet(null)}
-                >
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() =>
-                        setEditStreet({ id: street.id, name: street.name })
-                      }
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Editar Rua</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <Label>Nome</Label>
-                      <Input
-                        value={editStreet?.name || ''}
-                        onChange={(e) =>
-                          setEditStreet((prev) =>
-                            prev ? { ...prev, name: e.target.value } : null,
-                          )
+                  <Dialog
+                    open={editStreet?.id === street.id}
+                    onOpenChange={(open) => !open && setEditStreet(null)}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() =>
+                          setEditStreet({ id: street.id, name: street.name })
                         }
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button onClick={handleUpdateStreet}>Salvar</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir Rua?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso removerá a rua, todas as suas localizações e
-                        materiais alocados.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive hover:bg-destructive/90"
-                        onClick={() => {
-                          deleteStreet(street.id)
-                          toast({
-                            title: 'Rua removida',
-                            variant: 'destructive',
-                          })
-                        }}
                       >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Editar Rua</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Label>Nome</Label>
+                        <Input
+                          value={editStreet?.name || ''}
+                          onChange={(e) =>
+                            setEditStreet((prev) =>
+                              prev ? { ...prev, name: e.target.value } : null,
+                            )
+                          }
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={handleUpdateStreet}>Salvar</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-8 w-8"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Rua?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso removerá a rua, todas as suas localizações e
+                          materiais alocados.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive hover:bg-destructive/90"
+                          onClick={() => {
+                            deleteStreet(street.id)
+                            toast({
+                              title: 'Rua removida',
+                              variant: 'destructive',
+                            })
+                          }}
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
               <Link to={`/street/${street.id}`} className="block h-full">
                 <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-muted group-hover:border-t-primary">
                   <CardHeader className="bg-muted/20 border-b pb-4">

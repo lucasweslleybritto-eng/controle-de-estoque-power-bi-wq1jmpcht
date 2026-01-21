@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -23,17 +23,30 @@ const exitSchema = z.object({
 
 export function ExitForm() {
   const { toast } = useToast()
-  const { pallets, removePallet, getStreetName, getLocationName, locations } =
-    useInventoryStore()
+  const {
+    pallets,
+    removePallet,
+    getStreetName,
+    getLocationName,
+    locations,
+    currentUser,
+  } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedPalletId, setSelectedPalletId] = useState<string | null>(null)
 
   const exitForm = useForm<z.infer<typeof exitSchema>>({
     resolver: zodResolver(exitSchema),
     defaultValues: {
-      user: '',
+      user: currentUser?.name || '',
     },
   })
+
+  // Ensure user is set even if component mounts before user is ready
+  useEffect(() => {
+    if (currentUser?.name) {
+      exitForm.setValue('user', currentUser.name)
+    }
+  }, [currentUser, exitForm])
 
   // Filter matching pallets
   const filteredPallets = pallets.filter((p) => {
@@ -61,7 +74,7 @@ export function ExitForm() {
       title: 'Saída Registrada',
       description: `Material removido do estoque por ${data.user}.`,
     })
-    exitForm.reset({ user: '' })
+    // Don't clear user
     setSelectedPalletId(null)
     setSearchTerm('')
   }
@@ -101,7 +114,7 @@ export function ExitForm() {
 
             {/* Results List */}
             {searchTerm && (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto rounded-md border p-2 bg-slate-50/50">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto rounded-md border p-2 bg-slate-50/50 dark:bg-slate-900/50">
                 {filteredPallets.length === 0 ? (
                   <div className="p-4 text-center text-sm text-muted-foreground">
                     Nenhum material TRD encontrado com esse nome.
@@ -122,8 +135,8 @@ export function ExitForm() {
                         className={cn(
                           'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors',
                           selectedPalletId === p.id
-                            ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
-                            : 'bg-white hover:bg-slate-50',
+                            ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500 dark:bg-blue-900/30 dark:border-blue-500'
+                            : 'bg-white hover:bg-slate-50 dark:bg-card dark:hover:bg-accent',
                         )}
                       >
                         <div className="h-10 w-10 shrink-0 rounded bg-slate-100 flex items-center justify-center overflow-hidden">
@@ -145,7 +158,7 @@ export function ExitForm() {
                             {p.description}
                           </div>
                           <div className="mt-1 flex items-center gap-2 text-xs">
-                            <span className="bg-slate-200 px-1.5 py-0.5 rounded">
+                            <span className="bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded">
                               Qtd: {p.quantity}
                             </span>
                             <span className="text-muted-foreground">
@@ -179,6 +192,8 @@ export function ExitForm() {
               <Input
                 {...exitForm.register('user')}
                 placeholder="Nome do operador"
+                disabled
+                className="bg-muted text-muted-foreground cursor-not-allowed"
               />
               {exitForm.formState.errors.user && (
                 <span className="text-xs text-red-500">

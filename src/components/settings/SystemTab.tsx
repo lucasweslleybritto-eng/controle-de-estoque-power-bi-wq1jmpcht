@@ -14,10 +14,18 @@ import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
 
 export function SystemTab() {
-  const { settings, updateSettings } = useInventoryStore()
+  const { settings, updateSettings, currentUser } = useInventoryStore()
   const { toast } = useToast()
 
   const [formData, setFormData] = useState(settings)
+
+  if (currentUser?.role !== 'ADMIN') {
+    return (
+      <div className="text-center p-8 text-muted-foreground">
+        Acesso restrito a administradores.
+      </div>
+    )
+  }
 
   const handleSave = () => {
     updateSettings(formData)

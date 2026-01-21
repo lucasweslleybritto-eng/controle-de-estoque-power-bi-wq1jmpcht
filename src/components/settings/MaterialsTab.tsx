@@ -50,8 +50,13 @@ import { Material, MaterialType } from '@/types'
 import { fileToBase64 } from '@/lib/utils'
 
 export function MaterialsTab() {
-  const { materials, addMaterial, updateMaterial, deleteMaterial } =
-    useInventoryStore()
+  const {
+    materials,
+    addMaterial,
+    updateMaterial,
+    deleteMaterial,
+    currentUser,
+  } = useInventoryStore()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -63,12 +68,18 @@ export function MaterialsTab() {
     type: MaterialType
     description: string
     image: string
+    minStock: number
   }>({
     name: '',
     type: 'TRP',
     description: '',
     image: '',
+    minStock: 0,
   })
+
+  // RBAC Check
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const filteredMaterials = materials.filter(
     (m) =>
@@ -92,7 +103,13 @@ export function MaterialsTab() {
   const closeDialog = () => {
     setIsAddOpen(false)
     setEditingMaterial(null)
-    setFormData({ name: '', type: 'TRP', description: '', image: '' })
+    setFormData({
+      name: '',
+      type: 'TRP',
+      description: '',
+      image: '',
+      minStock: 0,
+    })
   }
 
   const openEdit = (material: Material) => {
@@ -102,6 +119,7 @@ export function MaterialsTab() {
       type: material.type,
       description: material.description || '',
       image: material.image || '',
+      minStock: material.minStock || 0,
     })
     setIsAddOpen(true)
   }
@@ -110,7 +128,6 @@ export function MaterialsTab() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Simple validation
     if (!file.type.startsWith('image/')) {
       toast({
         variant: 'destructive',
@@ -121,7 +138,6 @@ export function MaterialsTab() {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      // 2MB limit
       toast({
         variant: 'destructive',
         title: 'Arquivo muito grande',
@@ -156,9 +172,11 @@ export function MaterialsTab() {
             Base de dados mestre para itens de estoque (TRP/TRD).
           </p>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Material
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setIsAddOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Material
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center space-x-2 bg-background p-2 rounded-md border">
@@ -178,6 +196,7 @@ export function MaterialsTab() {
               <TableHead className="w-[60px]">Img</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Descrição Padrão</TableHead>
+              <TableHead>Estoque Mín.</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -186,7 +205,7 @@ export function MaterialsTab() {
             {filteredMaterials.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-8 text-muted-foreground"
                 >
                   Nenhum material encontrado.
@@ -213,6 +232,9 @@ export function MaterialsTab() {
                   <TableCell className="font-medium">{material.name}</TableCell>
                   <TableCell>{material.description}</TableCell>
                   <TableCell>
+                    {material.minStock ? material.minStock : '-'}
+                  </TableCell>
+                  <TableCell>
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
                         material.type === 'TRD'
@@ -224,50 +246,51 @@ export function MaterialsTab() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(material)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Excluir Material?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Isso removerá <strong>{material.name}</strong> do
-                              catálogo. Itens em estoque não serão afetados, mas
-                              a referência será perdida.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive"
-                              onClick={() => {
-                                deleteMaterial(material.id)
-                                toast({ title: 'Material removido' })
-                              }}
+                    {canEdit && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(material)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
                             >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Excluir Material?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Isso removerá <strong>{material.name}</strong>{' '}
+                                do catálogo.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive"
+                                onClick={() => {
+                                  deleteMaterial(material.id)
+                                  toast({ title: 'Material removido' })
+                                }}
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -303,6 +326,24 @@ export function MaterialsTab() {
                 }
                 placeholder="Ex: Especificações técnicas..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Estoque Mínimo (Alerta)</Label>
+              <Input
+                type="number"
+                value={formData.minStock}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    minStock: parseInt(e.target.value) || 0,
+                  })
+                }
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">
+                Quantidade mínima para gerar alerta.
+              </p>
             </div>
 
             <div className="space-y-2">

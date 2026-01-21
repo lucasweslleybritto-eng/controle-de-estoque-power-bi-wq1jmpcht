@@ -57,6 +57,7 @@ export default function StreetDetail() {
     deleteLocation,
     moveLocation,
     changeLocationStreet,
+    currentUser,
   } = useInventoryStore()
   const { toast } = useToast()
 
@@ -73,6 +74,9 @@ export default function StreetDetail() {
     locationName: string
   } | null>(null)
   const [targetStreetId, setTargetStreetId] = useState<string>('')
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const street = streets.find((s) => s.id === id)
 
@@ -159,29 +163,31 @@ export default function StreetDetail() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" /> Adicionar Prédio/Local
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Novo Local em {street.name}</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <Label>Nome do Local (Ex: A-101)</Label>
-                <Input
-                  value={newLocationName}
-                  onChange={(e) => setNewLocationName(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddLocation}>Salvar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {canEdit && (
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" /> Adicionar Prédio/Local
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Novo Local em {street.name}</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <Label>Nome do Local (Ex: A-101)</Label>
+                  <Input
+                    value={newLocationName}
+                    onChange={(e) => setNewLocationName(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleAddLocation}>Salvar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
 
           <div className="flex items-center gap-4 bg-card p-3 rounded-lg border shadow-sm">
             <div className="flex items-center space-x-2">
@@ -225,100 +231,104 @@ export default function StreetDetail() {
 
           return (
             <div key={location.id} className="relative group">
-              <div className="absolute top-2 right-2 z-20 flex flex-wrap justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {/* Reordering Controls */}
-                {!isFiltering && (
-                  <div className="flex bg-background/90 backdrop-blur-sm rounded-md border shadow-sm mr-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-5 hover:bg-accent rounded-l-md rounded-r-none"
-                      onClick={(e) =>
-                        handleMoveLocationOrder(location.id, 'up', e)
-                      }
-                      disabled={isFirst}
-                      title="Mover para trás"
-                    >
-                      <ChevronLeft className="h-3 w-3" />
-                    </Button>
-                    <div className="w-[1px] bg-border h-full" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-5 hover:bg-accent rounded-r-md rounded-l-none"
-                      onClick={(e) =>
-                        handleMoveLocationOrder(location.id, 'down', e)
-                      }
-                      disabled={isLast}
-                      title="Mover para frente"
-                    >
-                      <ChevronRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-6 w-6 shadow-sm"
-                  title="Mover para outra Rua"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setMoveLocationDialog({
-                      locationId: location.id,
-                      locationName: location.name,
-                    })
-                  }}
-                >
-                  <ArrowRightCircle className="h-3 w-3" />
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-6 w-6 shadow-sm"
-                  title="Editar Nome"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setEditLocation({
-                      id: location.id,
-                      name: location.name,
-                    })
-                  }}
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="h-6 w-6 shadow-sm"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir Localização?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação removerá o local e todos os materiais contidos
-                        nele.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive"
-                        onClick={() => deleteLocation(location.id)}
+              {canEdit && (
+                <div className="absolute top-2 right-2 z-20 flex flex-wrap justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Reordering Controls */}
+                  {!isFiltering && (
+                    <div className="flex bg-background/90 backdrop-blur-sm rounded-md border shadow-sm mr-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-5 hover:bg-accent rounded-l-md rounded-r-none"
+                        onClick={(e) =>
+                          handleMoveLocationOrder(location.id, 'up', e)
+                        }
+                        disabled={isFirst}
+                        title="Mover para trás"
                       >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                        <ChevronLeft className="h-3 w-3" />
+                      </Button>
+                      <div className="w-[1px] bg-border h-full" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-5 hover:bg-accent rounded-r-md rounded-l-none"
+                        onClick={(e) =>
+                          handleMoveLocationOrder(location.id, 'down', e)
+                        }
+                        disabled={isLast}
+                        title="Mover para frente"
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6 shadow-sm"
+                    title="Mover para outra Rua"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setMoveLocationDialog({
+                        locationId: location.id,
+                        locationName: location.name,
+                      })
+                    }}
+                  >
+                    <ArrowRightCircle className="h-3 w-3" />
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6 shadow-sm"
+                    title="Editar Nome"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setEditLocation({
+                        id: location.id,
+                        name: location.name,
+                      })
+                    }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-6 w-6 shadow-sm"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Excluir Localização?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação removerá o local e todos os materiais
+                          contidos nele.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive"
+                          onClick={() => deleteLocation(location.id)}
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
 
               <Link to={`/location/${location.id}`} className="block">
                 <Button

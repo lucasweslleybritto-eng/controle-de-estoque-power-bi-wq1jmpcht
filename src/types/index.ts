@@ -18,6 +18,7 @@ export interface Material {
   type: MaterialType
   description?: string
   image?: string
+  minStock?: number
 }
 
 export interface SystemSettings {
@@ -45,14 +46,12 @@ export interface MovementLog {
   date: string
   user: string
   type: LogType
-  // Material/Stock specific fields (optional)
   materialType?: MaterialType
   materialName?: string
   quantity?: number
   streetName?: string
   locationName?: string
   image?: string
-  // System specific fields
   description?: string
 }
 
@@ -63,4 +62,14 @@ export interface Equipment {
   image: string
   model?: string
   operator?: string | null
+}
+
+export type UserRole = 'ADMIN' | 'OPERATOR' | 'VIEWER'
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  avatar?: string
 }

@@ -56,11 +56,15 @@ export default function LocationDetail() {
     updatePallet,
     clearLocation,
     getMaterialImage,
+    currentUser,
   } = useInventoryStore()
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedPallet, setSelectedPallet] = useState<any>(null)
   const [editForm, setEditForm] = useState({ quantity: 0, description: '' })
+
+  const canEdit =
+    currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   const location = locations.find((l) => l.id === id)
 
@@ -193,63 +197,67 @@ export default function LocationDetail() {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Dialog
-                                open={isEditOpen}
-                                onOpenChange={setIsEditOpen}
-                              >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                      setSelectedPallet(pallet)
-                                      setEditForm({
-                                        quantity: pallet.quantity,
-                                        description: pallet.description,
-                                      })
-                                    }}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Editar Palete</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4 py-4">
-                                    <div className="space-y-2">
-                                      <Label>Descrição</Label>
-                                      <Input
-                                        value={editForm.description}
-                                        onChange={(e) =>
-                                          setEditForm({
-                                            ...editForm,
-                                            description: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label>Quantidade</Label>
-                                      <Input
-                                        type="number"
-                                        value={editForm.quantity}
-                                        onChange={(e) =>
-                                          setEditForm({
-                                            ...editForm,
-                                            quantity: parseInt(e.target.value),
-                                          })
-                                        }
-                                      />
-                                    </div>
-                                  </div>
-                                  <DialogFooter>
-                                    <Button onClick={handleEdit}>
-                                      Salvar Alterações
+                              {canEdit && (
+                                <Dialog
+                                  open={isEditOpen}
+                                  onOpenChange={setIsEditOpen}
+                                >
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        setSelectedPallet(pallet)
+                                        setEditForm({
+                                          quantity: pallet.quantity,
+                                          description: pallet.description,
+                                        })
+                                      }}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
                                     </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Editar Palete</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="space-y-2">
+                                        <Label>Descrição</Label>
+                                        <Input
+                                          value={editForm.description}
+                                          onChange={(e) =>
+                                            setEditForm({
+                                              ...editForm,
+                                              description: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label>Quantidade</Label>
+                                        <Input
+                                          type="number"
+                                          value={editForm.quantity}
+                                          onChange={(e) =>
+                                            setEditForm({
+                                              ...editForm,
+                                              quantity: parseInt(
+                                                e.target.value,
+                                              ),
+                                            })
+                                          }
+                                        />
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button onClick={handleEdit}>
+                                        Salvar Alterações
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
                             </TableCell>
                           </TableRow>
                         )
@@ -263,42 +271,44 @@ export default function LocationDetail() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-slate-50 dark:bg-slate-900/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Ações Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-start"
-                    disabled={!isOccupied}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" /> Esvaziar Localização
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Isso removerá todos os materiais desta localização. Esta
-                      ação será registrada como SAÍDA no histórico.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleClear}
-                      className="bg-red-600 hover:bg-red-700"
+          {canEdit && (
+            <Card className="bg-slate-50 dark:bg-slate-900/50">
+              <CardHeader>
+                <CardTitle className="text-lg">Ações Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="w-full justify-start"
+                      disabled={!isOccupied}
                     >
-                      Sim, esvaziar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardContent>
-          </Card>
+                      <Trash2 className="h-4 w-4 mr-2" /> Esvaziar Localização
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso removerá todos os materiais desta localização. Esta
+                        ação será registrada como SAÍDA no histórico.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleClear}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Sim, esvaziar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader className="pb-2">

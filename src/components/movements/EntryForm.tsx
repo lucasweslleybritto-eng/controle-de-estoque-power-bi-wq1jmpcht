@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from 'react'
+import { useState, ChangeEvent, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -49,7 +49,8 @@ const entrySchema = z
 
 export function EntryForm() {
   const { toast } = useToast()
-  const { streets, getLocationsByStreet, addPallet } = useInventoryStore()
+  const { streets, getLocationsByStreet, addPallet, currentUser } =
+    useInventoryStore()
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   const entryForm = useForm<z.infer<typeof entrySchema>>({
@@ -59,9 +60,16 @@ export function EntryForm() {
       materialName: '',
       description: '',
       quantity: 1,
-      user: '',
+      user: currentUser?.name || '',
     },
   })
+
+  // Ensure user is set even if component mounts before user is ready (though protected by Layout)
+  useEffect(() => {
+    if (currentUser?.name) {
+      entryForm.setValue('user', currentUser.name)
+    }
+  }, [currentUser, entryForm])
 
   const materialType = entryForm.watch('materialType')
   const selectedStreetId = entryForm.watch('streetId')
@@ -104,7 +112,7 @@ export function EntryForm() {
       materialName: '',
       description: '',
       quantity: 1,
-      user: '',
+      user: currentUser?.name || '',
     })
     setPreviewImage(null)
   }
@@ -269,6 +277,8 @@ export function EntryForm() {
                 <Input
                   {...entryForm.register('user')}
                   placeholder="Nome do operador"
+                  disabled
+                  className="bg-muted text-muted-foreground cursor-not-allowed"
                 />
                 {entryForm.formState.errors.user && (
                   <span className="text-xs text-red-500">
@@ -278,12 +288,12 @@ export function EntryForm() {
               </div>
 
               {/* Preview Section */}
-              <div className="rounded-lg border bg-slate-50 p-4 mt-4">
+              <div className="rounded-lg border bg-slate-50 dark:bg-slate-900/50 p-4 mt-4">
                 <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                   <ImageIcon className="h-4 w-4" /> Pré-visualização
                 </h4>
                 <div className="flex gap-4 items-start">
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-white shadow-sm flex items-center justify-center">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center">
                     {previewImage ? (
                       <img
                         src={previewImage}
@@ -291,7 +301,7 @@ export function EntryForm() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <Upload className="h-8 w-8 text-slate-300" />
+                      <Upload className="h-8 w-8 text-slate-300 dark:text-slate-600" />
                     )}
                   </div>
                   <div className="space-y-1 text-sm">

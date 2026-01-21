@@ -6,6 +6,8 @@ import {
   ArrowLeftRight,
   History,
   Settings,
+  Users,
+  BarChart,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -21,47 +23,65 @@ import {
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import logo8BSup from '@/assets/8-b-sup.jpg'
-
-const items = [
-  {
-    title: 'Dashboard',
-    url: '/',
-    icon: Home,
-  },
-  {
-    title: 'Entrada/Saída',
-    url: '/movements',
-    icon: ArrowLeftRight,
-  },
-  {
-    title: 'Histórico',
-    url: '/history',
-    icon: History,
-  },
-  {
-    title: 'Planilha Geral',
-    url: '/spreadsheet',
-    icon: ClipboardList,
-  },
-  {
-    title: 'Equipamentos',
-    url: '/equipment',
-    icon: Truck,
-  },
-  {
-    title: 'Configurações',
-    url: '/settings',
-    icon: Settings,
-  },
-  {
-    title: 'Como Funciona',
-    url: '/how-it-works',
-    icon: Info,
-  },
-]
+import useInventoryStore from '@/stores/useInventoryStore'
 
 export function AppSidebar() {
   const location = useLocation()
+  const { currentUser } = useInventoryStore()
+
+  const items = [
+    {
+      title: 'Dashboard',
+      url: '/',
+      icon: Home,
+    },
+    {
+      title: 'Entrada/Saída',
+      url: '/movements',
+      icon: ArrowLeftRight,
+    },
+    {
+      title: 'Histórico',
+      url: '/history',
+      icon: History,
+    },
+    {
+      title: 'Planilha Geral',
+      url: '/spreadsheet',
+      icon: ClipboardList,
+    },
+    {
+      title: 'Relatórios',
+      url: '/reports',
+      icon: BarChart,
+    },
+    {
+      title: 'Equipamentos',
+      url: '/equipment',
+      icon: Truck,
+    },
+    {
+      title: 'Configurações',
+      url: '/settings',
+      icon: Settings,
+    },
+    {
+      title: 'Como Funciona',
+      url: '/how-it-works',
+      icon: Info,
+    },
+  ]
+
+  // Add Users menu only for ADMIN
+  if (currentUser?.role === 'ADMIN') {
+    // Insert Users before Settings
+    const settingsIndex = items.findIndex((i) => i.title === 'Configurações')
+    items.splice(settingsIndex, 0, {
+      title: 'Usuários',
+      url: '/users',
+      icon: Users,
+    })
+  }
 
   return (
     <Sidebar collapsible="icon">

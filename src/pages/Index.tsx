@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ChevronLeft,
   ChevronRight,
+  Building,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -103,6 +104,51 @@ export default function Index() {
     e.preventDefault()
     e.stopPropagation()
     moveStreet(id, direction)
+  }
+
+  if (streets.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center animate-fade-in">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-full">
+          <Building className="h-12 w-12 text-slate-400" />
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h2 className="text-2xl font-bold tracking-tight">
+            O armazém está vazio
+          </h2>
+          <p className="text-muted-foreground">
+            Parece que não há ruas cadastradas no momento. Comece criando a
+            estrutura do seu armazém para gerenciar o estoque.
+          </p>
+        </div>
+        {canEdit && (
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="mt-4">
+                <Plus className="mr-2 h-4 w-4" /> Criar Primeira Rua
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Nova Rua</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <Label>Nome da Rua</Label>
+                <Input
+                  value={newStreetName}
+                  onChange={(e) => setNewStreetName(e.target.value)}
+                  placeholder="Ex: Rua A"
+                  className="mt-2"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddStreet}>Criar Rua</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    )
   }
 
   return (

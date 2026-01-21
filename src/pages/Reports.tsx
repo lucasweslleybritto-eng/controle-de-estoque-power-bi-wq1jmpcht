@@ -26,6 +26,7 @@ import {
   ArrowDownRight,
   Download,
   FileText,
+  BarChart3,
 } from 'lucide-react'
 import { format, subDays, startOfDay, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -36,6 +37,8 @@ import { useToast } from '@/hooks/use-toast'
 export default function Reports() {
   const { history, pallets, materials } = useInventoryStore()
   const { toast } = useToast()
+
+  const isEmpty = history.length === 0 && materials.length === 0
 
   // 1. Calculate Stock Value (Total Items)
   const totalItems = pallets.reduce((sum, p) => sum + p.quantity, 0)
@@ -90,6 +93,7 @@ export default function Reports() {
   }).length
 
   const handleExportCSV = () => {
+    if (isEmpty) return
     const reportData = history.map((log) => ({
       Data: format(new Date(log.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
       Tipo: log.type,
@@ -110,6 +114,7 @@ export default function Reports() {
   }
 
   const handleExportPDF = () => {
+    if (isEmpty) return
     window.print()
     toast({
       title: 'Modo Impressão',
@@ -128,14 +133,16 @@ export default function Reports() {
             Visão geral da performance do armazém.
           </p>
         </div>
-        <div className="flex gap-2 print:hidden">
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="mr-2 h-4 w-4" /> Exportar CSV
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            <FileText className="mr-2 h-4 w-4" /> Imprimir / PDF
-          </Button>
-        </div>
+        {!isEmpty && (
+          <div className="flex gap-2 print:hidden">
+            <Button variant="outline" onClick={handleExportCSV}>
+              <Download className="mr-2 h-4 w-4" /> Exportar CSV
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF}>
+              <FileText className="mr-2 h-4 w-4" /> Imprimir / PDF
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-2">
@@ -191,79 +198,102 @@ export default function Reports() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 print:block print:space-y-6">
-        <Card className="print:break-inside-avoid">
-          <CardHeader>
-            <CardTitle>Fluxo de Entrada e Saída (7 Dias)</CardTitle>
-            <CardDescription>
-              Comparativo diário de movimentações.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={movementData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      borderColor: 'hsl(var(--border))',
-                    }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="Entrada"
-                    fill="hsl(var(--chart-2))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="Saida"
-                    fill="hsl(var(--chart-1))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center min-h-[40vh] border rounded-lg bg-slate-50 dark:bg-slate-800/50 text-center p-8">
+          <BarChart3 className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
+          <h3 className="text-xl font-semibold">Sem dados suficientes</h3>
+          <p className="text-muted-foreground max-w-sm mt-2">
+            Comece a adicionar materiais e realizar movimentações para
+            visualizar os gráficos e análises.
+          </p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6 print:block print:space-y-6">
+          <Card className="print:break-inside-avoid">
+            <CardHeader>
+              <CardTitle>Fluxo de Entrada e Saída (7 Dias)</CardTitle>
+              <CardDescription>
+                Comparativo diário de movimentações.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] w-full">
+                {movementData.every((d) => d.Entrada === 0 && d.Saida === 0) ? (
+                  <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                    Nenhuma movimentação recente.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={movementData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          borderColor: 'hsl(var(--border))',
+                        }}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="Entrada"
+                        fill="hsl(var(--chart-2))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Saida"
+                        fill="hsl(var(--chart-1))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="print:break-inside-avoid">
-          <CardHeader>
-            <CardTitle>Top Saídas (Giro de Estoque)</CardTitle>
-            <CardDescription>
-              Materiais com maior volume de saída.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={turnoverData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="name" width={100} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      borderColor: 'hsl(var(--border))',
-                    }}
-                  />
-                  <Bar
-                    dataKey="qtd"
-                    fill="hsl(var(--chart-4))"
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="print:break-inside-avoid">
+            <CardHeader>
+              <CardTitle>Top Saídas (Giro de Estoque)</CardTitle>
+              <CardDescription>
+                Materiais com maior volume de saída.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] w-full">
+                {turnoverData.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                    Nenhuma saída registrada.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={turnoverData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="name" width={100} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          borderColor: 'hsl(var(--border))',
+                        }}
+                      />
+                      <Bar
+                        dataKey="qtd"
+                        fill="hsl(var(--chart-4))"
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

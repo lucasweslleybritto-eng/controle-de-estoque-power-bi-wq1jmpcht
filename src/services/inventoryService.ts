@@ -200,6 +200,44 @@ class InventoryService {
     }
   }
 
+  resetDatabase(currentUserId?: string) {
+    // Clear all data
+    this.set(KEYS.STREETS, [])
+    this.set(KEYS.LOCATIONS, [])
+    this.set(KEYS.MATERIALS, [])
+    this.set(KEYS.PALLETS, [])
+    this.set(KEYS.HISTORY, [])
+    this.set(KEYS.EQUIPMENTS, [])
+    this.set(KEYS.SETTINGS, INITIAL_SETTINGS)
+
+    // Handle Users
+    const currentUsers = this.getUsers()
+    let newUsers: User[] = []
+
+    if (currentUserId) {
+      const currentUser = currentUsers.find((u) => u.id === currentUserId)
+      if (currentUser) {
+        newUsers = [currentUser]
+      }
+    }
+
+    // Fallback if no user is preserved (e.g. somehow deleted or not found)
+    if (newUsers.length === 0) {
+      newUsers = [INITIAL_USERS[0]] // Default Admin
+    }
+
+    this.set(KEYS.USERS, newUsers)
+
+    // Notify all keys to update UI
+    Object.values(KEYS).forEach((key) => this.notifyChange(key))
+
+    this.notifyEvent(
+      'Sistema resetado. Todos os dados foram apagados.',
+      'system',
+      'destructive',
+    )
+  }
+
   getStreets(): Street[] {
     return this.get(KEYS.STREETS, INITIAL_STREETS)
   }

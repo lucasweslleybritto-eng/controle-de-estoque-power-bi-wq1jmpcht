@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Save } from 'lucide-react'
+import { Save, AlertTriangle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,12 +9,25 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
 
 export function SystemTab() {
-  const { settings, updateSettings, currentUser } = useInventoryStore()
+  const { settings, updateSettings, resetSystem, currentUser } =
+    useInventoryStore()
   const { toast } = useToast()
 
   const [formData, setFormData] = useState(settings)
@@ -33,6 +46,10 @@ export function SystemTab() {
       title: 'Configurações Salvas',
       description: 'As alterações foram aplicadas ao sistema.',
     })
+  }
+
+  const handleReset = () => {
+    resetSystem()
   }
 
   return (
@@ -115,6 +132,60 @@ export function SystemTab() {
         <Button onClick={handleSave} size="lg">
           <Save className="mr-2 h-4 w-4" /> Salvar Configurações Globais
         </Button>
+      </div>
+
+      <div className="pt-8 border-t">
+        <h3 className="text-lg font-medium text-destructive mb-4">
+          Zona de Perigo
+        </h3>
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" /> Reset Global do Sistema
+            </CardTitle>
+            <CardDescription>
+              Esta ação apagará <strong>permanentemente</strong> todos os dados
+              do sistema, incluindo:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Todo o histórico de movimentações</li>
+                <li>Todo o catálogo de materiais e equipamentos</li>
+                <li>Todas as ruas e localizações</li>
+                <li>Todos os usuários (exceto você)</li>
+              </ul>
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-end">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Resetar Sistema Completo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Você tem certeza absoluta?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá
+                    permanentemente todos os registros, configurações e dados de
+                    estoque do banco de dados local. O sistema retornará ao
+                    estado inicial vazio.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive hover:bg-destructive/90"
+                    onClick={handleReset}
+                  >
+                    Sim, apagar tudo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   )

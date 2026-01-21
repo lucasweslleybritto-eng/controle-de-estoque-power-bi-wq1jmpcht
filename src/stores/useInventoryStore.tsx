@@ -76,6 +76,7 @@ interface InventoryContextType {
 
   // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
+  resetSystem: () => void
 
   // Pallet/Movement Actions
   addPallet: (
@@ -552,6 +553,11 @@ export const InventoryProvider = ({
     )
   }
 
+  const resetSystem = () => {
+    if (!currentUser) return
+    inventoryService.resetDatabase(currentUser.id)
+  }
+
   const addPallet = (
     palletData: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
     user: string = 'Operador',
@@ -668,6 +674,7 @@ export const InventoryProvider = ({
       deleteUser,
       updateUserPreferences,
       updateSettings,
+      resetSystem,
       addPallet,
       updatePallet,
       movePallet,
@@ -714,6 +721,7 @@ export const InventoryProvider = ({
       deleteUser,
       updateUserPreferences,
       updateSettings,
+      resetSystem,
       addPallet,
       updatePallet,
       movePallet,

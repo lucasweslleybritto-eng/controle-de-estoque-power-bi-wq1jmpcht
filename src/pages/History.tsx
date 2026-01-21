@@ -21,7 +21,7 @@ import { Search, FilterX, Download } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { exportToCSV } from '@/lib/utils'
+import { exportToCSV, cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
 export default function History() {

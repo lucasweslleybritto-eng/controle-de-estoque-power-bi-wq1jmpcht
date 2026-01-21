@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRightCircle,
+  Save,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -97,7 +98,6 @@ export default function StreetDetail() {
     return true
   })
 
-  // Check if filtering is active to disable reordering
   const isFiltering = showEmptyOnly || showOccupiedOnly
 
   const handleAddLocation = () => {
@@ -106,8 +106,8 @@ export default function StreetDetail() {
       setNewLocationName('')
       setIsAddOpen(false)
       toast({
-        title: 'Localização criada',
-        description: `Local ${newLocationName} adicionado à rua.`,
+        title: 'Salvo com sucesso',
+        description: `Local ${newLocationName} adicionado.`,
       })
     }
   }
@@ -116,7 +116,10 @@ export default function StreetDetail() {
     if (editLocation && editLocation.name.trim()) {
       updateLocation(editLocation.id, editLocation.name)
       setEditLocation(null)
-      toast({ title: 'Localização atualizada' })
+      toast({
+        title: 'Alterações salvas',
+        description: 'O nome do local foi atualizado.',
+      })
     }
   }
 
@@ -135,7 +138,7 @@ export default function StreetDetail() {
       changeLocationStreet(moveLocationDialog.locationId, targetStreetId)
       toast({
         title: 'Local Movido',
-        description: `${moveLocationDialog.locationName} movido para outra rua com sucesso.`,
+        description: `${moveLocationDialog.locationName} transferido com sucesso.`,
       })
       setMoveLocationDialog(null)
       setTargetStreetId('')
@@ -183,7 +186,9 @@ export default function StreetDetail() {
                   />
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleAddLocation}>Salvar</Button>
+                  <Button onClick={handleAddLocation}>
+                    <Save className="w-4 h-4 mr-2" /> Salvar
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -233,7 +238,6 @@ export default function StreetDetail() {
             <div key={location.id} className="relative group">
               {canEdit && (
                 <div className="absolute top-2 right-2 z-20 flex flex-wrap justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {/* Reordering Controls */}
                   {!isFiltering && (
                     <div className="flex bg-background/90 backdrop-blur-sm rounded-md border shadow-sm mr-1">
                       <Button
@@ -371,7 +375,6 @@ export default function StreetDetail() {
         })}
       </div>
 
-      {/* Edit Location Dialog */}
       <Dialog
         open={!!editLocation}
         onOpenChange={(open) => !open && setEditLocation(null)}
@@ -394,12 +397,13 @@ export default function StreetDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleUpdateLocation}>Salvar Alterações</Button>
+            <Button onClick={handleUpdateLocation}>
+              <Save className="w-4 h-4 mr-2" /> Salvar Alterações
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Move Location Dialog */}
       <Dialog
         open={!!moveLocationDialog}
         onOpenChange={(open) => !open && setMoveLocationDialog(null)}
@@ -433,7 +437,7 @@ export default function StreetDetail() {
           </div>
           <DialogFooter>
             <Button onClick={handleChangeStreet} disabled={!targetStreetId}>
-              Confirmar Mudança
+              <Save className="w-4 h-4 mr-2" /> Confirmar Mudança
             </Button>
           </DialogFooter>
         </DialogContent>

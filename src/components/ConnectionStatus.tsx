@@ -3,14 +3,8 @@ import {
   CloudOff,
   RefreshCw,
   AlertTriangle,
-  Radio,
   DownloadCloud,
 } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import {
   Popover,
   PopoverContent,
@@ -46,7 +40,7 @@ export function ConnectionStatus() {
   const getStatusLabel = () => {
     switch (syncStatus) {
       case 'syncing':
-        return 'Sincronizando...'
+        return 'Salvando...'
       case 'error':
         return 'Erro de Sincronização'
       case 'offline':

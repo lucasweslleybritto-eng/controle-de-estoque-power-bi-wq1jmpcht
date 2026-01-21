@@ -16,7 +16,6 @@ import {
   Equipment,
   LogType,
   User,
-  UserRole,
   UserPreferences,
   SyncStatus,
 } from '@/types'
@@ -38,7 +37,6 @@ interface InventoryContextType {
   lastSync: Date
   isOnline: boolean
 
-  // Getters
   getLocationsByStreet: (streetId: string) => Location[]
   getPalletsByLocation: (locationId: string) => Pallet[]
   getLocationStatus: (locationId: string) => 'occupied' | 'empty'
@@ -48,20 +46,17 @@ interface InventoryContextType {
   getMaterialTotalStock: (materialId: string) => number
   isLowStock: (materialId: string) => boolean
 
-  // Street CRUD
   addStreet: (name: string) => void
   updateStreet: (id: string, name: string) => void
   deleteStreet: (id: string) => void
   moveStreet: (id: string, direction: 'up' | 'down') => void
 
-  // Location CRUD
   addLocation: (streetId: string, name: string) => void
   updateLocation: (id: string, name: string) => void
   deleteLocation: (id: string) => void
   moveLocation: (locationId: string, direction: 'up' | 'down') => void
   changeLocationStreet: (locationId: string, newStreetId: string) => void
 
-  // Material CRUD
   addMaterial: (material: Omit<Material, 'id'>) => void
   updateMaterial: (id: string, material: Partial<Material>) => void
   deleteMaterial: (id: string) => void
@@ -69,11 +64,9 @@ interface InventoryContextType {
     data: { material: Omit<Material, 'id'>; initialQuantity: number }[],
   ) => void
 
-  // Equipment CRUD
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void
   deleteEquipment: (id: string) => void
 
-  // User CRUD & Auth
   login: (userId: string) => void
   logout: () => void
   addUser: (user: Omit<User, 'id'>) => void
@@ -81,12 +74,10 @@ interface InventoryContextType {
   deleteUser: (id: string) => void
   updateUserPreferences: (prefs: Partial<UserPreferences>) => void
 
-  // System Settings
   updateSettings: (settings: Partial<SystemSettings>) => void
   resetSystem: () => void
   simulateRemoteUpdate: () => void
 
-  // Pallet/Movement Actions
   addPallet: (
     pallet: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
     user?: string,
@@ -108,7 +99,6 @@ export const InventoryProvider = ({
 }) => {
   const { toast } = useToast()
 
-  // Initialize state
   const [streets, setStreets] = useState<Street[]>(() =>
     inventoryService.getStreets(),
   )
@@ -143,7 +133,6 @@ export const InventoryProvider = ({
     inventoryService.getStatus().isOnline,
   )
 
-  // Subscription to Service Updates
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
       if (event.type === 'UPDATE') {
@@ -202,7 +191,6 @@ export const InventoryProvider = ({
     return unsubscribe
   }, [toast, currentUser])
 
-  // Getters & Helpers
   const getLocationsByStreet = useCallback(
     (streetId: string) => locations.filter((l) => l.streetId === streetId),
     [locations],
@@ -330,7 +318,6 @@ export const InventoryProvider = ({
     _persistHistory(newHistory)
   }
 
-  // Auth Actions
   const login = (userId: string) => {
     const user = users.find((u) => u.id === userId)
     if (user) {
@@ -372,7 +359,6 @@ export const InventoryProvider = ({
     setCurrentUser(updatedUser)
   }
 
-  // CRUD Actions
   const addStreet = (name: string) => {
     const newStreets = [...streets, { id: crypto.randomUUID(), name }]
     setStreets(newStreets)
@@ -789,43 +775,6 @@ export const InventoryProvider = ({
       syncStatus,
       lastSync,
       isOnline,
-      getLocationsByStreet,
-      getPalletsByLocation,
-      getLocationStatus,
-      getStreetName,
-      getLocationName,
-      getMaterialImage,
-      getMaterialTotalStock,
-      isLowStock,
-      addStreet,
-      updateStreet,
-      deleteStreet,
-      moveStreet,
-      addLocation,
-      updateLocation,
-      deleteLocation,
-      moveLocation,
-      changeLocationStreet,
-      addMaterial,
-      updateMaterial,
-      deleteMaterial,
-      importMaterials,
-      addEquipment,
-      deleteEquipment,
-      login,
-      logout,
-      addUser,
-      updateUser,
-      deleteUser,
-      updateUserPreferences,
-      updateSettings,
-      resetSystem,
-      simulateRemoteUpdate,
-      addPallet,
-      updatePallet,
-      movePallet,
-      removePallet,
-      clearLocation,
     ],
   )
 

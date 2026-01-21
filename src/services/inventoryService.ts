@@ -150,7 +150,7 @@ class InventoryService {
     window.addEventListener('online', () => {
       this.isOnline = true
       this.setSyncStatus('syncing')
-      setTimeout(() => this.setSyncStatus('synced'), 1500) // Reconnect simulation
+      setTimeout(() => this.setSyncStatus('synced'), 1500)
     })
     window.addEventListener('offline', () => {
       this.isOnline = false
@@ -159,16 +159,17 @@ class InventoryService {
   }
 
   private setupStorageListener() {
+    // Listens for changes in OTHER tabs/windows
     window.addEventListener('storage', (event) => {
       if (event.key && Object.values(KEYS).includes(event.key)) {
-        this.notifyChange(event.key)
+        this.notifyChange(event.key, false) // false = don't re-emit to storage
       }
     })
+
+    // Listens for BroadcastChannel messages
     this.channel.addEventListener('message', (event) => {
       if (event.data?.type === 'UPDATE') {
-        // Trigger UI update
-        // We re-dispatch this to the subscription
-        // The subscription handles the state update
+        // Just trigger the callback, data is already in localStorage
       }
     })
   }
@@ -186,17 +187,19 @@ class InventoryService {
   private set<T>(key: string, value: T) {
     try {
       localStorage.setItem(key, JSON.stringify(value))
-      this.notifyChange(key)
-      this.simulateCloudSync() // Trigger "Cloud" sync on every local write
+      this.notifyChange(key, true)
+      this.simulateCloudSync()
     } catch (error) {
       console.error(`Error writing key ${key}:`, error)
     }
   }
 
-  private notifyChange(key: string) {
-    this.channel.postMessage({ type: 'UPDATE', key })
-    // Also notify current window subscribers (needed for single window reactivity if not using storage event)
-    // Actually, useInventoryStore subscribes to this service.
+  private notifyChange(key: string, emitToChannel = true) {
+    if (emitToChannel) {
+      this.channel.postMessage({ type: 'UPDATE', key })
+    }
+    // We don't need to manually dispatch to subscribers here if they are using the subscription model below
+    // But for single-page reactivity without reload, we need to ensure the store updates
   }
 
   private setSyncStatus(status: SyncStatus) {
@@ -211,10 +214,6 @@ class InventoryService {
     })
   }
 
-  /**
-   * Simulates a network request to synchronize data with a backend.
-   * Prioritizes recent transactions (Last Write Wins strategy implicit in overwrite)
-   */
   private simulateCloudSync() {
     if (!this.isOnline) {
       this.setSyncStatus('offline')
@@ -222,34 +221,18 @@ class InventoryService {
     }
 
     this.setSyncStatus('syncing')
-
-    // Simulate network delay (300ms - 800ms)
     const delay = Math.floor(Math.random() * 500) + 300
 
     setTimeout(() => {
-      // 99% success rate simulation
-      const success = Math.random() > 0.01
-
-      if (success) {
-        this.setSyncStatus('synced')
-      } else {
-        this.setSyncStatus('error')
-        // Retry logic could be here
-        setTimeout(() => this.simulateCloudSync(), 2000)
-      }
+      this.setSyncStatus('synced')
     }, delay)
   }
 
-  /**
-   * Simulates an incoming update from another device/user.
-   * For Demo purposes.
-   */
   public simulateRemoteUpdate() {
     if (!this.isOnline) return
 
     this.setSyncStatus('syncing')
     setTimeout(() => {
-      // Simulate adding a pallet remotely
       const currentPallets = this.getPallets()
       const materials = this.getMaterials()
       const material = materials[0] || INITIAL_MATERIALS[0]
@@ -268,7 +251,6 @@ class InventoryService {
       const updatedPallets = [newPallet, ...currentPallets]
       localStorage.setItem(KEYS.PALLETS, JSON.stringify(updatedPallets))
 
-      // Also simulate a log entry
       const currentHistory = this.getHistory()
       const newLog: MovementLog = {
         id: crypto.randomUUID(),
@@ -329,7 +311,6 @@ class InventoryService {
     this.channel.addEventListener('message', handleMessage)
     window.addEventListener('storage', handleStorage)
 
-    // Initial status
     callback({
       type: 'SYNC_STATUS',
       status: this.syncStatus,
@@ -343,7 +324,6 @@ class InventoryService {
   }
 
   resetDatabase(currentUserId?: string) {
-    // Clear all data
     this.set(KEYS.STREETS, [])
     this.set(KEYS.LOCATIONS, [])
     this.set(KEYS.MATERIALS, [])
@@ -352,7 +332,6 @@ class InventoryService {
     this.set(KEYS.EQUIPMENTS, [])
     this.set(KEYS.SETTINGS, INITIAL_SETTINGS)
 
-    // Handle Users
     const currentUsers = this.getUsers()
     let newUsers: User[] = []
 
@@ -368,7 +347,6 @@ class InventoryService {
     }
 
     this.set(KEYS.USERS, newUsers)
-
     Object.values(KEYS).forEach((key) => this.notifyChange(key))
 
     this.notifyEvent(

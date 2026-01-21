@@ -1,12 +1,42 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Filter, ArrowLeft, Layers } from 'lucide-react'
+import {
+  Filter,
+  ArrowLeft,
+  Layers,
+  Plus,
+  AlertTriangle,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function StreetDetail() {
   const { id } = useParams<{ id: string }>()
@@ -15,9 +45,21 @@ export default function StreetDetail() {
     getLocationsByStreet,
     getPalletsByLocation,
     getLocationStatus,
+    addLocation,
+    updateLocation,
+    deleteLocation,
   } = useInventoryStore()
+  const { toast } = useToast()
+
   const [showEmptyOnly, setShowEmptyOnly] = useState(false)
   const [showOccupiedOnly, setShowOccupiedOnly] = useState(false)
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [newLocationName, setNewLocationName] = useState('')
+  const [editLocation, setEditLocation] = useState<{
+    id: string
+    name: string
+    needsVerification: boolean
+  } | null>(null)
 
   const street = streets.find((s) => s.id === id)
 
@@ -37,6 +79,30 @@ export default function StreetDetail() {
     if (showOccupiedOnly && status !== 'occupied') return false
     return true
   })
+
+  const handleAddLocation = () => {
+    if (newLocationName.trim()) {
+      addLocation(street.id, newLocationName)
+      setNewLocationName('')
+      setIsAddOpen(false)
+      toast({
+        title: 'Localização criada',
+        description: `Local ${newLocationName} adicionado à rua.`,
+      })
+    }
+  }
+
+  const handleUpdateLocation = () => {
+    if (editLocation && editLocation.name.trim()) {
+      updateLocation(
+        editLocation.id,
+        editLocation.name,
+        editLocation.needsVerification,
+      )
+      setEditLocation(null)
+      toast({ title: 'Localização atualizada' })
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -58,33 +124,59 @@ export default function StreetDetail() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-lg border shadow-sm">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-empty"
-              checked={showEmptyOnly}
-              onCheckedChange={(checked) => {
-                setShowEmptyOnly(checked)
-                if (checked) setShowOccupiedOnly(false)
-              }}
-            />
-            <Label htmlFor="show-empty" className="text-sm cursor-pointer">
-              Apenas Vazios
-            </Label>
-          </div>
-          <div className="h-4 w-[1px] bg-border hidden sm:block" />
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-occupied"
-              checked={showOccupiedOnly}
-              onCheckedChange={(checked) => {
-                setShowOccupiedOnly(checked)
-                if (checked) setShowEmptyOnly(false)
-              }}
-            />
-            <Label htmlFor="show-occupied" className="text-sm cursor-pointer">
-              Apenas Ocupados
-            </Label>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Prédio/Local
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Local em {street.name}</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <Label>Nome do Local (Ex: A-101)</Label>
+                <Input
+                  value={newLocationName}
+                  onChange={(e) => setNewLocationName(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleAddLocation}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <div className="flex items-center gap-4 bg-white p-3 rounded-lg border shadow-sm">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-empty"
+                checked={showEmptyOnly}
+                onCheckedChange={(checked) => {
+                  setShowEmptyOnly(checked)
+                  if (checked) setShowOccupiedOnly(false)
+                }}
+              />
+              <Label htmlFor="show-empty" className="text-sm cursor-pointer">
+                Apenas Vazios
+              </Label>
+            </div>
+            <div className="h-4 w-[1px] bg-border hidden sm:block" />
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-occupied"
+                checked={showOccupiedOnly}
+                onCheckedChange={(checked) => {
+                  setShowOccupiedOnly(checked)
+                  if (checked) setShowEmptyOnly(false)
+                }}
+              />
+              <Label htmlFor="show-occupied" className="text-sm cursor-pointer">
+                Apenas Ocupados
+              </Label>
+            </div>
           </div>
         </div>
       </div>
@@ -94,54 +186,145 @@ export default function StreetDetail() {
           const status = getLocationStatus(location.id)
           const pallets = getPalletsByLocation(location.id)
           const isOccupied = status === 'occupied'
+          const isVerification = status === 'verification'
 
           return (
-            <Link key={location.id} to={`/location/${location.id}`}>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2',
-                  isOccupied
-                    ? 'bg-green-50/50 hover:bg-green-100 border-green-200 hover:border-green-400 text-green-900'
-                    : 'bg-red-50/50 hover:bg-red-100 border-red-200 hover:border-red-400 text-red-900',
-                )}
-              >
-                <span className="text-2xl font-bold tracking-tighter">
-                  {location.name}
-                </span>
-
-                {isOccupied ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-200/50 text-green-800 hover:bg-green-300/50 border-0 text-[10px] px-1.5 h-5"
+            <div key={location.id} className="relative group">
+              <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-6 w-6 shadow-sm"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setEditLocation({
+                      id: location.id,
+                      name: location.name,
+                      needsVerification: location.needsVerification,
+                    })
+                  }}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-6 w-6 shadow-sm"
                     >
-                      {pallets.length} Palete{pallets.length > 1 ? 's' : ''}
-                    </Badge>
-                    <span className="text-[10px] opacity-70 truncate max-w-[90%] text-center px-1">
-                      {pallets[0]?.materialName}
-                    </span>
-                  </div>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-red-200 bg-red-100/50 text-red-700 text-[10px] px-2 h-5"
-                  >
-                    Vazio
-                  </Badge>
-                )}
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir Localização?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação removerá o local e todos os materiais contidos
+                        nele.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive"
+                        onClick={() => deleteLocation(location.id)}
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
 
-                <div
+              <Link to={`/location/${location.id}`} className="block">
+                <Button
+                  variant="outline"
                   className={cn(
-                    'absolute top-2 right-2 w-2 h-2 rounded-full',
-                    isOccupied ? 'bg-green-500 animate-pulse' : 'bg-red-500',
+                    'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2',
+                    isVerification
+                      ? 'bg-yellow-50/80 hover:bg-yellow-100 border-yellow-300 text-yellow-900'
+                      : isOccupied
+                        ? 'bg-green-50/50 hover:bg-green-100 border-green-200 hover:border-green-400 text-green-900'
+                        : 'bg-red-50/50 hover:bg-red-100 border-red-200 hover:border-red-400 text-red-900',
                   )}
-                />
-              </Button>
-            </Link>
+                >
+                  <span className="text-2xl font-bold tracking-tighter">
+                    {location.name}
+                  </span>
+
+                  {isVerification ? (
+                    <div className="flex flex-col items-center">
+                      <AlertTriangle className="h-6 w-6 text-yellow-600 animate-pulse" />
+                      <span className="text-[10px] font-bold text-yellow-700 mt-1">
+                        Verificar
+                      </span>
+                    </div>
+                  ) : isOccupied ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-200/50 text-green-800 hover:bg-green-300/50 border-0 text-[10px] px-1.5 h-5"
+                      >
+                        {pallets.length} Item{pallets.length > 1 ? 's' : ''}
+                      </Badge>
+                      <span className="text-[10px] opacity-70 truncate max-w-[90%] text-center px-1">
+                        {pallets[0]?.materialName}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-red-200 bg-red-100/50 text-red-700 text-[10px] px-2 h-5"
+                    >
+                      Vazio
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            </div>
           )
         })}
       </div>
+
+      <Dialog
+        open={!!editLocation}
+        onOpenChange={(open) => !open && setEditLocation(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Localização</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={editLocation?.name || ''}
+                onChange={(e) =>
+                  setEditLocation((prev) =>
+                    prev ? { ...prev, name: e.target.value } : null,
+                  )
+                }
+              />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="verify-check"
+                checked={editLocation?.needsVerification || false}
+                onCheckedChange={(checked) =>
+                  setEditLocation((prev) =>
+                    prev ? { ...prev, needsVerification: !!checked } : null,
+                  )
+                }
+              />
+              <Label htmlFor="verify-check">Necessita Verificação</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleUpdateLocation}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

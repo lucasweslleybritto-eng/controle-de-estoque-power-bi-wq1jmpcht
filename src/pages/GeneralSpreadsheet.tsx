@@ -16,20 +16,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Download, Search, FilterX } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export default function GeneralSpreadsheet() {
-  const { pallets, locations, streets } = useInventoryStore()
+  const { pallets, locations, streets, getLocationName } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [streetFilter, setStreetFilter] = useState('all')
 
-  const getLocationName = (id: string) =>
-    locations.find((l) => l.id === id)?.name || id
   const getStreetName = (locId: string) => {
+    if (locId === 'TRP_AREA') return 'Entrada'
     const loc = locations.find((l) => l.id === locId)
     return streets.find((s) => s.id === loc?.streetId)?.name || 'N/A'
   }
@@ -42,7 +41,9 @@ export default function GeneralSpreadsheet() {
 
     const loc = locations.find((l) => l.id === pallet.locationId)
     const matchesStreet =
-      streetFilter === 'all' || loc?.streetId === streetFilter
+      streetFilter === 'all' ||
+      (streetFilter === 'TRP_AREA' && pallet.locationId === 'TRP_AREA') ||
+      loc?.streetId === streetFilter
 
     return matchesSearch && matchesStreet
   })
@@ -55,7 +56,7 @@ export default function GeneralSpreadsheet() {
             Planilha Geral de Estoque
           </h1>
           <p className="text-muted-foreground">
-            Visualização completa de todos os materiais e localizações.
+            Visualização completa de todos os materiais (TRP e TRD).
           </p>
         </div>
         <Button variant="outline" className="gap-2">
@@ -78,10 +79,11 @@ export default function GeneralSpreadsheet() {
             <div className="w-full md:w-64">
               <Select value={streetFilter} onValueChange={setStreetFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por Rua" />
+                  <SelectValue placeholder="Filtrar por Rua/Setor" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as Ruas</SelectItem>
+                  <SelectItem value="TRP_AREA">Zona TRP (Entrada)</SelectItem>
                   {streets.map((street) => (
                     <SelectItem key={street.id} value={street.id}>
                       {street.name}
@@ -108,9 +110,9 @@ export default function GeneralSpreadsheet() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="w-[150px]">ID Palete</TableHead>
+                  <TableHead className="w-[100px]">Tipo</TableHead>
                   <TableHead>Material</TableHead>
-                  <TableHead>Rua</TableHead>
+                  <TableHead>Setor</TableHead>
                   <TableHead>Localização</TableHead>
                   <TableHead className="text-right">Quantidade</TableHead>
                   <TableHead className="hidden md:table-cell">
@@ -131,8 +133,10 @@ export default function GeneralSpreadsheet() {
                 ) : (
                   filteredPallets.map((pallet) => (
                     <TableRow key={pallet.id} className="hover:bg-slate-50">
-                      <TableCell className="font-mono text-xs">
-                        {pallet.id}
+                      <TableCell>
+                        <span className="font-bold text-xs border px-1 rounded bg-slate-100">
+                          {pallet.type}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{pallet.materialName}</div>

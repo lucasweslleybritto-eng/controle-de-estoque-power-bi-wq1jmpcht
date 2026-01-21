@@ -1,4 +1,11 @@
-import { Home, Table, Info, Truck, Box } from 'lucide-react'
+import {
+  Home,
+  ClipboardList,
+  Info,
+  Truck,
+  ArrowLeftRight,
+  History,
+} from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
   Sidebar,
@@ -20,9 +27,19 @@ const items = [
     icon: Home,
   },
   {
+    title: 'Entrada/Saída',
+    url: '/movements',
+    icon: ArrowLeftRight,
+  },
+  {
+    title: 'Histórico',
+    url: '/history',
+    icon: History,
+  },
+  {
     title: 'Planilha Geral',
     url: '/spreadsheet',
-    icon: Table,
+    icon: ClipboardList,
   },
   {
     title: 'Equipamentos',
@@ -43,9 +60,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2 px-2">
-          <Box className="h-6 w-6 text-primary" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
+            E2
+          </div>
           <span className="font-bold text-lg tracking-tight group-data-[collapsible=icon]:hidden">
-            Logística Twin
+            Estoque Classe 2
           </span>
         </div>
       </SidebarHeader>

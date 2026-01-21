@@ -8,6 +8,8 @@ import LocationDetail from './pages/LocationDetail'
 import GeneralSpreadsheet from './pages/GeneralSpreadsheet'
 import Equipment from './pages/Equipment'
 import HowItWorks from './pages/HowItWorks'
+import EntryExit from './pages/EntryExit'
+import History from './pages/History'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -28,6 +30,8 @@ const App = () => (
             <Route path="/spreadsheet" element={<GeneralSpreadsheet />} />
             <Route path="/equipment" element={<Equipment />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/movements" element={<EntryExit />} />
+            <Route path="/history" element={<History />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

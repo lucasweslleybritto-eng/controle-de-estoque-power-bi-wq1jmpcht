@@ -5,28 +5,33 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { MousePointerClick, Search, Edit3 } from 'lucide-react'
+import {
+  MousePointerClick,
+  Search,
+  AlertTriangle,
+  ArrowLeftRight,
+} from 'lucide-react'
 
 export default function HowItWorks() {
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in py-8">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">Como Funciona o Sistema</h1>
+        <h1 className="text-3xl font-bold">Guia Estoque Classe 2</h1>
         <p className="text-muted-foreground">
-          Guia rápido para operadores logísticos.
+          Instruções operacionais para gestão de armazém.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="text-center">
           <CardHeader>
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
               <MousePointerClick className="w-6 h-6 text-blue-600" />
             </div>
-            <CardTitle className="text-lg">1. Navegue</CardTitle>
+            <CardTitle className="text-lg">1. Ruas</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Selecione a Rua no Dashboard e clique na localização desejada.
+            Gerencie Ruas e Locais. Clique em uma rua para ver detalhes.
           </CardContent>
         </Card>
         <Card className="text-center">
@@ -34,23 +39,32 @@ export default function HowItWorks() {
             <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
               <Search className="w-6 h-6 text-green-600" />
             </div>
-            <CardTitle className="text-lg">2. Identifique</CardTitle>
+            <CardTitle className="text-lg">2. Cores</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Verde significa ocupado, Vermelho significa vazio. Use a busca para
-            achar itens.
+            Verde (Ocupado), Vermelho (Vazio), Amarelo (Verificar).
           </CardContent>
         </Card>
         <Card className="text-center">
           <CardHeader>
             <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-2">
-              <Edit3 className="w-6 h-6 text-orange-600" />
+              <ArrowLeftRight className="w-6 h-6 text-orange-600" />
             </div>
-            <CardTitle className="text-lg">3. Gerencie</CardTitle>
+            <CardTitle className="text-lg">3. Movimento</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Adicione, mova ou remova paletes clicando nos detalhes da
-            localização.
+            Use "Entrada/Saída" para registrar TRP e TRD.
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardHeader>
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <CardTitle className="text-lg">4. Alertas</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Ícone de alerta indica necessidade de verificação física.
           </CardContent>
         </Card>
       </div>
@@ -63,35 +77,42 @@ export default function HowItWorks() {
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger>
-                Como mover um palete de lugar?
+                Qual a diferença entre TRP e TRD?
               </AccordionTrigger>
               <AccordionContent>
-                Vá até a localização atual do palete, clique no ícone de "Mover"
-                (setas cruzadas) na lista de paletes. Selecione o novo destino
-                na lista de locais vazios e confirme.
+                <strong>TRP (Entrada):</strong> Material que chegou mas ainda
+                não foi alocado a um local específico. Fica na Zona Virtual.
+                <br />
+                <strong>TRD (Rua):</strong> Material alocado em uma localização
+                física específica (Rua/Prédio).
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-              <AccordionTrigger>O que significam as cores?</AccordionTrigger>
+              <AccordionTrigger>
+                Como adicionar uma nova rua ou local?
+              </AccordionTrigger>
               <AccordionContent>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong>Verde:</strong> Localização ocupada (contém
-                    material).
-                  </li>
-                  <li>
-                    <strong>Vermelho:</strong> Localização vazia (disponível).
-                  </li>
-                </ul>
+                No Dashboard, use o botão "Nova Rua". Dentro da Rua, use
+                "Adicionar Prédio/Local".
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
               <AccordionTrigger>
-                Como adicionar um novo material?
+                O que significa "Necessita Verificação"?
               </AccordionTrigger>
               <AccordionContent>
-                Navegue até uma localização vazia (Vermelha), clique nela e use
-                o botão "Adicionar" no topo da lista.
+                É um status especial (Amarelo) para indicar que o operador deve
+                conferir fisicamente o local. Pode ser ativado na edição do
+                local.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-4">
+              <AccordionTrigger>
+                Como dar baixa em um material?
+              </AccordionTrigger>
+              <AccordionContent>
+                Vá em "Entrada/Saída", aba "Registrar Saída". Apenas materiais
+                TRD podem ser baixados.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

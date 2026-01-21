@@ -6,7 +6,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 
 const equipments = [
@@ -20,28 +19,19 @@ const equipments = [
   },
   {
     id: 2,
-    name: 'Empilhadeira a Gás 02',
-    model: 'Hyster H50',
+    name: 'Paleteira Manual 05',
+    model: 'Standard',
     status: 'in-use',
     image:
-      'https://img.usecurling.com/p/300/200?q=forklift%20industrial&color=orange',
+      'https://img.usecurling.com/p/300/200?q=hand%20pallet%20truck&color=blue',
     operator: 'Carlos Silva',
   },
   {
     id: 3,
-    name: 'Paleteira Elétrica 01',
+    name: 'Paleteira Elétrica 02',
     model: 'Linde T20',
     status: 'maintenance',
     image: 'https://img.usecurling.com/p/300/200?q=pallet%20jack&color=red',
-    operator: null,
-  },
-  {
-    id: 4,
-    name: 'Paleteira Manual 05',
-    model: 'Standard',
-    status: 'available',
-    image:
-      'https://img.usecurling.com/p/300/200?q=hand%20pallet%20truck&color=blue',
     operator: null,
   },
 ]
@@ -53,13 +43,12 @@ export default function Equipment() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Equipamentos</h1>
           <p className="text-muted-foreground">
-            Gerencie a frota de movimentação interna.
+            Lista de ferramentas operacionais.
           </p>
         </div>
-        <Button>Solicitar Manutenção</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {equipments.map((eq) => (
           <Card
             key={eq.id}

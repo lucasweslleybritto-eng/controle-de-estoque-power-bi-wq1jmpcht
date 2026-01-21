@@ -26,6 +26,8 @@ export default function Layout() {
     if (decoded === 'how-it-works') return 'Como Funciona'
     if (decoded === 'street') return 'Rua'
     if (decoded === 'location') return 'Localização'
+    if (decoded === 'movements') return 'Entrada/Saída'
+    if (decoded === 'history') return 'Histórico'
     return decoded.charAt(0).toUpperCase() + decoded.slice(1)
   }
 
@@ -41,7 +43,7 @@ export default function Layout() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
-                    <Link to="/">Dashboard</Link>
+                    <Link to="/">Estoque Classe 2</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 {pathSegments.length > 0 && (

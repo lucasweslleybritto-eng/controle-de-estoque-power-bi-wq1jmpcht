@@ -50,6 +50,7 @@ interface InventoryContextType {
   updateStreet: (id: string, name: string) => void
   deleteStreet: (id: string) => void
   moveStreet: (id: string, direction: 'up' | 'down') => void
+  reorderStreets: (newStreets: Street[]) => void
 
   addLocation: (streetId: string, name: string) => void
   updateLocation: (id: string, name: string) => void
@@ -429,6 +430,12 @@ export const InventoryProvider = ({
     inventoryService.saveStreets(newStreets)
   }
 
+  const reorderStreets = (newStreets: Street[]) => {
+    setStreets(newStreets)
+    inventoryService.saveStreets(newStreets)
+    // Optional: Log reorder action occasionally or just silently save
+  }
+
   const addLocation = (streetId: string, name: string) => {
     const street = streets.find((s) => s.id === streetId)
     const newLocations = [
@@ -735,6 +742,7 @@ export const InventoryProvider = ({
       updateStreet,
       deleteStreet,
       moveStreet,
+      reorderStreets,
       addLocation,
       updateLocation,
       deleteLocation,

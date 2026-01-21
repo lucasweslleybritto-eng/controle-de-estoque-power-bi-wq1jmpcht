@@ -872,9 +872,6 @@ section[aria-label='Notifications alt+T'] {
 .h-svh{
   height: 100svh;
 }
-.max-h-80{
-  max-height: 20rem;
-}
 .max-h-\[--radix-context-menu-content-available-height\]{
   max-height: var(--radix-context-menu-content-available-height);
 }
@@ -964,6 +961,9 @@ section[aria-label='Notifications alt+T'] {
 }
 .w-\[--cell-size\]{
   width: var(--cell-size);
+}
+.w-\[--radix-popover-trigger-width\]{
+  width: var(--radix-popover-trigger-width);
 }
 .w-\[--sidebar-width\]{
   width: var(--sidebar-width);
@@ -1932,6 +1932,9 @@ section[aria-label='Notifications alt+T'] {
 }
 .opacity-0{
   opacity: 0;
+}
+.opacity-100{
+  opacity: 1;
 }
 .opacity-20{
   opacity: 0.2;

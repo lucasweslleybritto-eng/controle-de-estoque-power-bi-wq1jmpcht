@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Combobox } from '@/components/Combobox'
 import { useToast } from '@/hooks/use-toast'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { cn } from '@/lib/utils'
@@ -72,6 +73,12 @@ export function EntryForm() {
 
   const availableMaterials = materials.filter((m) => m.type === materialType)
   const selectedMaterial = materials.find((m) => m.name === materialName)
+
+  // Map materials to Combobox options
+  const materialOptions = availableMaterials.map((m) => ({
+    value: m.name,
+    label: m.name,
+  }))
 
   const onEntrySubmit = (data: z.infer<typeof entrySchema>) => {
     addPallet({
@@ -149,24 +156,13 @@ export function EntryForm() {
                 name="materialName"
                 control={entryForm.control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o Material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableMaterials.length === 0 ? (
-                        <div className="p-2 text-sm text-muted-foreground text-center">
-                          Sem materiais {materialType} cadastrados
-                        </div>
-                      ) : (
-                        availableMaterials.map((m) => (
-                          <SelectItem key={m.id} value={m.name}>
-                            {m.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={materialOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Selecione ou busque o material..."
+                    emptyText={`Sem materiais ${materialType} cadastrados.`}
+                  />
                 )}
               />
               {entryForm.formState.errors.materialName && (

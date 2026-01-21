@@ -12,13 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/Combobox'
 import { useToast } from '@/hooks/use-toast'
 import useInventoryStore from '@/stores/useInventoryStore'
 
@@ -41,6 +35,18 @@ export function ExitForm() {
 
   // Filter only TRD pallets for Exit, as requested: "Only TRD materials ... eligible for Exit"
   const trdPallets = pallets.filter((p) => p.type === 'TRD')
+
+  // Map pallets to Combobox options
+  const palletOptions = trdPallets.map((p) => {
+    const location = locations.find((l) => l.id === p.locationId)
+    const streetId = location?.streetId || ''
+    const locationInfo = `${getLocationName(p.locationId)} (${getStreetName(streetId)})`
+
+    return {
+      value: p.id,
+      label: `${p.materialName} - ${p.quantity} un - ${locationInfo}`,
+    }
+  })
 
   const onExitSubmit = (data: z.infer<typeof exitSchema>) => {
     removePallet(data.palletId, data.user)
@@ -71,36 +77,14 @@ export function ExitForm() {
                 name="palletId"
                 control={exitForm.control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="h-auto py-3">
-                      <SelectValue placeholder="Buscar item no estoque..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80">
-                      {trdPallets.length === 0 ? (
-                        <div className="p-2 text-sm text-muted-foreground">
-                          Nenhum item TRD disponível.
-                        </div>
-                      ) : (
-                        trdPallets.map((p) => {
-                          const location = locations.find(
-                            (l) => l.id === p.locationId,
-                          )
-                          const streetId = location?.streetId || ''
-
-                          return (
-                            <SelectItem key={p.id} value={p.id}>
-                              <span className="font-bold">
-                                {p.materialName}
-                              </span>{' '}
-                              - {p.quantity} un -{' '}
-                              {getLocationName(p.locationId)} (
-                              {getStreetName(streetId)})
-                            </SelectItem>
-                          )
-                        })
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={palletOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Buscar item no estoque..."
+                    emptyText="Nenhum item TRD disponível."
+                    className="h-auto py-3"
+                  />
                 )}
               />
               {exitForm.formState.errors.palletId && (

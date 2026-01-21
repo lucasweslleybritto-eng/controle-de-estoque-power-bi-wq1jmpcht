@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Search, Image as ImageIcon } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Image as ImageIcon,
+  Upload,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -40,6 +47,7 @@ import {
 import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
 import { Material, MaterialType } from '@/types'
+import { fileToBase64 } from '@/lib/utils'
 
 export function MaterialsTab() {
   const { materials, addMaterial, updateMaterial, deleteMaterial } =
@@ -48,6 +56,7 @@ export function MaterialsTab() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
+  const [isLoadingImage, setIsLoadingImage] = useState(false)
 
   const [formData, setFormData] = useState<{
     name: string
@@ -95,6 +104,47 @@ export function MaterialsTab() {
       image: material.image || '',
     })
     setIsAddOpen(true)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Simple validation
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo inválido',
+        description: 'Por favor, selecione uma imagem.',
+      })
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      // 2MB limit
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: 'A imagem deve ter no máximo 2MB.',
+      })
+      return
+    }
+
+    try {
+      setIsLoadingImage(true)
+      const base64 = await fileToBase64(file)
+      setFormData((prev) => ({ ...prev, image: base64 }))
+      toast({ title: 'Imagem carregada com sucesso' })
+    } catch (error) {
+      console.error('Image upload failed', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro no upload',
+        description: 'Falha ao processar a imagem.',
+      })
+    } finally {
+      setIsLoadingImage(false)
+    }
   }
 
   return (
@@ -254,16 +304,67 @@ export function MaterialsTab() {
                 placeholder="Ex: Especificações técnicas..."
               />
             </div>
+
             <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input
-                value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
-                placeholder="https://..."
-              />
+              <Label>Imagem</Label>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-16 rounded border bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {formData.image ? (
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="image-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {isLoadingImage
+                        ? 'Carregando...'
+                        : 'Carregar Foto do Dispositivo'}
+                    </Label>
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={isLoadingImage}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Max: 2MB. A imagem será salva localmente.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Ou use uma URL
+                    </span>
+                  </div>
+                </div>
+
+                <Input
+                  value={formData.image}
+                  onChange={(e) =>
+                    setFormData({ ...formData, image: e.target.value })
+                  }
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label>Tipo Padrão</Label>
               <Select

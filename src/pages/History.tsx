@@ -16,14 +16,17 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Search, FilterX } from 'lucide-react'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { Search, FilterX, Download } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { exportToCSV } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function History() {
   const { history } = useInventoryStore()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'ENTRY' | 'EXIT'>('ALL')
   const [materialTypeFilter, setMaterialTypeFilter] = useState<
@@ -43,15 +46,61 @@ export default function History() {
     return matchesSearch && matchesType && matchesMatType
   })
 
+  const handleExport = () => {
+    if (filteredHistory.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Não há dados para exportar com os filtros atuais.',
+      })
+      return
+    }
+
+    try {
+      const dataToExport = filteredHistory.map((log) => ({
+        Data: format(new Date(log.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+        Tipo: log.type === 'ENTRY' ? 'ENTRADA' : 'SAÍDA',
+        Material: log.materialName,
+        Quantidade: log.quantity,
+        Classificação: log.materialType,
+        Local: log.locationName,
+        Rua: log.streetName || '-',
+        Usuário: log.user,
+      }))
+
+      exportToCSV(
+        dataToExport,
+        `historico-movimentacoes-${format(new Date(), 'dd-MM-yyyy')}`,
+      )
+
+      toast({
+        title: 'Exportação Concluída',
+        description: 'O arquivo CSV foi baixado com sucesso.',
+      })
+    } catch (error) {
+      console.error('Export failed', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Ocorreu um erro ao gerar o arquivo.',
+      })
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Histórico de Movimentações
-        </h1>
-        <p className="text-muted-foreground">
-          Log completo de Entradas e Saídas.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
+            Histórico de Movimentações
+          </h1>
+          <p className="text-muted-foreground">
+            Log completo de Entradas e Saídas.
+          </p>
+        </div>
+        <Button variant="outline" className="gap-2" onClick={handleExport}>
+          <Download className="h-4 w-4" /> Exportar Histórico
+        </Button>
       </div>
 
       <Card>

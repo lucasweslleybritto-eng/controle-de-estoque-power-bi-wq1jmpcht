@@ -31,6 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { exportToCSV } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function GeneralSpreadsheet() {
   const { pallets, locations, streets, getLocationName, removePallet } =
@@ -38,6 +40,7 @@ export default function GeneralSpreadsheet() {
   const [searchTerm, setSearchTerm] = useState('')
   const [streetFilter, setStreetFilter] = useState('all')
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const getStreetName = (locId: string) => {
     if (locId === 'TRP_AREA') return 'Entrada'
@@ -67,6 +70,46 @@ export default function GeneralSpreadsheet() {
     }
   }
 
+  const handleExport = () => {
+    if (filteredPallets.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Não há dados para exportar com os filtros atuais.',
+      })
+      return
+    }
+
+    try {
+      const dataToExport = filteredPallets.map((p) => ({
+        ID: p.id,
+        Tipo: p.type,
+        Material: p.materialName,
+        'Descrição/Lote': p.description,
+        Rua: getStreetName(p.locationId),
+        Localização: getLocationName(p.locationId),
+        Quantidade: p.quantity,
+        'Data Entrada': format(new Date(p.entryDate), 'dd/MM/yyyy HH:mm', {
+          locale: ptBR,
+        }),
+      }))
+
+      exportToCSV(dataToExport, `estoque-${format(new Date(), 'dd-MM-yyyy')}`)
+
+      toast({
+        title: 'Exportação Concluída',
+        description: 'O arquivo CSV foi baixado com sucesso.',
+      })
+    } catch (error) {
+      console.error('Export failed', error)
+      toast({
+        variant: 'destructive',
+        title: 'Erro na exportação',
+        description: 'Ocorreu um erro ao gerar o arquivo.',
+      })
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
@@ -78,7 +121,7 @@ export default function GeneralSpreadsheet() {
             Visualização completa de todos os materiais (TRP e TRD).
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={handleExport}>
           <Download className="h-4 w-4" /> Exportar Relatório
         </Button>
       </div>

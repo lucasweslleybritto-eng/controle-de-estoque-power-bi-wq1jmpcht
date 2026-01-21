@@ -68,9 +68,9 @@ interface InventoryContextType {
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void
   deleteEquipment: (id: string) => void
 
-  login: (userId: string) => void
+  login: (userIdOrUser: string | User) => void
   logout: () => void
-  addUser: (user: Omit<User, 'id'>) => void
+  addUser: (user: Omit<User, 'id'>) => User
   updateUser: (id: string, user: Partial<User>) => void
   deleteUser: (id: string) => void
   updateUserPreferences: (prefs: Partial<UserPreferences>) => void
@@ -347,12 +347,28 @@ export const InventoryProvider = ({
     inventoryService.upsertItem(inventoryService.keys.HISTORY, log)
   }
 
-  const login = (userId: string) => {
-    const user = users.find((u) => u.id === userId)
+  const login = (userIdOrUser: string | User) => {
+    let user: User | undefined
+    if (typeof userIdOrUser === 'string') {
+      user = users.find((u) => u.id === userIdOrUser)
+      // Fallback to service cache if state hasn't updated yet (e.g. fresh creation)
+      if (!user) {
+        user = inventoryService.getUsers().find((u) => u.id === userIdOrUser)
+      }
+    } else {
+      user = userIdOrUser
+    }
+
     if (user) {
       setCurrentUser(user)
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
       toast({ title: `Bem-vindo, ${user.name}` })
+    } else {
+      toast({
+        title: 'Erro no login',
+        description: 'Usuário não encontrado.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -365,6 +381,7 @@ export const InventoryProvider = ({
   const addUser = (userData: Omit<User, 'id'>) => {
     const newUser = { ...userData, id: crypto.randomUUID() }
     inventoryService.upsertItem(inventoryService.keys.USERS, newUser)
+    return newUser
   }
 
   const updateUser = (id: string, updates: Partial<User>) => {

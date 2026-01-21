@@ -30765,6 +30765,339 @@ function HowItWorks() {
 		]
 	});
 }
+var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
+var EVENT_OPTIONS = {
+	bubbles: false,
+	cancelable: true
+};
+var GROUP_NAME$2 = "RovingFocusGroup";
+var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(GROUP_NAME$2);
+var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(GROUP_NAME$2, [createCollectionScope$1]);
+var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME$2);
+var RovingFocusGroup = import_react.forwardRef((props, forwardedRef) => {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Provider, {
+		scope: props.__scopeRovingFocusGroup,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
+			scope: props.__scopeRovingFocusGroup,
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RovingFocusGroupImpl, {
+				...props,
+				ref: forwardedRef
+			})
+		})
+	});
+});
+RovingFocusGroup.displayName = GROUP_NAME$2;
+var RovingFocusGroupImpl = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeRovingFocusGroup, orientation, loop = false, dir, currentTabStopId: currentTabStopIdProp, defaultCurrentTabStopId, onCurrentTabStopIdChange, onEntryFocus, preventScrollOnEntryFocus = false, ...groupProps } = props;
+	const ref = import_react.useRef(null);
+	const composedRefs = useComposedRefs(forwardedRef, ref);
+	const direction = useDirection(dir);
+	const [currentTabStopId, setCurrentTabStopId] = useControllableState({
+		prop: currentTabStopIdProp,
+		defaultProp: defaultCurrentTabStopId ?? null,
+		onChange: onCurrentTabStopIdChange,
+		caller: GROUP_NAME$2
+	});
+	const [isTabbingBackOut, setIsTabbingBackOut] = import_react.useState(false);
+	const handleEntryFocus = useCallbackRef(onEntryFocus);
+	const getItems = useCollection$1(__scopeRovingFocusGroup);
+	const isClickFocusRef = import_react.useRef(false);
+	const [focusableItemsCount, setFocusableItemsCount] = import_react.useState(0);
+	import_react.useEffect(() => {
+		const node = ref.current;
+		if (node) {
+			node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
+			return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
+		}
+	}, [handleEntryFocus]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RovingFocusProvider, {
+		scope: __scopeRovingFocusGroup,
+		orientation,
+		dir: direction,
+		loop,
+		currentTabStopId,
+		onItemFocus: import_react.useCallback((tabStopId) => setCurrentTabStopId(tabStopId), [setCurrentTabStopId]),
+		onItemShiftTab: import_react.useCallback(() => setIsTabbingBackOut(true), []),
+		onFocusableItemAdd: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount + 1), []),
+		onFocusableItemRemove: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount - 1), []),
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
+			"data-orientation": orientation,
+			...groupProps,
+			ref: composedRefs,
+			style: {
+				outline: "none",
+				...props.style
+			},
+			onMouseDown: composeEventHandlers(props.onMouseDown, () => {
+				isClickFocusRef.current = true;
+			}),
+			onFocus: composeEventHandlers(props.onFocus, (event) => {
+				const isKeyboardFocus = !isClickFocusRef.current;
+				if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
+					const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
+					event.currentTarget.dispatchEvent(entryFocusEvent);
+					if (!entryFocusEvent.defaultPrevented) {
+						const items$1 = getItems().filter((item) => item.focusable);
+						focusFirst$1([
+							items$1.find((item) => item.active),
+							items$1.find((item) => item.id === currentTabStopId),
+							...items$1
+						].filter(Boolean).map((item) => item.ref.current), preventScrollOnEntryFocus);
+					}
+				}
+				isClickFocusRef.current = false;
+			}),
+			onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
+		})
+	});
+});
+var ITEM_NAME$2 = "RovingFocusGroupItem";
+var RovingFocusGroupItem = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeRovingFocusGroup, focusable = true, active = false, tabStopId, children, ...itemProps } = props;
+	const autoId = useId();
+	const id = tabStopId || autoId;
+	const context = useRovingFocusContext(ITEM_NAME$2, __scopeRovingFocusGroup);
+	const isCurrentTabStop = context.currentTabStopId === id;
+	const getItems = useCollection$1(__scopeRovingFocusGroup);
+	const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
+	import_react.useEffect(() => {
+		if (focusable) {
+			onFocusableItemAdd();
+			return () => onFocusableItemRemove();
+		}
+	}, [
+		focusable,
+		onFocusableItemAdd,
+		onFocusableItemRemove
+	]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.ItemSlot, {
+		scope: __scopeRovingFocusGroup,
+		id,
+		focusable,
+		active,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
+			tabIndex: isCurrentTabStop ? 0 : -1,
+			"data-orientation": context.orientation,
+			...itemProps,
+			ref: forwardedRef,
+			onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
+				if (!focusable) event.preventDefault();
+				else context.onItemFocus(id);
+			}),
+			onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id)),
+			onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
+				if (event.key === "Tab" && event.shiftKey) {
+					context.onItemShiftTab();
+					return;
+				}
+				if (event.target !== event.currentTarget) return;
+				const focusIntent = getFocusIntent(event, context.orientation, context.dir);
+				if (focusIntent !== void 0) {
+					if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+					event.preventDefault();
+					let candidateNodes = getItems().filter((item) => item.focusable).map((item) => item.ref.current);
+					if (focusIntent === "last") candidateNodes.reverse();
+					else if (focusIntent === "prev" || focusIntent === "next") {
+						if (focusIntent === "prev") candidateNodes.reverse();
+						const currentIndex = candidateNodes.indexOf(event.currentTarget);
+						candidateNodes = context.loop ? wrapArray$1(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
+					}
+					setTimeout(() => focusFirst$1(candidateNodes));
+				}
+			}),
+			children: typeof children === "function" ? children({
+				isCurrentTabStop,
+				hasTabStop: currentTabStopId != null
+			}) : children
+		})
+	});
+});
+RovingFocusGroupItem.displayName = ITEM_NAME$2;
+var MAP_KEY_TO_FOCUS_INTENT = {
+	ArrowLeft: "prev",
+	ArrowUp: "prev",
+	ArrowRight: "next",
+	ArrowDown: "next",
+	PageUp: "first",
+	Home: "first",
+	PageDown: "last",
+	End: "last"
+};
+function getDirectionAwareKey(key, dir) {
+	if (dir !== "rtl") return key;
+	return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
+}
+function getFocusIntent(event, orientation, dir) {
+	const key = getDirectionAwareKey(event.key, dir);
+	if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
+	if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
+	return MAP_KEY_TO_FOCUS_INTENT[key];
+}
+function focusFirst$1(candidates, preventScroll = false) {
+	const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
+	for (const candidate of candidates) {
+		if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+		candidate.focus({ preventScroll });
+		if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+	}
+}
+function wrapArray$1(array$1, startIndex) {
+	return array$1.map((_$1, index$1) => array$1[(startIndex + index$1) % array$1.length]);
+}
+var Root$1 = RovingFocusGroup;
+var Item = RovingFocusGroupItem;
+var TABS_NAME = "Tabs";
+var [createTabsContext, createTabsScope] = createContextScope(TABS_NAME, [createRovingFocusGroupScope]);
+var useRovingFocusGroupScope$1 = createRovingFocusGroupScope();
+var [TabsProvider, useTabsContext] = createTabsContext(TABS_NAME);
+var Tabs$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeTabs, value: valueProp, onValueChange, defaultValue, orientation = "horizontal", dir, activationMode = "automatic", ...tabsProps } = props;
+	const direction = useDirection(dir);
+	const [value, setValue] = useControllableState({
+		prop: valueProp,
+		onChange: onValueChange,
+		defaultProp: defaultValue ?? "",
+		caller: TABS_NAME
+	});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsProvider, {
+		scope: __scopeTabs,
+		baseId: useId(),
+		value,
+		onValueChange: setValue,
+		orientation,
+		dir: direction,
+		activationMode,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			dir: direction,
+			"data-orientation": orientation,
+			...tabsProps,
+			ref: forwardedRef
+		})
+	});
+});
+Tabs$1.displayName = TABS_NAME;
+var TAB_LIST_NAME = "TabsList";
+var TabsList$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeTabs, loop = true, ...listProps } = props;
+	const context = useTabsContext(TAB_LIST_NAME, __scopeTabs);
+	const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$1, {
+		asChild: true,
+		...rovingFocusGroupScope,
+		orientation: context.orientation,
+		dir: context.dir,
+		loop,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			role: "tablist",
+			"aria-orientation": context.orientation,
+			...listProps,
+			ref: forwardedRef
+		})
+	});
+});
+TabsList$1.displayName = TAB_LIST_NAME;
+var TRIGGER_NAME$1 = "TabsTrigger";
+var TabsTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeTabs, value, disabled = false, ...triggerProps } = props;
+	const context = useTabsContext(TRIGGER_NAME$1, __scopeTabs);
+	const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
+	const triggerId = makeTriggerId(context.baseId, value);
+	const contentId = makeContentId(context.baseId, value);
+	const isSelected = value === context.value;
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Item, {
+		asChild: true,
+		...rovingFocusGroupScope,
+		focusable: !disabled,
+		active: isSelected,
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
+			type: "button",
+			role: "tab",
+			"aria-selected": isSelected,
+			"aria-controls": contentId,
+			"data-state": isSelected ? "active" : "inactive",
+			"data-disabled": disabled ? "" : void 0,
+			disabled,
+			id: triggerId,
+			...triggerProps,
+			ref: forwardedRef,
+			onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
+				if (!disabled && event.button === 0 && event.ctrlKey === false) context.onValueChange(value);
+				else event.preventDefault();
+			}),
+			onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
+				if ([" ", "Enter"].includes(event.key)) context.onValueChange(value);
+			}),
+			onFocus: composeEventHandlers(props.onFocus, () => {
+				const isAutomaticActivation = context.activationMode !== "manual";
+				if (!isSelected && !disabled && isAutomaticActivation) context.onValueChange(value);
+			})
+		})
+	});
+});
+TabsTrigger$1.displayName = TRIGGER_NAME$1;
+var CONTENT_NAME$2 = "TabsContent";
+var TabsContent$1 = import_react.forwardRef((props, forwardedRef) => {
+	const { __scopeTabs, value, forceMount, children, ...contentProps } = props;
+	const context = useTabsContext(CONTENT_NAME$2, __scopeTabs);
+	const triggerId = makeTriggerId(context.baseId, value);
+	const contentId = makeContentId(context.baseId, value);
+	const isSelected = value === context.value;
+	const isMountAnimationPreventedRef = import_react.useRef(isSelected);
+	import_react.useEffect(() => {
+		const rAF = requestAnimationFrame(() => isMountAnimationPreventedRef.current = false);
+		return () => cancelAnimationFrame(rAF);
+	}, []);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
+		present: forceMount || isSelected,
+		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
+			"data-state": isSelected ? "active" : "inactive",
+			"data-orientation": context.orientation,
+			role: "tabpanel",
+			"aria-labelledby": triggerId,
+			hidden: !present,
+			id: contentId,
+			tabIndex: 0,
+			...contentProps,
+			ref: forwardedRef,
+			style: {
+				...props.style,
+				animationDuration: isMountAnimationPreventedRef.current ? "0s" : void 0
+			},
+			children: present && children
+		})
+	});
+});
+TabsContent$1.displayName = CONTENT_NAME$2;
+function makeTriggerId(baseId, value) {
+	return `${baseId}-trigger-${value}`;
+}
+function makeContentId(baseId, value) {
+	return `${baseId}-content-${value}`;
+}
+var Root2$1 = Tabs$1;
+var List = TabsList$1;
+var Trigger$1 = TabsTrigger$1;
+var Content = TabsContent$1;
+var Tabs = Root2$1;
+var TabsList = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(List, {
+	ref,
+	className: cn$1("inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground", className),
+	...props
+}));
+TabsList.displayName = List.displayName;
+var TabsTrigger = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trigger$1, {
+	ref,
+	className: cn$1("inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm", className),
+	...props
+}));
+TabsTrigger.displayName = Trigger$1.displayName;
+var TabsContent = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content, {
+	ref,
+	className: cn$1("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className),
+	...props
+}));
+TabsContent.displayName = Content.displayName;
 var isCheckBoxInput = (element) => element.type === "checkbox";
 var isDateObject = (value) => value instanceof Date;
 var isNullOrUndefined = (value) => value == null;
@@ -36118,339 +36451,6 @@ function superRefine(fn) {
 function number(params) {
 	return /* @__PURE__ */ _coercedNumber(ZodNumber, params);
 }
-var ENTRY_FOCUS = "rovingFocusGroup.onEntryFocus";
-var EVENT_OPTIONS = {
-	bubbles: false,
-	cancelable: true
-};
-var GROUP_NAME$2 = "RovingFocusGroup";
-var [Collection$1, useCollection$1, createCollectionScope$1] = createCollection(GROUP_NAME$2);
-var [createRovingFocusGroupContext, createRovingFocusGroupScope] = createContextScope(GROUP_NAME$2, [createCollectionScope$1]);
-var [RovingFocusProvider, useRovingFocusContext] = createRovingFocusGroupContext(GROUP_NAME$2);
-var RovingFocusGroup = import_react.forwardRef((props, forwardedRef) => {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Provider, {
-		scope: props.__scopeRovingFocusGroup,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.Slot, {
-			scope: props.__scopeRovingFocusGroup,
-			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RovingFocusGroupImpl, {
-				...props,
-				ref: forwardedRef
-			})
-		})
-	});
-});
-RovingFocusGroup.displayName = GROUP_NAME$2;
-var RovingFocusGroupImpl = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeRovingFocusGroup, orientation, loop = false, dir, currentTabStopId: currentTabStopIdProp, defaultCurrentTabStopId, onCurrentTabStopIdChange, onEntryFocus, preventScrollOnEntryFocus = false, ...groupProps } = props;
-	const ref = import_react.useRef(null);
-	const composedRefs = useComposedRefs(forwardedRef, ref);
-	const direction = useDirection(dir);
-	const [currentTabStopId, setCurrentTabStopId] = useControllableState({
-		prop: currentTabStopIdProp,
-		defaultProp: defaultCurrentTabStopId ?? null,
-		onChange: onCurrentTabStopIdChange,
-		caller: GROUP_NAME$2
-	});
-	const [isTabbingBackOut, setIsTabbingBackOut] = import_react.useState(false);
-	const handleEntryFocus = useCallbackRef(onEntryFocus);
-	const getItems = useCollection$1(__scopeRovingFocusGroup);
-	const isClickFocusRef = import_react.useRef(false);
-	const [focusableItemsCount, setFocusableItemsCount] = import_react.useState(0);
-	import_react.useEffect(() => {
-		const node = ref.current;
-		if (node) {
-			node.addEventListener(ENTRY_FOCUS, handleEntryFocus);
-			return () => node.removeEventListener(ENTRY_FOCUS, handleEntryFocus);
-		}
-	}, [handleEntryFocus]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RovingFocusProvider, {
-		scope: __scopeRovingFocusGroup,
-		orientation,
-		dir: direction,
-		loop,
-		currentTabStopId,
-		onItemFocus: import_react.useCallback((tabStopId) => setCurrentTabStopId(tabStopId), [setCurrentTabStopId]),
-		onItemShiftTab: import_react.useCallback(() => setIsTabbingBackOut(true), []),
-		onFocusableItemAdd: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount + 1), []),
-		onFocusableItemRemove: import_react.useCallback(() => setFocusableItemsCount((prevCount) => prevCount - 1), []),
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
-			"data-orientation": orientation,
-			...groupProps,
-			ref: composedRefs,
-			style: {
-				outline: "none",
-				...props.style
-			},
-			onMouseDown: composeEventHandlers(props.onMouseDown, () => {
-				isClickFocusRef.current = true;
-			}),
-			onFocus: composeEventHandlers(props.onFocus, (event) => {
-				const isKeyboardFocus = !isClickFocusRef.current;
-				if (event.target === event.currentTarget && isKeyboardFocus && !isTabbingBackOut) {
-					const entryFocusEvent = new CustomEvent(ENTRY_FOCUS, EVENT_OPTIONS);
-					event.currentTarget.dispatchEvent(entryFocusEvent);
-					if (!entryFocusEvent.defaultPrevented) {
-						const items$1 = getItems().filter((item) => item.focusable);
-						focusFirst$1([
-							items$1.find((item) => item.active),
-							items$1.find((item) => item.id === currentTabStopId),
-							...items$1
-						].filter(Boolean).map((item) => item.ref.current), preventScrollOnEntryFocus);
-					}
-				}
-				isClickFocusRef.current = false;
-			}),
-			onBlur: composeEventHandlers(props.onBlur, () => setIsTabbingBackOut(false))
-		})
-	});
-});
-var ITEM_NAME$2 = "RovingFocusGroupItem";
-var RovingFocusGroupItem = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeRovingFocusGroup, focusable = true, active = false, tabStopId, children, ...itemProps } = props;
-	const autoId = useId();
-	const id = tabStopId || autoId;
-	const context = useRovingFocusContext(ITEM_NAME$2, __scopeRovingFocusGroup);
-	const isCurrentTabStop = context.currentTabStopId === id;
-	const getItems = useCollection$1(__scopeRovingFocusGroup);
-	const { onFocusableItemAdd, onFocusableItemRemove, currentTabStopId } = context;
-	import_react.useEffect(() => {
-		if (focusable) {
-			onFocusableItemAdd();
-			return () => onFocusableItemRemove();
-		}
-	}, [
-		focusable,
-		onFocusableItemAdd,
-		onFocusableItemRemove
-	]);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Collection$1.ItemSlot, {
-		scope: __scopeRovingFocusGroup,
-		id,
-		focusable,
-		active,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.span, {
-			tabIndex: isCurrentTabStop ? 0 : -1,
-			"data-orientation": context.orientation,
-			...itemProps,
-			ref: forwardedRef,
-			onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
-				if (!focusable) event.preventDefault();
-				else context.onItemFocus(id);
-			}),
-			onFocus: composeEventHandlers(props.onFocus, () => context.onItemFocus(id)),
-			onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-				if (event.key === "Tab" && event.shiftKey) {
-					context.onItemShiftTab();
-					return;
-				}
-				if (event.target !== event.currentTarget) return;
-				const focusIntent = getFocusIntent(event, context.orientation, context.dir);
-				if (focusIntent !== void 0) {
-					if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-					event.preventDefault();
-					let candidateNodes = getItems().filter((item) => item.focusable).map((item) => item.ref.current);
-					if (focusIntent === "last") candidateNodes.reverse();
-					else if (focusIntent === "prev" || focusIntent === "next") {
-						if (focusIntent === "prev") candidateNodes.reverse();
-						const currentIndex = candidateNodes.indexOf(event.currentTarget);
-						candidateNodes = context.loop ? wrapArray$1(candidateNodes, currentIndex + 1) : candidateNodes.slice(currentIndex + 1);
-					}
-					setTimeout(() => focusFirst$1(candidateNodes));
-				}
-			}),
-			children: typeof children === "function" ? children({
-				isCurrentTabStop,
-				hasTabStop: currentTabStopId != null
-			}) : children
-		})
-	});
-});
-RovingFocusGroupItem.displayName = ITEM_NAME$2;
-var MAP_KEY_TO_FOCUS_INTENT = {
-	ArrowLeft: "prev",
-	ArrowUp: "prev",
-	ArrowRight: "next",
-	ArrowDown: "next",
-	PageUp: "first",
-	Home: "first",
-	PageDown: "last",
-	End: "last"
-};
-function getDirectionAwareKey(key, dir) {
-	if (dir !== "rtl") return key;
-	return key === "ArrowLeft" ? "ArrowRight" : key === "ArrowRight" ? "ArrowLeft" : key;
-}
-function getFocusIntent(event, orientation, dir) {
-	const key = getDirectionAwareKey(event.key, dir);
-	if (orientation === "vertical" && ["ArrowLeft", "ArrowRight"].includes(key)) return void 0;
-	if (orientation === "horizontal" && ["ArrowUp", "ArrowDown"].includes(key)) return void 0;
-	return MAP_KEY_TO_FOCUS_INTENT[key];
-}
-function focusFirst$1(candidates, preventScroll = false) {
-	const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
-	for (const candidate of candidates) {
-		if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
-		candidate.focus({ preventScroll });
-		if (document.activeElement !== PREVIOUSLY_FOCUSED_ELEMENT) return;
-	}
-}
-function wrapArray$1(array$1, startIndex) {
-	return array$1.map((_$1, index$1) => array$1[(startIndex + index$1) % array$1.length]);
-}
-var Root$1 = RovingFocusGroup;
-var Item = RovingFocusGroupItem;
-var TABS_NAME = "Tabs";
-var [createTabsContext, createTabsScope] = createContextScope(TABS_NAME, [createRovingFocusGroupScope]);
-var useRovingFocusGroupScope$1 = createRovingFocusGroupScope();
-var [TabsProvider, useTabsContext] = createTabsContext(TABS_NAME);
-var Tabs$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeTabs, value: valueProp, onValueChange, defaultValue, orientation = "horizontal", dir, activationMode = "automatic", ...tabsProps } = props;
-	const direction = useDirection(dir);
-	const [value, setValue] = useControllableState({
-		prop: valueProp,
-		onChange: onValueChange,
-		defaultProp: defaultValue ?? "",
-		caller: TABS_NAME
-	});
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsProvider, {
-		scope: __scopeTabs,
-		baseId: useId(),
-		value,
-		onValueChange: setValue,
-		orientation,
-		dir: direction,
-		activationMode,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			dir: direction,
-			"data-orientation": orientation,
-			...tabsProps,
-			ref: forwardedRef
-		})
-	});
-});
-Tabs$1.displayName = TABS_NAME;
-var TAB_LIST_NAME = "TabsList";
-var TabsList$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeTabs, loop = true, ...listProps } = props;
-	const context = useTabsContext(TAB_LIST_NAME, __scopeTabs);
-	const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Root$1, {
-		asChild: true,
-		...rovingFocusGroupScope,
-		orientation: context.orientation,
-		dir: context.dir,
-		loop,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			role: "tablist",
-			"aria-orientation": context.orientation,
-			...listProps,
-			ref: forwardedRef
-		})
-	});
-});
-TabsList$1.displayName = TAB_LIST_NAME;
-var TRIGGER_NAME$1 = "TabsTrigger";
-var TabsTrigger$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeTabs, value, disabled = false, ...triggerProps } = props;
-	const context = useTabsContext(TRIGGER_NAME$1, __scopeTabs);
-	const rovingFocusGroupScope = useRovingFocusGroupScope$1(__scopeTabs);
-	const triggerId = makeTriggerId(context.baseId, value);
-	const contentId = makeContentId(context.baseId, value);
-	const isSelected = value === context.value;
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Item, {
-		asChild: true,
-		...rovingFocusGroupScope,
-		focusable: !disabled,
-		active: isSelected,
-		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.button, {
-			type: "button",
-			role: "tab",
-			"aria-selected": isSelected,
-			"aria-controls": contentId,
-			"data-state": isSelected ? "active" : "inactive",
-			"data-disabled": disabled ? "" : void 0,
-			disabled,
-			id: triggerId,
-			...triggerProps,
-			ref: forwardedRef,
-			onMouseDown: composeEventHandlers(props.onMouseDown, (event) => {
-				if (!disabled && event.button === 0 && event.ctrlKey === false) context.onValueChange(value);
-				else event.preventDefault();
-			}),
-			onKeyDown: composeEventHandlers(props.onKeyDown, (event) => {
-				if ([" ", "Enter"].includes(event.key)) context.onValueChange(value);
-			}),
-			onFocus: composeEventHandlers(props.onFocus, () => {
-				const isAutomaticActivation = context.activationMode !== "manual";
-				if (!isSelected && !disabled && isAutomaticActivation) context.onValueChange(value);
-			})
-		})
-	});
-});
-TabsTrigger$1.displayName = TRIGGER_NAME$1;
-var CONTENT_NAME$2 = "TabsContent";
-var TabsContent$1 = import_react.forwardRef((props, forwardedRef) => {
-	const { __scopeTabs, value, forceMount, children, ...contentProps } = props;
-	const context = useTabsContext(CONTENT_NAME$2, __scopeTabs);
-	const triggerId = makeTriggerId(context.baseId, value);
-	const contentId = makeContentId(context.baseId, value);
-	const isSelected = value === context.value;
-	const isMountAnimationPreventedRef = import_react.useRef(isSelected);
-	import_react.useEffect(() => {
-		const rAF = requestAnimationFrame(() => isMountAnimationPreventedRef.current = false);
-		return () => cancelAnimationFrame(rAF);
-	}, []);
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Presence, {
-		present: forceMount || isSelected,
-		children: ({ present }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Primitive.div, {
-			"data-state": isSelected ? "active" : "inactive",
-			"data-orientation": context.orientation,
-			role: "tabpanel",
-			"aria-labelledby": triggerId,
-			hidden: !present,
-			id: contentId,
-			tabIndex: 0,
-			...contentProps,
-			ref: forwardedRef,
-			style: {
-				...props.style,
-				animationDuration: isMountAnimationPreventedRef.current ? "0s" : void 0
-			},
-			children: present && children
-		})
-	});
-});
-TabsContent$1.displayName = CONTENT_NAME$2;
-function makeTriggerId(baseId, value) {
-	return `${baseId}-trigger-${value}`;
-}
-function makeContentId(baseId, value) {
-	return `${baseId}-content-${value}`;
-}
-var Root2$1 = Tabs$1;
-var List = TabsList$1;
-var Trigger$1 = TabsTrigger$1;
-var Content = TabsContent$1;
-var Tabs = Root2$1;
-var TabsList = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(List, {
-	ref,
-	className: cn$1("inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground", className),
-	...props
-}));
-TabsList.displayName = List.displayName;
-var TabsTrigger = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trigger$1, {
-	ref,
-	className: cn$1("inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm", className),
-	...props
-}));
-TabsTrigger.displayName = Trigger$1.displayName;
-var TabsContent = import_react.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Content, {
-	ref,
-	className: cn$1("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className),
-	...props
-}));
-TabsContent.displayName = Content.displayName;
 var entrySchema = object({
 	materialType: _enum(["TRP", "TRD"]),
 	materialName: string().min(2, "Nome do material é obrigatório"),
@@ -36465,14 +36465,9 @@ var entrySchema = object({
 	message: "Rua e Localização são obrigatórios para TRD",
 	path: ["locationId"]
 });
-var exitSchema = object({
-	palletId: string().min(1, "Selecione um item"),
-	user: string().min(2, "Nome do operador obrigatório")
-});
-function EntryExit() {
+function EntryForm() {
 	const { toast: toast$2 } = useToast();
-	const { streets, getLocationsByStreet, addPallet, pallets, removePallet, getStreetName, getLocationName } = useInventoryStore();
-	const [activeTab, setActiveTab] = (0, import_react.useState)("entry");
+	const { streets, getLocationsByStreet, addPallet } = useInventoryStore();
 	const entryForm = useForm({
 		resolver: a(entrySchema),
 		defaultValues: {
@@ -36484,11 +36479,6 @@ function EntryExit() {
 	});
 	const materialType = entryForm.watch("materialType");
 	const selectedStreetId = entryForm.watch("streetId");
-	const exitForm = useForm({
-		resolver: a(exitSchema),
-		defaultValues: { user: "" }
-	});
-	const trdPallets = pallets.filter((p) => p.type === "TRD");
 	const onEntrySubmit = (data) => {
 		addPallet({
 			locationId: data.materialType === "TRP" ? "TRP_AREA" : data.locationId,
@@ -36508,6 +36498,121 @@ function EntryExit() {
 			quantity: 1
 		});
 	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Nova Entrada" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Preencha os dados para registrar recebimento de material." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+		onSubmit: entryForm.handleSubmit(onEntrySubmit),
+		className: "space-y-6",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "grid md:grid-cols-2 gap-6",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Tipo de Material" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+						name: "materialType",
+						control: entryForm.control,
+						render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex gap-4",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								type: "button",
+								variant: field.value === "TRP" ? "default" : "outline",
+								className: cn$1("flex-1", field.value === "TRP" && "bg-blue-600 hover:bg-blue-700"),
+								onClick: () => field.onChange("TRP"),
+								children: "TRP (Entrada)"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+								type: "button",
+								variant: field.value === "TRD" ? "default" : "outline",
+								className: cn$1("flex-1", field.value === "TRD" && "bg-green-600 hover:bg-green-700"),
+								onClick: () => field.onChange("TRD"),
+								children: "TRD (Rua)"
+							})]
+						})
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nome do Material" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+							...entryForm.register("materialName"),
+							placeholder: "Ex: Motor Elétrico"
+						}),
+						entryForm.formState.errors.materialName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "text-xs text-red-500",
+							children: entryForm.formState.errors.materialName.message
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Descrição / Detalhes" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+						...entryForm.register("description"),
+						placeholder: "Ex: Lote 123, Fornecedor X"
+					})]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Quantidade" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+						type: "number",
+						...entryForm.register("quantity")
+					})]
+				}),
+				materialType === "TRD" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+						name: "streetId",
+						control: entryForm.control,
+						render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							onValueChange: field.onChange,
+							value: field.value,
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione a Rua" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: streets.map((s$2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+								value: s$2.id,
+								children: s$2.name
+							}, s$2.id)) })]
+						})
+					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-2",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Localização" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+							name: "locationId",
+							control: entryForm.control,
+							render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+								onValueChange: field.onChange,
+								value: field.value,
+								disabled: !selectedStreetId,
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione o Local" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: selectedStreetId && getLocationsByStreet(selectedStreetId).map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: l.id,
+									children: l.name
+								}, l.id)) })]
+							})
+						}),
+						entryForm.formState.errors.locationId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "text-xs text-red-500",
+							children: entryForm.formState.errors.locationId.message
+						})
+					]
+				})] })
+			]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			type: "submit",
+			className: "w-full md:w-auto",
+			size: "lg",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "mr-2 h-4 w-4" }), " Confirmar Entrada"]
+		})]
+	}) })] });
+}
+var exitSchema = object({
+	palletId: string().min(1, "Selecione um item"),
+	user: string().min(2, "Nome do operador obrigatório")
+});
+function ExitForm() {
+	const { toast: toast$2 } = useToast();
+	const { pallets, removePallet, getStreetName, getLocationName, locations } = useInventoryStore();
+	const exitForm = useForm({
+		resolver: a(exitSchema),
+		defaultValues: { user: "" }
+	});
+	const trdPallets = pallets.filter((p) => p.type === "TRD");
 	const onExitSubmit = (data) => {
 		removePallet(data.palletId, data.user);
 		toast$2({
@@ -36516,6 +36621,83 @@ function EntryExit() {
 		});
 		exitForm.reset({ user: "" });
 	};
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Registrar Saída" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Remoção de material TRD (alocado em rua)." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+		onSubmit: exitForm.handleSubmit(onExitSubmit),
+		className: "space-y-6",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "space-y-4",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "space-y-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Selecione o Item para Saída" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
+						name: "palletId",
+						control: exitForm.control,
+						render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
+							onValueChange: field.onChange,
+							value: field.value,
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
+								className: "h-auto py-3",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Buscar item no estoque..." })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, {
+								className: "max-h-80",
+								children: trdPallets.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "p-2 text-sm text-muted-foreground",
+									children: "Nenhum item TRD disponível."
+								}) : trdPallets.map((p) => {
+									const streetId = locations.find((l) => l.id === p.locationId)?.streetId || "";
+									return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectItem, {
+										value: p.id,
+										children: [
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+												className: "font-bold",
+												children: p.materialName
+											}),
+											" ",
+											"- ",
+											p.quantity,
+											" un -",
+											" ",
+											getLocationName(p.locationId),
+											" (",
+											getStreetName(streetId),
+											")"
+										]
+									}, p.id);
+								})
+							})]
+						})
+					}),
+					exitForm.formState.errors.palletId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "text-xs text-red-500",
+						children: exitForm.formState.errors.palletId.message
+					})
+				]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "space-y-2",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Operador Responsável" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+						...exitForm.register("user"),
+						placeholder: "Nome do operador"
+					}),
+					exitForm.formState.errors.user && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "text-xs text-red-500",
+						children: exitForm.formState.errors.user.message
+					})
+				]
+			})]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+			type: "submit",
+			variant: "destructive",
+			className: "w-full md:w-auto",
+			size: "lg",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowUpFromLine, { className: "mr-2 h-4 w-4" }), " Confirmar Saída"]
+		})]
+	}) })] });
+}
+function EntryExit() {
+	const [activeTab, setActiveTab] = (0, import_react.useState)("entry");
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "max-w-4xl mx-auto space-y-8 animate-fade-in pb-10",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
@@ -36544,183 +36726,12 @@ function EntryExit() {
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
 					value: "entry",
 					className: "mt-6",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Nova Entrada" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Preencha os dados para registrar recebimento de material." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
-						onSubmit: entryForm.handleSubmit(onEntrySubmit),
-						className: "space-y-6",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "grid md:grid-cols-2 gap-6",
-							children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Tipo de Material" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-										name: "materialType",
-										control: entryForm.control,
-										render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-											className: "flex gap-4",
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-												type: "button",
-												variant: field.value === "TRP" ? "default" : "outline",
-												className: cn$1("flex-1", field.value === "TRP" && "bg-blue-600 hover:bg-blue-700"),
-												onClick: () => field.onChange("TRP"),
-												children: "TRP (Entrada)"
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
-												type: "button",
-												variant: field.value === "TRD" ? "default" : "outline",
-												className: cn$1("flex-1", field.value === "TRD" && "bg-green-600 hover:bg-green-700"),
-												onClick: () => field.onChange("TRD"),
-												children: "TRD (Rua)"
-											})]
-										})
-									})]
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Nome do Material" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-											...entryForm.register("materialName"),
-											placeholder: "Ex: Motor Elétrico"
-										}),
-										entryForm.formState.errors.materialName && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-											className: "text-xs text-red-500",
-											children: entryForm.formState.errors.materialName.message
-										})
-									]
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Descrição / Detalhes" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-										...entryForm.register("description"),
-										placeholder: "Ex: Lote 123, Fornecedor X"
-									})]
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Quantidade" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-										type: "number",
-										...entryForm.register("quantity")
-									})]
-								}),
-								materialType === "TRD" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Rua" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-										name: "streetId",
-										control: entryForm.control,
-										render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-											onValueChange: field.onChange,
-											value: field.value,
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione a Rua" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: streets.map((s$2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-												value: s$2.id,
-												children: s$2.name
-											}, s$2.id)) })]
-										})
-									})]
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									className: "space-y-2",
-									children: [
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Localização" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-											name: "locationId",
-											control: entryForm.control,
-											render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-												onValueChange: field.onChange,
-												value: field.value,
-												disabled: !selectedStreetId,
-												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Selecione o Local" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, { children: selectedStreetId && getLocationsByStreet(selectedStreetId).map((l) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-													value: l.id,
-													children: l.name
-												}, l.id)) })]
-											})
-										}),
-										entryForm.formState.errors.locationId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-											className: "text-xs text-red-500",
-											children: entryForm.formState.errors.locationId.message
-										})
-									]
-								})] })
-							]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "submit",
-							className: "w-full md:w-auto",
-							size: "lg",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "mr-2 h-4 w-4" }), " Confirmar Entrada"]
-						})]
-					}) })] })
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(EntryForm, {})
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TabsContent, {
 					value: "exit",
 					className: "mt-6",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, { children: "Registrar Saída" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: "Remoção de material TRD (alocado em rua)." })] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
-						onSubmit: exitForm.handleSubmit(onExitSubmit),
-						className: "space-y-6",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "space-y-4",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "space-y-2",
-								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Selecione o Item para Saída" }),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Controller, {
-										name: "palletId",
-										control: exitForm.control,
-										render: ({ field }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-											onValueChange: field.onChange,
-											value: field.value,
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, {
-												className: "h-auto py-3",
-												children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Buscar item no estoque..." })
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectContent, {
-												className: "max-h-80",
-												children: trdPallets.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-													className: "p-2 text-sm text-muted-foreground",
-													children: "Nenhum item TRD disponível."
-												}) : trdPallets.map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectItem, {
-													value: p.id,
-													children: [
-														/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-															className: "font-bold",
-															children: p.materialName
-														}),
-														" ",
-														"- ",
-														p.quantity,
-														" un -",
-														" ",
-														getLocationName(p.locationId),
-														" (",
-														getStreetName(useInventoryStore.getState().locations.find((l) => l.id === p.locationId)?.streetId || ""),
-														")"
-													]
-												}, p.id))
-											})]
-										})
-									}),
-									exitForm.formState.errors.palletId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-xs text-red-500",
-										children: exitForm.formState.errors.palletId.message
-									})
-								]
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "space-y-2",
-								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Operador Responsável" }),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-										...exitForm.register("user"),
-										placeholder: "Nome do operador"
-									}),
-									exitForm.formState.errors.user && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-xs text-red-500",
-										children: exitForm.formState.errors.user.message
-									})
-								]
-							})]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
-							type: "submit",
-							variant: "destructive",
-							className: "w-full md:w-auto",
-							size: "lg",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowUpFromLine, { className: "mr-2 h-4 w-4" }), " Confirmar Saída"]
-						})]
-					}) })] })
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ExitForm, {})
 				})
 			]
 		})]
@@ -39327,4 +39338,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-DxhzE2jH.js.map
+//# sourceMappingURL=index-CLh0gOsT.js.map

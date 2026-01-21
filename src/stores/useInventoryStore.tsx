@@ -191,6 +191,9 @@ export const InventoryProvider = ({
       ? currentStreets.find((s) => s.id === loc.streetId)?.name || 'N/A'
       : 'Zona de Entrada'
 
+    // Determine image source: pallet specific or material default
+    const image = pallet.image || getMaterialImage(pallet.materialName)
+
     const log: MovementLog = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -201,6 +204,7 @@ export const InventoryProvider = ({
       quantity: pallet.quantity,
       locationName: locName,
       streetName,
+      image,
     }
 
     const newHistory = [log, ...inventoryService.getHistory()]

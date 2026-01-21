@@ -37,6 +37,7 @@ export interface Pallet {
   type: MaterialType
   // Helper to link back to material definition for image
   materialId?: string
+  image?: string
 }
 
 export interface MovementLog {
@@ -49,6 +50,7 @@ export interface MovementLog {
   quantity: number
   locationName: string
   streetName?: string
+  image?: string
 }
 
 export interface Equipment {

@@ -61,8 +61,10 @@ export function WarehouseTab() {
     name: string
   } | null>(null)
 
+  // Roles permissions
   const canEdit =
     currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
+  const canDelete = currentUser?.role === 'ADMIN'
 
   const handleAddStreet = () => {
     if (newStreetName.trim()) {
@@ -150,8 +152,8 @@ export function WarehouseTab() {
                   </span>
                 </span>
               </AccordionTrigger>
-              {canEdit && (
-                <div className="flex items-center gap-2 mr-4">
+              <div className="flex items-center gap-2 mr-4">
+                {canEdit && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -162,6 +164,8 @@ export function WarehouseTab() {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
+                )}
+                {canDelete && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -194,8 +198,8 @@ export function WarehouseTab() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             <AccordionContent className="pb-4 pt-2">
               <div className="space-y-2 pl-4 border-l-2 border-slate-100 dark:border-slate-800 ml-2">

@@ -438,14 +438,9 @@ export const InventoryProvider = ({
 
   const deleteStreet = (id: string) => {
     const streetName = streets.find((s) => s.id === id)?.name || 'Unknown'
-    inventoryService.deleteItem(inventoryService.keys.STREETS, id)
 
-    // Cascade delete locations
+    // 1. Delete Pallets first (Children of Locations)
     const streetLocations = locations.filter((l) => l.streetId === id)
-    streetLocations.forEach((l) =>
-      inventoryService.deleteItem(inventoryService.keys.LOCATIONS, l.id),
-    )
-
     const streetLocationIds = streetLocations.map((l) => l.id)
     const palletsToDelete = pallets.filter((p) =>
       streetLocationIds.includes(p.locationId),
@@ -453,6 +448,14 @@ export const InventoryProvider = ({
     palletsToDelete.forEach((p) =>
       inventoryService.deleteItem(inventoryService.keys.PALLETS, p.id),
     )
+
+    // 2. Delete Locations (Children of Street)
+    streetLocations.forEach((l) =>
+      inventoryService.deleteItem(inventoryService.keys.LOCATIONS, l.id),
+    )
+
+    // 3. Delete Street (Parent)
+    inventoryService.deleteItem(inventoryService.keys.STREETS, id)
 
     addLog(
       'SYSTEM',

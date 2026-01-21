@@ -22,7 +22,7 @@ export default function HowItWorks() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="text-center">
           <CardHeader>
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
@@ -42,7 +42,9 @@ export default function HowItWorks() {
             <CardTitle className="text-lg">2. Cores</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Verde (Ocupado), Vermelho (Vazio), Amarelo (Verificar).
+            <strong>Verde:</strong> Local Ocupado (Material presente).
+            <br />
+            <strong>Vermelho:</strong> Local Vazio (Disponível).
           </CardContent>
         </Card>
         <Card className="text-center">
@@ -54,17 +56,6 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
             Use "Entrada/Saída" para registrar TRP e TRD.
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardHeader>
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <CardTitle className="text-lg">4. Alertas</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Ícone de alerta indica necessidade de verificação física.
           </CardContent>
         </Card>
       </div>
@@ -96,16 +87,6 @@ export default function HowItWorks() {
                 "Adicionar Prédio/Local".
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>
-                O que significa "Necessita Verificação"?
-              </AccordionTrigger>
-              <AccordionContent>
-                É um status especial (Amarelo) para indicar que o operador deve
-                conferir fisicamente o local. Pode ser ativado na edição do
-                local.
-              </AccordionContent>
-            </AccordionItem>
             <AccordionItem value="item-4">
               <AccordionTrigger>
                 Como dar baixa em um material?
@@ -113,6 +94,15 @@ export default function HowItWorks() {
               <AccordionContent>
                 Vá em "Entrada/Saída", aba "Registrar Saída". Apenas materiais
                 TRD podem ser baixados.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-5">
+              <AccordionTrigger>
+                O que significam as cores Verde e Vermelho?
+              </AccordionTrigger>
+              <AccordionContent>
+                O sistema usa estritamente Verde para indicar que há material no
+                local (Ocupado) e Vermelho para indicar que o local está vazio.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

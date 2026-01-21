@@ -146,7 +146,7 @@ export default function StreetDetail() {
                 }}
               />
               <Label htmlFor="show-empty" className="text-sm cursor-pointer">
-                Apenas Vazios
+                Apenas Vazios (Vermelho)
               </Label>
             </div>
             <div className="h-4 w-[1px] bg-border hidden sm:block" />
@@ -160,7 +160,7 @@ export default function StreetDetail() {
                 }}
               />
               <Label htmlFor="show-occupied" className="text-sm cursor-pointer">
-                Apenas Ocupados
+                Apenas Ocupados (Verde)
               </Label>
             </div>
           </div>
@@ -227,8 +227,8 @@ export default function StreetDetail() {
                   className={cn(
                     'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2 shadow-sm',
                     isOccupied
-                      ? 'bg-green-600/10 dark:bg-green-900/20 hover:bg-green-600/20 border-green-600 text-green-700 dark:text-green-400'
-                      : 'bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-700 dark:text-red-400',
+                      ? 'bg-green-600/20 dark:bg-green-900/40 hover:bg-green-600/30 border-green-600 text-green-800 dark:text-green-300'
+                      : 'bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-800 dark:text-red-400',
                   )}
                 >
                   <span className="text-2xl font-bold tracking-tighter">
@@ -239,7 +239,7 @@ export default function StreetDetail() {
                     <div className="flex flex-col items-center gap-1">
                       <Badge
                         variant="secondary"
-                        className="bg-green-600 text-white hover:bg-green-700 border-0 text-[10px] px-1.5 h-5"
+                        className="bg-green-600 text-white border-0 text-[10px] px-1.5 h-5 pointer-events-none"
                       >
                         {pallets.length} Item{pallets.length > 1 ? 's' : ''}
                       </Badge>
@@ -250,7 +250,7 @@ export default function StreetDetail() {
                   ) : (
                     <Badge
                       variant="outline"
-                      className="border-red-600 bg-red-600 text-white text-[10px] px-2 h-5"
+                      className="border-red-600 bg-red-600 text-white text-[10px] px-2 h-5 pointer-events-none"
                     >
                       Vazio
                     </Badge>

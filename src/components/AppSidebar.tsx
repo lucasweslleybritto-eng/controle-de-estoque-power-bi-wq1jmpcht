@@ -6,7 +6,6 @@ import {
   ArrowLeftRight,
   History,
   Settings,
-  Shield,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -21,6 +20,7 @@ import {
   SidebarHeader,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import logo8BSup from '@/assets/8-b-sup.jpg'
 
 const items = [
   {
@@ -65,16 +65,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b p-4 bg-primary/5">
+      <SidebarHeader className="border-b p-4 bg-sidebar-background">
         <div className="flex items-center gap-3 px-1 transition-all">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-700 shadow-md">
-            <Shield className="h-6 w-6 text-black fill-black/10" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-primary/20 bg-black">
+            <img
+              src={logo8BSup}
+              alt="8º B Sup Sl"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="flex flex-col overflow-hidden transition-all group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            <span className="font-bold text-sm leading-none text-foreground uppercase whitespace-nowrap">
+            <span className="font-bold text-sm leading-none text-sidebar-foreground uppercase whitespace-nowrap">
               8º B Sup Sl
             </span>
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase whitespace-nowrap">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase whitespace-nowrap mt-1">
               Depósito de Fardamento
             </span>
           </div>

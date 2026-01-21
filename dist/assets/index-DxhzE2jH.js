@@ -19520,10 +19520,6 @@ var Settings$1 = createLucideIcon("settings", [["path", {
 	r: "3",
 	key: "1v7zrd"
 }]]);
-var Shield = createLucideIcon("shield", [["path", {
-	d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-	key: "oel41y"
-}]]);
 var SlidersVertical = createLucideIcon("sliders-vertical", [
 	["path", {
 		d: "M10 8h4",
@@ -19622,20 +19618,6 @@ var Trash2 = createLucideIcon("trash-2", [
 	["path", {
 		d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
 		key: "e791ji"
-	}]
-]);
-var TriangleAlert = createLucideIcon("triangle-alert", [
-	["path", {
-		d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
-		key: "wmoenq"
-	}],
-	["path", {
-		d: "M12 9v4",
-		key: "juzpu7"
-	}],
-	["path", {
-		d: "M12 17h.01",
-		key: "p32p05"
 	}]
 ]);
 var Truck = createLucideIcon("truck", [
@@ -26328,7 +26310,7 @@ function Index() {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h1", {
-					className: "text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2",
+					className: "text-3xl font-bold tracking-tight flex items-center gap-2",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LayoutDashboard, { className: "h-8 w-8 text-primary" }), "Estoque Classe 2"]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 					className: "text-muted-foreground mt-1",
@@ -26339,7 +26321,7 @@ function Index() {
 						className: "relative flex-1 md:w-80",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
 							placeholder: "Buscar rua...",
-							className: "pl-10 bg-white",
+							className: "pl-10 bg-background",
 							value: searchQuery,
 							onChange: (e) => setSearchQuery(e.target.value)
 						})]
@@ -26372,7 +26354,7 @@ function Index() {
 				className: "grid grid-cols-1 md:grid-cols-3 gap-6",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-						className: "bg-white border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow",
+						className: "border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, {
 							className: "flex flex-row items-center justify-between space-y-0 pb-2",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
@@ -26393,7 +26375,7 @@ function Index() {
 						})] })]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-						className: "bg-white border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow",
+						className: "border-l-4 border-l-green-600 shadow-sm hover:shadow-md transition-shadow",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, {
 							className: "flex flex-row items-center justify-between space-y-0 pb-2",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
@@ -26409,7 +26391,7 @@ function Index() {
 						})] })]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-						className: "bg-white border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow",
+						className: "border-l-4 border-l-blue-600 shadow-sm hover:shadow-md transition-shadow",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, {
 							className: "flex flex-row items-center justify-between space-y-0 pb-2",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
@@ -26492,16 +26474,16 @@ function Index() {
 							to: `/street/${street.id}`,
 							className: "block h-full",
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-								className: "h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-slate-200 group-hover:border-t-primary",
+								className: "h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-muted group-hover:border-t-primary",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardHeader, {
-									className: "bg-slate-50 border-b pb-4",
+									className: "bg-muted/20 border-b pb-4",
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "flex justify-between items-center",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
-											className: "text-2xl font-bold text-slate-800",
+											className: "text-2xl font-bold",
 											children: street.name
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-											className: "text-xs font-semibold px-2 py-1 bg-white border rounded-full text-slate-600",
+											className: "text-xs font-semibold px-2 py-1 bg-background border rounded-full text-muted-foreground",
 											children: [streetTotal, " Slots"]
 										})]
 									})
@@ -26511,22 +26493,29 @@ function Index() {
 										className: "space-y-4",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											className: "space-y-2",
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-												className: "flex justify-between text-sm",
-												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-													className: "text-muted-foreground",
-													children: "Ocupação"
-												}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-													className: "font-medium",
-													children: [streetOccupancy, "%"]
-												})]
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-												className: "h-2 w-full bg-slate-100 rounded-full overflow-hidden",
-												children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-													className: cn$1("h-full transition-all duration-500", streetOccupancy > 80 ? "bg-red-500" : streetOccupancy > 50 ? "bg-yellow-500" : "bg-green-500"),
-													style: { width: `${streetOccupancy}%` }
+											children: [
+												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+													className: "flex justify-between text-sm",
+													children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+														className: "text-muted-foreground",
+														children: "Ocupação"
+													}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+														className: "font-medium",
+														children: [streetOccupancy, "%"]
+													})]
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+													className: "h-2 w-full bg-secondary rounded-full overflow-hidden",
+													children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+														className: cn$1("h-full transition-all duration-500", streetOccupancy > 90 ? "bg-green-600" : streetOccupancy < 10 ? "bg-red-500" : "bg-green-500"),
+														style: { width: `${streetOccupancy}%` }
+													})
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+													className: "flex justify-between text-[10px] text-muted-foreground px-1",
+													children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Vazio (Vermelho)" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Cheio (Verde)" })]
 												})
-											})]
+											]
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											className: "pt-2 flex items-center text-primary text-sm font-medium group-hover:translate-x-1 transition-transform",
 											children: ["Ver Detalhes ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, { className: "ml-1 h-3 w-3" })]
@@ -26786,7 +26775,7 @@ function StreetDetail() {
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, {
 									htmlFor: "show-empty",
 									className: "text-sm cursor-pointer",
-									children: "Apenas Vazios"
+									children: "Apenas Vazios (Vermelho)"
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "h-4 w-[1px] bg-border hidden sm:block" }),
@@ -26802,7 +26791,7 @@ function StreetDetail() {
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, {
 									htmlFor: "show-occupied",
 									className: "text-sm cursor-pointer",
-									children: "Apenas Ocupados"
+									children: "Apenas Ocupados (Verde)"
 								})]
 							})
 						]
@@ -26849,7 +26838,7 @@ function StreetDetail() {
 							className: "block",
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 								variant: "outline",
-								className: cn$1("w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2 shadow-sm", isOccupied ? "bg-green-600/10 dark:bg-green-900/20 hover:bg-green-600/20 border-green-600 text-green-700 dark:text-green-400" : "bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-700 dark:text-red-400"),
+								className: cn$1("w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2 shadow-sm", isOccupied ? "bg-green-600/20 dark:bg-green-900/40 hover:bg-green-600/30 border-green-600 text-green-800 dark:text-green-300" : "bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-800 dark:text-red-400"),
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 									className: "text-2xl font-bold tracking-tighter",
 									children: location.name
@@ -26857,7 +26846,7 @@ function StreetDetail() {
 									className: "flex flex-col items-center gap-1",
 									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Badge, {
 										variant: "secondary",
-										className: "bg-green-600 text-white hover:bg-green-700 border-0 text-[10px] px-1.5 h-5",
+										className: "bg-green-600 text-white border-0 text-[10px] px-1.5 h-5 pointer-events-none",
 										children: [
 											pallets.length,
 											" Item",
@@ -26869,7 +26858,7 @@ function StreetDetail() {
 									})]
 								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
 									variant: "outline",
-									className: "border-red-600 bg-red-600 text-white text-[10px] px-2 h-5",
+									className: "border-red-600 bg-red-600 text-white text-[10px] px-2 h-5 pointer-events-none",
 									children: "Vazio"
 								})]
 							})
@@ -30056,6 +30045,7 @@ function GeneralSpreadsheet() {
 		]
 	});
 }
+var _8_b_sup_default = "/assets/8-b-sup-BOqCBP0y.jpg";
 function Equipment() {
 	const { equipments, addEquipment, deleteEquipment } = useInventoryStore();
 	const { toast: toast$2 } = useToast();
@@ -30091,21 +30081,35 @@ function Equipment() {
 		toast$2({ title: "Equipamento adicionado" });
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-6 animate-fade-in",
+		className: "space-y-6 animate-fade-in pb-10",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-				className: "text-3xl font-bold tracking-tight",
-				children: "Gestão de Equipamentos"
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-muted-foreground",
-				children: "Controle de frota e ferramentas do depósito."
-			})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
+			className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b pb-6",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-center gap-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "h-16 w-16 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm bg-black",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: _8_b_sup_default,
+						alt: "Logo",
+						className: "h-full w-full object-cover"
+					})
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+					className: "text-3xl font-bold tracking-tight",
+					children: "Gestão de Equipamentos"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-muted-foreground",
+					children: "Controle de frota e ferramentas do 8º B Sup Sl."
+				})] })]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dialog, {
 				open: isAddOpen,
 				onOpenChange: setIsAddOpen,
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTrigger, {
 					asChild: true,
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "mr-2 h-4 w-4" }), " Adicionar Equipamento"] })
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+						size: "lg",
+						className: "shadow-sm",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Plus, { className: "mr-2 h-5 w-5" }), " Adicionar Equipamento"]
+					})
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogContent, { children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogHeader, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, { children: "Novo Equipamento" }) }),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -30176,10 +30180,10 @@ function Equipment() {
 					}) })
 				] })]
 			})]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-			className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-			children: equipments.map((eq) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-				className: "overflow-hidden hover:shadow-lg transition-shadow group relative",
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+			children: [equipments.map((eq) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
+				className: "overflow-hidden hover:shadow-lg transition-all duration-300 group relative border-muted bg-card",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity",
@@ -30206,63 +30210,84 @@ function Equipment() {
 						})] })] })] })
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center",
+						className: "aspect-video w-full overflow-hidden bg-slate-100 dark:bg-slate-900 flex items-center justify-center border-b",
 						children: eq.image ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 							src: eq.image,
 							alt: eq.name,
-							className: "w-full h-full object-cover hover:scale-105 transition-transform duration-500",
+							className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
 							onError: (e) => {
 								e.target.style.display = "none";
 							}
-						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Truck, { className: "h-16 w-16 text-slate-700" })
+						}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex flex-col items-center gap-2 text-muted-foreground",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Truck, { className: "h-12 w-12 opacity-50" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-xs",
+								children: "Sem imagem"
+							})]
+						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardHeader, {
-						className: "pb-2",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex justify-between items-start",
-							children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
-									className: "text-lg",
+						className: "pb-2 pt-4",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "flex justify-between items-start gap-2",
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "min-w-0",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
+									className: "text-lg truncate",
+									title: eq.name,
 									children: eq.name
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, { children: eq.model })] }),
-								eq.status === "available" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
-									className: "bg-green-600 hover:bg-green-700",
-									children: "Disponível"
-								}),
-								eq.status === "in-use" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
-									variant: "secondary",
-									className: "bg-yellow-200 text-yellow-900 hover:bg-yellow-300",
-									children: "Em Uso"
-								}),
-								eq.status === "maintenance" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
-									variant: "destructive",
-									children: "Manutenção"
-								})
-							]
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardDescription, {
+									className: "truncate",
+									title: eq.model,
+									children: eq.model || "Modelo não especificado"
+								})]
+							})
 						})
 					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "space-y-2 text-sm",
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "flex items-center justify-between mb-2",
+						children: [
+							eq.status === "available" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
+								variant: "outline",
+								className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+								children: "Disponível"
+							}),
+							eq.status === "in-use" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
+								variant: "outline",
+								className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+								children: "Em Uso"
+							}),
+							eq.status === "maintenance" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Badge, {
+								variant: "outline",
+								className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+								children: "Manutenção"
+							})
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "space-y-1 text-xs text-muted-foreground",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							className: "flex items-center text-muted-foreground",
-							children: eq.status === "available" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, { className: "w-4 h-4 mr-2 text-green-500" }),
-								" ",
-								"Pronto para uso"
-							] }) : eq.status === "in-use" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, { className: "w-4 h-4 mr-2 text-yellow-500" }),
-								" ",
+							className: "flex items-center",
+							children: eq.status === "available" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, { className: "w-3.5 h-3.5 mr-1.5 text-green-600" }), "Pronto para operação"] }) : eq.status === "in-use" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Clock, { className: "w-3.5 h-3.5 mr-1.5 text-blue-600" }),
 								"Operador: ",
-								eq.operator || "N/A"
-							] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleAlert, { className: "w-4 h-4 mr-2 text-red-500" }),
-								" ",
-								"Indisponível"
-							] })
+								eq.operator || "Não informado"
+							] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleAlert, { className: "w-3.5 h-3.5 mr-1.5 text-red-600" }), "Indisponível"] })
 						})
-					}) })
+					})] })
 				]
-			}, eq.id))
+			}, eq.id)), equipments.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/50",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Truck, { className: "h-12 w-12 mx-auto mb-3 opacity-20" }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Nenhum equipamento cadastrado." }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Button, {
+						variant: "link",
+						onClick: () => setIsAddOpen(true),
+						className: "mt-2",
+						children: "Adicionar o primeiro"
+					})
+				]
+			})]
 		})]
 	});
 }
@@ -30659,7 +30684,7 @@ function HowItWorks() {
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "grid md:grid-cols-2 lg:grid-cols-4 gap-4",
+				className: "grid md:grid-cols-2 lg:grid-cols-3 gap-4",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
 						className: "text-center",
@@ -30682,9 +30707,15 @@ function HowItWorks() {
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
 							className: "text-lg",
 							children: "2. Cores"
-						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
+						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardContent, {
 							className: "text-sm text-muted-foreground",
-							children: "Verde (Ocupado), Vermelho (Vazio), Amarelo (Verificar)."
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Verde:" }),
+								" Local Ocupado (Material presente).",
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("br", {}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Vermelho:" }),
+								" Local Vazio (Disponível)."
+							]
 						})]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
@@ -30698,19 +30729,6 @@ function HowItWorks() {
 						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
 							className: "text-sm text-muted-foreground",
 							children: "Use \"Entrada/Saída\" para registrar TRP e TRD."
-						})]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Card, {
-						className: "text-center",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(CardHeader, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							className: "mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TriangleAlert, { className: "w-6 h-6 text-red-600" })
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardTitle, {
-							className: "text-lg",
-							children: "4. Alertas"
-						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CardContent, {
-							className: "text-sm text-muted-foreground",
-							children: "Ícone de alerta indica necessidade de verificação física."
 						})]
 					})
 				]
@@ -30735,12 +30753,12 @@ function HowItWorks() {
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, { children: "Como adicionar uma nova rua ou local?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, { children: "No Dashboard, use o botão \"Nova Rua\". Dentro da Rua, use \"Adicionar Prédio/Local\"." })]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AccordionItem, {
-						value: "item-3",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, { children: "O que significa \"Necessita Verificação\"?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, { children: "É um status especial (Amarelo) para indicar que o operador deve conferir fisicamente o local. Pode ser ativado na edição do local." })]
-					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AccordionItem, {
 						value: "item-4",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, { children: "Como dar baixa em um material?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, { children: "Vá em \"Entrada/Saída\", aba \"Registrar Saída\". Apenas materiais TRD podem ser baixados." })]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(AccordionItem, {
+						value: "item-5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionTrigger, { children: "O que significam as cores Verde e Vermelho?" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AccordionContent, { children: "O sistema usa estritamente Verde para indicar que há material no local (Ocupado) e Vermelho para indicar que o local está vazio." })]
 					})
 				]
 			}) })] })
@@ -37989,19 +38007,23 @@ function AppSidebar() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Sidebar, {
 		collapsible: "icon",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SidebarHeader, {
-			className: "border-b p-4 bg-primary/5",
+			className: "border-b p-4 bg-sidebar-background",
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex items-center gap-3 px-1 transition-all",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-yellow-700 shadow-md",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Shield, { className: "h-6 w-6 text-black fill-black/10" })
+					className: "flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-primary/20 bg-black",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: _8_b_sup_default,
+						alt: "8º B Sup Sl",
+						className: "h-full w-full object-cover"
+					})
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex flex-col overflow-hidden transition-all group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "font-bold text-sm leading-none text-foreground uppercase whitespace-nowrap",
+						className: "font-bold text-sm leading-none text-sidebar-foreground uppercase whitespace-nowrap",
 						children: "8º B Sup Sl"
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "text-[10px] text-muted-foreground font-semibold uppercase whitespace-nowrap",
+						className: "text-[10px] text-muted-foreground font-semibold uppercase whitespace-nowrap mt-1",
 						children: "Depósito de Fardamento"
 					})]
 				})]
@@ -39305,4 +39327,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-Bb6TD6vA.js.map
+//# sourceMappingURL=index-DxhzE2jH.js.map

@@ -92,7 +92,7 @@ export default function Index() {
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <LayoutDashboard className="h-8 w-8 text-primary" />
             Estoque Classe 2
           </h1>
@@ -105,7 +105,7 @@ export default function Index() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar rua..."
-              className="pl-10 bg-white"
+              className="pl-10 bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -138,7 +138,7 @@ export default function Index() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Ocupação TRD
@@ -152,7 +152,7 @@ export default function Index() {
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-green-600 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Posições Livres
@@ -168,7 +168,7 @@ export default function Index() {
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-white border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-blue-600 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total de Ruas
@@ -272,13 +272,13 @@ export default function Index() {
                 </AlertDialog>
               </div>
               <Link to={`/street/${street.id}`} className="block h-full">
-                <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-slate-200 group-hover:border-t-primary">
-                  <CardHeader className="bg-slate-50 border-b pb-4">
+                <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-t-4 border-t-muted group-hover:border-t-primary">
+                  <CardHeader className="bg-muted/20 border-b pb-4">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-2xl font-bold text-slate-800">
+                      <CardTitle className="text-2xl font-bold">
                         {street.name}
                       </CardTitle>
-                      <span className="text-xs font-semibold px-2 py-1 bg-white border rounded-full text-slate-600">
+                      <span className="text-xs font-semibold px-2 py-1 bg-background border rounded-full text-muted-foreground">
                         {streetTotal} Slots
                       </span>
                     </div>
@@ -294,18 +294,22 @@ export default function Index() {
                             {streetOccupancy}%
                           </span>
                         </div>
-                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                           <div
                             className={cn(
                               'h-full transition-all duration-500',
-                              streetOccupancy > 80
-                                ? 'bg-red-500'
-                                : streetOccupancy > 50
-                                  ? 'bg-yellow-500'
+                              streetOccupancy > 90
+                                ? 'bg-green-600'
+                                : streetOccupancy < 10
+                                  ? 'bg-red-500'
                                   : 'bg-green-500',
                             )}
                             style={{ width: `${streetOccupancy}%` }}
                           />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                          <span>Vazio (Vermelho)</span>
+                          <span>Cheio (Verde)</span>
                         </div>
                       </div>
                       <div className="pt-2 flex items-center text-primary text-sm font-medium group-hover:translate-x-1 transition-transform">

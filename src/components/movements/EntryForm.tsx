@@ -32,6 +32,7 @@ const entrySchema = z
     quantity: z.coerce.number().min(1, 'Quantidade mínima é 1'),
     streetId: z.string().optional(),
     locationId: z.string().optional(),
+    user: z.string().min(2, 'Nome do operador é obrigatório'),
   })
   .refine(
     (data) => {
@@ -58,6 +59,7 @@ export function EntryForm() {
       materialName: '',
       description: '',
       quantity: 1,
+      user: '',
     },
   })
 
@@ -82,23 +84,27 @@ export function EntryForm() {
   }
 
   const onEntrySubmit = (data: z.infer<typeof entrySchema>) => {
-    addPallet({
-      locationId: data.materialType === 'TRP' ? 'TRP_AREA' : data.locationId!,
-      materialName: data.materialName,
-      description: data.description,
-      quantity: data.quantity,
-      type: data.materialType,
-      image: previewImage || undefined,
-    })
+    addPallet(
+      {
+        locationId: data.materialType === 'TRP' ? 'TRP_AREA' : data.locationId!,
+        materialName: data.materialName,
+        description: data.description,
+        quantity: data.quantity,
+        type: data.materialType,
+        image: previewImage || undefined,
+      },
+      data.user,
+    )
     toast({
       title: 'Entrada Registrada',
-      description: `Material ${data.materialName} (${data.materialType}) adicionado.`,
+      description: `Material ${data.materialName} (${data.materialType}) adicionado por ${data.user}.`,
     })
     entryForm.reset({
       materialType: 'TRP',
       materialName: '',
       description: '',
       quantity: 1,
+      user: '',
     })
     setPreviewImage(null)
   }
@@ -258,6 +264,19 @@ export function EntryForm() {
                 </>
               )}
 
+              <div className="space-y-2">
+                <Label>Operador Responsável</Label>
+                <Input
+                  {...entryForm.register('user')}
+                  placeholder="Nome do operador"
+                />
+                {entryForm.formState.errors.user && (
+                  <span className="text-xs text-red-500">
+                    {entryForm.formState.errors.user.message}
+                  </span>
+                )}
+              </div>
+
               {/* Preview Section */}
               <div className="rounded-lg border bg-slate-50 p-4 mt-4">
                 <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
@@ -283,15 +302,6 @@ export function EntryForm() {
                     <p className="text-muted-foreground">
                       <span className="font-medium">Tipo:</span> {materialType}
                     </p>
-                    {previewImage ? (
-                      <span className="inline-flex items-center text-xs text-green-600 font-medium">
-                        <Check className="mr-1 h-3 w-3" /> Imagem carregada
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">
-                        Sem imagem selecionada
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

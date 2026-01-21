@@ -1054,6 +1054,9 @@ section[aria-label='Notifications alt+T'] {
 .max-w-\[200px\]{
   max-width: 200px;
 }
+.max-w-\[300px\]{
+  max-width: 300px;
+}
 .max-w-\[90\%\]{
   max-width: 90%;
 }
@@ -1839,9 +1842,6 @@ section[aria-label='Notifications alt+T'] {
 .uppercase{
   text-transform: uppercase;
 }
-.italic{
-  font-style: italic;
-}
 .tabular-nums{
   --tw-numeric-spacing: tabular-nums;
   font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
@@ -1895,6 +1895,10 @@ section[aria-label='Notifications alt+T'] {
   --tw-text-opacity: 1;
   color: rgb(75 85 99 / var(--tw-text-opacity, 1));
 }
+.text-gray-800{
+  --tw-text-opacity: 1;
+  color: rgb(31 41 55 / var(--tw-text-opacity, 1));
+}
 .text-green-600{
   --tw-text-opacity: 1;
   color: rgb(22 163 74 / var(--tw-text-opacity, 1));
@@ -1947,6 +1951,10 @@ section[aria-label='Notifications alt+T'] {
 .text-slate-400{
   --tw-text-opacity: 1;
   color: rgb(148 163 184 / var(--tw-text-opacity, 1));
+}
+.text-slate-700{
+  --tw-text-opacity: 1;
+  color: rgb(51 65 85 / var(--tw-text-opacity, 1));
 }
 .text-slate-900{
   --tw-text-opacity: 1;

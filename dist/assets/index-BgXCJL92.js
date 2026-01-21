@@ -26132,12 +26132,22 @@ var InventoryService = class {
 			key
 		});
 	}
+	notifyEvent(message$1, variant = "default") {
+		this.channel.postMessage({
+			type: "NOTIFICATION",
+			message: message$1,
+			variant
+		});
+	}
 	subscribe(callback) {
 		const handleMessage = (event) => {
-			if (event.data?.type === "UPDATE" && event.data?.key) callback(event.data.key);
+			if (event.data?.type === "UPDATE" || event.data?.type === "NOTIFICATION") callback(event.data);
 		};
 		const handleStorage = (event) => {
-			if (event.key && Object.values(KEYS).includes(event.key)) callback(event.key);
+			if (event.key && Object.values(KEYS).includes(event.key)) callback({
+				type: "UPDATE",
+				key: event.key
+			});
 		};
 		this.channel.addEventListener("message", handleMessage);
 		window.addEventListener("storage", handleStorage);
@@ -26195,6 +26205,7 @@ var InventoryService = class {
 const inventoryService = new InventoryService();
 var InventoryContext = (0, import_react.createContext)(void 0);
 const InventoryProvider = ({ children }) => {
+	const { toast: toast$2 } = useToast();
 	const [streets, setStreets] = (0, import_react.useState)(() => inventoryService.getStreets());
 	const [locations, setLocations] = (0, import_react.useState)(() => inventoryService.getLocations());
 	const [materials, setMaterials] = (0, import_react.useState)(() => inventoryService.getMaterials());
@@ -26203,8 +26214,8 @@ const InventoryProvider = ({ children }) => {
 	const [pallets, setPallets] = (0, import_react.useState)(() => inventoryService.getPallets());
 	const [history, setHistory] = (0, import_react.useState)(() => inventoryService.getHistory());
 	(0, import_react.useEffect)(() => {
-		return inventoryService.subscribe((key) => {
-			switch (key) {
+		return inventoryService.subscribe((event) => {
+			if (event.type === "UPDATE") switch (event.key) {
 				case inventoryService.keys.STREETS:
 					setStreets(inventoryService.getStreets());
 					break;
@@ -26227,8 +26238,13 @@ const InventoryProvider = ({ children }) => {
 					setHistory(inventoryService.getHistory());
 					break;
 			}
+			else if (event.type === "NOTIFICATION") toast$2({
+				title: "Atualização Remota",
+				description: event.message,
+				variant: event.variant
+			});
 		});
-	}, []);
+	}, [toast$2]);
 	const getLocationsByStreet = (0, import_react.useCallback)((streetId) => locations.filter((l) => l.streetId === streetId), [locations]);
 	const getPalletsByLocation = (0, import_react.useCallback)((locationId) => pallets.filter((p) => p.locationId === locationId), [pallets]);
 	const getLocationStatus = (0, import_react.useCallback)((locationId) => {
@@ -26243,24 +26259,37 @@ const InventoryProvider = ({ children }) => {
 		setHistory(logs);
 		inventoryService.saveHistory(logs);
 	};
-	const addLog = (type, pallet, user = "Operador") => {
-		const currentLocations = inventoryService.getLocations();
-		const currentStreets = inventoryService.getStreets();
-		const loc = currentLocations.find((l) => l.id === pallet.locationId);
-		const locName = loc ? loc.name : pallet.locationId === "TRP_AREA" ? "Zona TRP" : "N/A";
-		const streetName = loc ? currentStreets.find((s$2) => s$2.id === loc.streetId)?.name || "N/A" : "Zona de Entrada";
-		const image = pallet.image || getMaterialImage(pallet.materialName);
+	const addLog = (type, params, user = "Sistema") => {
+		const { pallet, details } = params;
+		let locName = "N/A";
+		let streetName = "N/A";
+		let image = void 0;
+		let materialName = void 0;
+		let materialType = void 0;
+		let quantity = void 0;
+		if (pallet) {
+			const currentLocations = inventoryService.getLocations();
+			const currentStreets = inventoryService.getStreets();
+			const loc = currentLocations.find((l) => l.id === pallet.locationId);
+			locName = loc ? loc.name : pallet.locationId === "TRP_AREA" ? "Zona TRP" : "N/A";
+			streetName = loc ? currentStreets.find((s$2) => s$2.id === loc.streetId)?.name || "N/A" : "Zona de Entrada";
+			image = pallet.image || getMaterialImage(pallet.materialName);
+			materialName = pallet.materialName;
+			materialType = pallet.type;
+			quantity = pallet.quantity;
+		}
 		_persistHistory([{
 			id: crypto.randomUUID(),
 			date: (/* @__PURE__ */ new Date()).toISOString(),
 			user,
 			type,
-			materialType: pallet.type,
-			materialName: pallet.materialName,
-			quantity: pallet.quantity,
+			materialType,
+			materialName,
+			quantity,
 			locationName: locName,
 			streetName,
-			image
+			image,
+			description: details
 		}, ...inventoryService.getHistory()]);
 	};
 	const addStreet = (name) => {
@@ -26270,16 +26299,22 @@ const InventoryProvider = ({ children }) => {
 		}];
 		setStreets(newStreets);
 		inventoryService.saveStreets(newStreets);
+		addLog("SYSTEM", { details: `Rua criada: ${name}` }, "Gerente");
+		inventoryService.notifyEvent(`Nova rua criada: ${name}`);
 	};
 	const updateStreet = (id, name) => {
+		const oldName = streets.find((s$2) => s$2.id === id)?.name;
 		const newStreets = streets.map((s$2) => s$2.id === id ? {
 			...s$2,
 			name
 		} : s$2);
 		setStreets(newStreets);
 		inventoryService.saveStreets(newStreets);
+		addLog("SYSTEM", { details: `Rua renomeada: ${oldName} -> ${name}` }, "Gerente");
+		inventoryService.notifyEvent(`Rua ${oldName} renomeada para ${name}`);
 	};
 	const deleteStreet = (id) => {
+		const streetName = streets.find((s$2) => s$2.id === id)?.name || "Unknown";
 		const newStreets = streets.filter((s$2) => s$2.id !== id);
 		setStreets(newStreets);
 		inventoryService.saveStreets(newStreets);
@@ -26290,6 +26325,8 @@ const InventoryProvider = ({ children }) => {
 		const newPallets = pallets.filter((p) => !streetLocationIds.includes(p.locationId));
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
+		addLog("SYSTEM", { details: `Rua excluída: ${streetName}` }, "Gerente");
+		inventoryService.notifyEvent(`Rua ${streetName} excluída`, "destructive");
 	};
 	const moveStreet = (id, direction) => {
 		const index$1 = streets.findIndex((s$2) => s$2.id === id);
@@ -26301,8 +26338,10 @@ const InventoryProvider = ({ children }) => {
 		[newStreets[index$1], newStreets[swapIndex]] = [newStreets[swapIndex], newStreets[index$1]];
 		setStreets(newStreets);
 		inventoryService.saveStreets(newStreets);
+		addLog("SYSTEM", { details: `Rua ${newStreets[swapIndex].name} reordenada (${direction})` }, "Gerente");
 	};
 	const addLocation = (streetId, name) => {
+		const street = streets.find((s$2) => s$2.id === streetId);
 		const newLocations = [...locations, {
 			id: crypto.randomUUID(),
 			streetId,
@@ -26310,22 +26349,29 @@ const InventoryProvider = ({ children }) => {
 		}];
 		setLocations(newLocations);
 		inventoryService.saveLocations(newLocations);
+		addLog("SYSTEM", { details: `Local ${name} criado na rua ${street?.name}` }, "Gerente");
+		inventoryService.notifyEvent(`Novo local ${name} em ${street?.name}`);
 	};
 	const updateLocation = (id, name) => {
+		const oldName = locations.find((l) => l.id === id)?.name;
 		const newLocations = locations.map((l) => l.id === id ? {
 			...l,
 			name
 		} : l);
 		setLocations(newLocations);
 		inventoryService.saveLocations(newLocations);
+		addLog("SYSTEM", { details: `Local renomeado: ${oldName} -> ${name}` }, "Gerente");
 	};
 	const deleteLocation = (id) => {
+		const locName = locations.find((l) => l.id === id)?.name || "Unknown";
 		const newLocations = locations.filter((l) => l.id !== id);
 		setLocations(newLocations);
 		inventoryService.saveLocations(newLocations);
 		const newPallets = pallets.filter((p) => p.locationId !== id);
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
+		addLog("SYSTEM", { details: `Local excluído: ${locName}` }, "Gerente");
+		inventoryService.notifyEvent(`Local ${locName} excluído`, "destructive");
 	};
 	const moveLocation = (locationId, direction) => {
 		const location = locations.find((l) => l.id === locationId);
@@ -26341,14 +26387,19 @@ const InventoryProvider = ({ children }) => {
 		const newLocations = [...locations.filter((l) => l.streetId !== location.streetId), ...streetLocations];
 		setLocations(newLocations);
 		inventoryService.saveLocations(newLocations);
+		addLog("SYSTEM", { details: `Local ${location.name} reordenado (${direction})` }, "Gerente");
 	};
 	const changeLocationStreet = (locationId, newStreetId) => {
+		const loc = locations.find((l) => l.id === locationId);
+		const newStreet = streets.find((s$2) => s$2.id === newStreetId);
 		const newLocations = locations.map((l) => l.id === locationId ? {
 			...l,
 			streetId: newStreetId
 		} : l);
 		setLocations(newLocations);
 		inventoryService.saveLocations(newLocations);
+		addLog("SYSTEM", { details: `Local ${loc?.name} movido para rua ${newStreet?.name}` }, "Gerente");
+		inventoryService.notifyEvent(`Local ${loc?.name} movido para ${newStreet?.name}`);
 	};
 	const addMaterial = (material) => {
 		const newMaterials = [...materials, {
@@ -26391,8 +26442,9 @@ const InventoryProvider = ({ children }) => {
 		};
 		setSettings(newSettings);
 		inventoryService.saveSettings(newSettings);
+		addLog("SYSTEM", { details: "Configurações do sistema atualizadas" }, "Admin");
 	};
-	const addPallet = (palletData) => {
+	const addPallet = (palletData, user = "Operador") => {
 		let materialId = palletData.materialId;
 		if (!materialId) materialId = materials.find((m) => m.name === palletData.materialName)?.id;
 		const newPallet = {
@@ -26404,7 +26456,8 @@ const InventoryProvider = ({ children }) => {
 		const newPallets = [...pallets, newPallet];
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
-		addLog("ENTRY", newPallet);
+		addLog("ENTRY", { pallet: newPallet }, user);
+		inventoryService.notifyEvent(`Nova entrada: ${palletData.materialName} (${palletData.quantity})`);
 	};
 	const updatePallet = (id, updates) => {
 		const newPallets = pallets.map((p) => p.id === id ? {
@@ -26425,17 +26478,19 @@ const InventoryProvider = ({ children }) => {
 	const removePallet = (id, user) => {
 		const pallet = pallets.find((p) => p.id === id);
 		if (pallet) {
-			addLog("EXIT", pallet, user);
+			addLog("EXIT", { pallet }, user);
 			const newPallets = pallets.filter((p) => p.id !== id);
 			setPallets(newPallets);
 			inventoryService.savePallets(newPallets);
+			inventoryService.notifyEvent(`Saída de material: ${pallet.materialName} (${pallet.quantity})`, "destructive");
 		}
 	};
 	const clearLocation = (locationId) => {
-		pallets.filter((p) => p.locationId === locationId).forEach((p) => addLog("EXIT", p, "Sistema - Esvaziar"));
+		pallets.filter((p) => p.locationId === locationId).forEach((p) => addLog("EXIT", { pallet: p }, "Sistema - Esvaziar"));
 		const newPallets = pallets.filter((p) => p.locationId !== locationId);
 		setPallets(newPallets);
 		inventoryService.savePallets(newPallets);
+		inventoryService.notifyEvent("Localização esvaziada", "destructive");
 	};
 	const value = (0, import_react.useMemo)(() => ({
 		streets,
@@ -36899,7 +36954,8 @@ var entrySchema = object({
 	description: string(),
 	quantity: number().min(1, "Quantidade mínima é 1"),
 	streetId: string().optional(),
-	locationId: string().optional()
+	locationId: string().optional(),
+	user: string().min(2, "Nome do operador é obrigatório")
 }).refine((data) => {
 	if (data.materialType === "TRD") return !!data.streetId && !!data.locationId;
 	return true;
@@ -36917,7 +36973,8 @@ function EntryForm() {
 			materialType: "TRP",
 			materialName: "",
 			description: "",
-			quantity: 1
+			quantity: 1,
+			user: ""
 		}
 	});
 	const materialType = entryForm.watch("materialType");
@@ -36943,16 +37000,17 @@ function EntryForm() {
 			quantity: data.quantity,
 			type: data.materialType,
 			image: previewImage || void 0
-		});
+		}, data.user);
 		toast$2({
 			title: "Entrada Registrada",
-			description: `Material ${data.materialName} (${data.materialType}) adicionado.`
+			description: `Material ${data.materialName} (${data.materialType}) adicionado por ${data.user}.`
 		});
 		entryForm.reset({
 			materialType: "TRP",
 			materialName: "",
 			description: "",
-			quantity: 1
+			quantity: 1,
+			user: ""
 		});
 		setPreviewImage(null);
 	};
@@ -37069,6 +37127,20 @@ function EntryForm() {
 						]
 					})] }),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "space-y-2",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Label$1, { children: "Operador Responsável" }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
+								...entryForm.register("user"),
+								placeholder: "Nome do operador"
+							}),
+							entryForm.formState.errors.user && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "text-xs text-red-500",
+								children: entryForm.formState.errors.user.message
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "rounded-lg border bg-slate-50 p-4 mt-4",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h4", {
 							className: "font-semibold text-sm mb-3 flex items-center gap-2",
@@ -37084,34 +37156,24 @@ function EntryForm() {
 								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Upload, { className: "h-8 w-8 text-slate-300" })
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "space-y-1 text-sm",
-								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "font-medium",
+										children: "Material:"
+									}),
+									" ",
+									materialName || "..."
+								] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									className: "text-muted-foreground",
+									children: [
 										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 											className: "font-medium",
-											children: "Material:"
+											children: "Tipo:"
 										}),
 										" ",
-										materialName || "..."
-									] }),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-										className: "text-muted-foreground",
-										children: [
-											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-												className: "font-medium",
-												children: "Tipo:"
-											}),
-											" ",
-											materialType
-										]
-									}),
-									previewImage ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-										className: "inline-flex items-center text-xs text-green-600 font-medium",
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Check, { className: "mr-1 h-3 w-3" }), " Imagem carregada"]
-									}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-xs text-muted-foreground italic",
-										children: "Sem imagem selecionada"
-									})
-								]
+										materialType
+									]
+								})]
 							})]
 						})]
 					})
@@ -37155,7 +37217,7 @@ function ExitForm() {
 		removePallet(selectedPalletId, data.user);
 		toast$2({
 			title: "Saída Registrada",
-			description: "Material removido do estoque."
+			description: `Material removido do estoque por ${data.user}.`
 		});
 		exitForm.reset({ user: "" });
 		setSelectedPalletId(null);
@@ -37319,12 +37381,15 @@ function History() {
 	const { toast: toast$2 } = useToast();
 	const [searchTerm, setSearchTerm] = (0, import_react.useState)("");
 	const [typeFilter, setTypeFilter] = (0, import_react.useState)("ALL");
-	const [materialTypeFilter, setMaterialTypeFilter] = (0, import_react.useState)("ALL");
 	const filteredHistory = history.filter((log) => {
-		const matchesSearch = log.materialName.toLowerCase().includes(searchTerm.toLowerCase()) || log.user.toLowerCase().includes(searchTerm.toLowerCase()) || log.locationName.toLowerCase().includes(searchTerm.toLowerCase());
+		const matchesSearch = [
+			log.materialName,
+			log.user,
+			log.locationName,
+			log.description
+		].filter(Boolean).join(" ").toLowerCase().includes(searchTerm.toLowerCase());
 		const matchesType = typeFilter === "ALL" || log.type === typeFilter;
-		const matchesMatType = materialTypeFilter === "ALL" || log.materialType === materialTypeFilter;
-		return matchesSearch && matchesType && matchesMatType;
+		return matchesSearch && matchesType;
 	});
 	const handleExport = () => {
 		if (filteredHistory.length === 0) {
@@ -37338,14 +37403,13 @@ function History() {
 		try {
 			exportToCSV(filteredHistory.map((log) => ({
 				Data: format(new Date(log.date), "dd/MM/yyyy HH:mm", { locale: ptBR }),
-				Tipo: log.type === "ENTRY" ? "ENTRADA" : "SAÍDA",
-				Material: log.materialName,
-				Quantidade: log.quantity,
-				Classificação: log.materialType,
-				Local: log.locationName,
-				Rua: log.streetName || "-",
-				Usuário: log.user
-			})), `historico-movimentacoes-${format(/* @__PURE__ */ new Date(), "dd-MM-yyyy")}`);
+				Tipo: log.type === "ENTRY" ? "ENTRADA" : log.type === "EXIT" ? "SAÍDA" : "SISTEMA",
+				Usuário: log.user,
+				Detalhes: log.description || log.materialName,
+				Quantidade: log.quantity || "-",
+				Local: log.locationName || "-",
+				Rua: log.streetName || "-"
+			})), `historico-completo-${format(/* @__PURE__ */ new Date(), "dd-MM-yyyy")}`);
 			toast$2({
 				title: "Exportação Concluída",
 				description: "O arquivo CSV foi baixado com sucesso."
@@ -37359,16 +37423,32 @@ function History() {
 			});
 		}
 	};
+	const getTypeBadgeColor = (type) => {
+		switch (type) {
+			case "ENTRY": return "bg-green-100 text-green-800";
+			case "EXIT": return "bg-red-100 text-red-800";
+			case "SYSTEM": return "bg-blue-100 text-blue-800";
+			default: return "bg-gray-100 text-gray-800";
+		}
+	};
+	const getTypeLabel = (type) => {
+		switch (type) {
+			case "ENTRY": return "ENTRADA";
+			case "EXIT": return "SAÍDA";
+			case "SYSTEM": return "SISTEMA";
+			default: return type;
+		}
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-6 animate-fade-in",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "flex flex-col md:flex-row justify-between items-end gap-4",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
 				className: "text-3xl font-bold tracking-tight mb-2",
-				children: "Histórico de Movimentações"
+				children: "Histórico de Atividades"
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "text-muted-foreground",
-				children: "Log completo de Entradas e Saídas."
+				children: "Log completo de Entradas, Saídas e Alterações do Sistema."
 			})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 				variant: "outline",
 				className: "gap-2",
@@ -37383,7 +37463,7 @@ function History() {
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "flex-1 relative",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Search, { className: "absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Input, {
-							placeholder: "Filtrar por material, usuário ou local...",
+							placeholder: "Filtrar por material, usuário, local ou descrição...",
 							className: "pl-9",
 							value: searchTerm,
 							onChange: (e) => setSearchTerm(e.target.value)
@@ -37394,49 +37474,31 @@ function History() {
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
 							value: typeFilter,
 							onValueChange: (v) => setTypeFilter(v),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Tipo de Movimento" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectContent, { children: [
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Tipo de Evento" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectContent, { children: [
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
 									value: "ALL",
-									children: "Todos Movimentos"
+									children: "Todos Eventos"
 								}),
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
 									value: "ENTRY",
-									children: "Entrada"
+									children: "Entrada de Estoque"
 								}),
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
 									value: "EXIT",
-									children: "Saída"
+									children: "Saída de Estoque"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
+									value: "SYSTEM",
+									children: "Sistema / Estrutura"
 								})
 							] })]
 						})
 					}),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "w-full md:w-48",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Select, {
-							value: materialTypeFilter,
-							onValueChange: (v) => setMaterialTypeFilter(v),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectTrigger, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectValue, { placeholder: "Tipo de Material" }) }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SelectContent, { children: [
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: "ALL",
-									children: "Todos Tipos"
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: "TRP",
-									children: "TRP"
-								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SelectItem, {
-									value: "TRD",
-									children: "TRD"
-								})
-							] })]
-						})
-					}),
-					(searchTerm || typeFilter !== "ALL" || materialTypeFilter !== "ALL") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
+					(searchTerm || typeFilter !== "ALL") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Button, {
 						variant: "ghost",
 						onClick: () => {
 							setSearchTerm("");
 							setTypeFilter("ALL");
-							setMaterialTypeFilter("ALL");
 						},
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(FunnelX, { className: "h-4 w-4 mr-2" }), " Limpar"]
 					})
@@ -37450,48 +37512,55 @@ function History() {
 					className: "bg-slate-50/50",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableRow, { children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Data/Hora" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Usuário" }),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Tipo" }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Material" }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Detalhes da Ação" }),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Qtd" }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Class." }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Local" }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Usuário" })
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableHead, { children: "Localização" })
 					] })
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableBody, { children: filteredHistory.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableRow, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
-					colSpan: 7,
+					colSpan: 6,
 					className: "text-center h-32 text-muted-foreground",
 					children: "Nenhum registro encontrado."
 				}) }) : filteredHistory.map((log) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableRow, {
 					className: "hover:bg-slate-50",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
-							className: "text-xs font-medium",
+							className: "text-xs font-medium whitespace-nowrap",
 							children: format(new Date(log.date), "dd/MM/yy HH:mm", { locale: ptBR })
 						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: cn("px-2 py-1 rounded-full text-xs font-bold", log.type === "ENTRY" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"),
-							children: log.type === "ENTRY" ? "ENTRADA" : "SAÍDA"
-						}) }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: log.materialName }),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
-							className: "font-bold",
-							children: log.quantity
+							className: "text-sm font-medium",
+							children: log.user
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "text-xs border px-1 rounded bg-slate-100",
-							children: log.materialType
+							className: cn("px-2 py-1 rounded-full text-xs font-bold", getTypeBadgeColor(log.type)),
+							children: getTypeLabel(log.type)
 						}) }),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TableCell, {
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
+							className: "max-w-[300px]",
+							children: log.type === "SYSTEM" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+								className: "flex items-center text-sm text-slate-700",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleAlert, { className: "h-3 w-3 mr-2 text-blue-500" }), log.description]
+							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "font-medium text-sm",
+								children: log.materialName
+							}), log.description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-xs text-muted-foreground truncate",
+								children: log.description
+							})] })
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
+							className: "font-bold",
+							children: log.quantity ? log.quantity : "-"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
 							className: "text-sm text-muted-foreground",
-							children: [
+							children: log.locationName !== "N/A" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 								log.locationName,
 								" ",
 								log.streetName ? `(${log.streetName})` : ""
-							]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TableCell, {
-							className: "text-sm",
-							children: log.user
+							] }) : "-"
 						})
 					]
 				}, log.id)) })] })
@@ -40046,4 +40115,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-BCWxQmVa.js.map
+//# sourceMappingURL=index-BgXCJL92.js.map

@@ -17,33 +17,37 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
-import { Search, FilterX, Download } from 'lucide-react'
+import { Search, FilterX, Download, AlertCircle } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { exportToCSV, cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { LogType } from '@/types'
 
 export default function History() {
   const { history } = useInventoryStore()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'ENTRY' | 'EXIT'>('ALL')
-  const [materialTypeFilter, setMaterialTypeFilter] = useState<
-    'ALL' | 'TRP' | 'TRD'
-  >('ALL')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | LogType>('ALL')
 
   const filteredHistory = history.filter((log) => {
-    const matchesSearch =
-      log.materialName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.locationName.toLowerCase().includes(searchTerm.toLowerCase())
+    // Search in relevant fields including new description
+    const contentToSearch = [
+      log.materialName,
+      log.user,
+      log.locationName,
+      log.description,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    const matchesSearch = contentToSearch.includes(searchTerm.toLowerCase())
 
     const matchesType = typeFilter === 'ALL' || log.type === typeFilter
-    const matchesMatType =
-      materialTypeFilter === 'ALL' || log.materialType === materialTypeFilter
 
-    return matchesSearch && matchesType && matchesMatType
+    return matchesSearch && matchesType
   })
 
   const handleExport = () => {
@@ -59,18 +63,22 @@ export default function History() {
     try {
       const dataToExport = filteredHistory.map((log) => ({
         Data: format(new Date(log.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-        Tipo: log.type === 'ENTRY' ? 'ENTRADA' : 'SAÍDA',
-        Material: log.materialName,
-        Quantidade: log.quantity,
-        Classificação: log.materialType,
-        Local: log.locationName,
-        Rua: log.streetName || '-',
+        Tipo:
+          log.type === 'ENTRY'
+            ? 'ENTRADA'
+            : log.type === 'EXIT'
+              ? 'SAÍDA'
+              : 'SISTEMA',
         Usuário: log.user,
+        Detalhes: log.description || log.materialName,
+        Quantidade: log.quantity || '-',
+        Local: log.locationName || '-',
+        Rua: log.streetName || '-',
       }))
 
       exportToCSV(
         dataToExport,
-        `historico-movimentacoes-${format(new Date(), 'dd-MM-yyyy')}`,
+        `historico-completo-${format(new Date(), 'dd-MM-yyyy')}`,
       )
 
       toast({
@@ -87,15 +95,41 @@ export default function History() {
     }
   }
 
+  const getTypeBadgeColor = (type: LogType) => {
+    switch (type) {
+      case 'ENTRY':
+        return 'bg-green-100 text-green-800'
+      case 'EXIT':
+        return 'bg-red-100 text-red-800'
+      case 'SYSTEM':
+        return 'bg-blue-100 text-blue-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getTypeLabel = (type: LogType) => {
+    switch (type) {
+      case 'ENTRY':
+        return 'ENTRADA'
+      case 'EXIT':
+        return 'SAÍDA'
+      case 'SYSTEM':
+        return 'SISTEMA'
+      default:
+        return type
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
-            Histórico de Movimentações
+            Histórico de Atividades
           </h1>
           <p className="text-muted-foreground">
-            Log completo de Entradas e Saídas.
+            Log completo de Entradas, Saídas e Alterações do Sistema.
           </p>
         </div>
         <Button variant="outline" className="gap-2" onClick={handleExport}>
@@ -109,7 +143,7 @@ export default function History() {
             <div className="flex-1 relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Filtrar por material, usuário ou local..."
+                placeholder="Filtrar por material, usuário, local ou descrição..."
                 className="pl-9"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -121,39 +155,22 @@ export default function History() {
                 onValueChange={(v: any) => setTypeFilter(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Tipo de Movimento" />
+                  <SelectValue placeholder="Tipo de Evento" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Todos Movimentos</SelectItem>
-                  <SelectItem value="ENTRY">Entrada</SelectItem>
-                  <SelectItem value="EXIT">Saída</SelectItem>
+                  <SelectItem value="ALL">Todos Eventos</SelectItem>
+                  <SelectItem value="ENTRY">Entrada de Estoque</SelectItem>
+                  <SelectItem value="EXIT">Saída de Estoque</SelectItem>
+                  <SelectItem value="SYSTEM">Sistema / Estrutura</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full md:w-48">
-              <Select
-                value={materialTypeFilter}
-                onValueChange={(v: any) => setMaterialTypeFilter(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Tipo de Material" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Todos Tipos</SelectItem>
-                  <SelectItem value="TRP">TRP</SelectItem>
-                  <SelectItem value="TRD">TRD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(searchTerm ||
-              typeFilter !== 'ALL' ||
-              materialTypeFilter !== 'ALL') && (
+            {(searchTerm || typeFilter !== 'ALL') && (
               <Button
                 variant="ghost"
                 onClick={() => {
                   setSearchTerm('')
                   setTypeFilter('ALL')
-                  setMaterialTypeFilter('ALL')
                 }}
               >
                 <FilterX className="h-4 w-4 mr-2" /> Limpar
@@ -167,19 +184,18 @@ export default function History() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
                   <TableHead>Data/Hora</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Material</TableHead>
-                  <TableHead>Qtd</TableHead>
-                  <TableHead>Class.</TableHead>
-                  <TableHead>Local</TableHead>
                   <TableHead>Usuário</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Detalhes da Ação</TableHead>
+                  <TableHead>Qtd</TableHead>
+                  <TableHead>Localização</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredHistory.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={6}
                       className="text-center h-32 text-muted-foreground"
                     >
                       Nenhum registro encontrado.
@@ -188,37 +204,56 @@ export default function History() {
                 ) : (
                   filteredHistory.map((log) => (
                     <TableRow key={log.id} className="hover:bg-slate-50">
-                      <TableCell className="text-xs font-medium">
+                      <TableCell className="text-xs font-medium whitespace-nowrap">
                         {format(new Date(log.date), 'dd/MM/yy HH:mm', {
                           locale: ptBR,
                         })}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {log.user}
                       </TableCell>
                       <TableCell>
                         <span
                           className={cn(
                             'px-2 py-1 rounded-full text-xs font-bold',
-                            log.type === 'ENTRY'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800',
+                            getTypeBadgeColor(log.type),
                           )}
                         >
-                          {log.type === 'ENTRY' ? 'ENTRADA' : 'SAÍDA'}
+                          {getTypeLabel(log.type)}
                         </span>
                       </TableCell>
-                      <TableCell>{log.materialName}</TableCell>
+                      <TableCell className="max-w-[300px]">
+                        {log.type === 'SYSTEM' ? (
+                          <span className="flex items-center text-sm text-slate-700">
+                            <AlertCircle className="h-3 w-3 mr-2 text-blue-500" />
+                            {log.description}
+                          </span>
+                        ) : (
+                          <div>
+                            <span className="font-medium text-sm">
+                              {log.materialName}
+                            </span>
+                            {log.description && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {log.description}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-bold">
-                        {log.quantity}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs border px-1 rounded bg-slate-100">
-                          {log.materialType}
-                        </span>
+                        {log.quantity ? log.quantity : '-'}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {log.locationName}{' '}
-                        {log.streetName ? `(${log.streetName})` : ''}
+                        {log.locationName !== 'N/A' ? (
+                          <>
+                            {log.locationName}{' '}
+                            {log.streetName ? `(${log.streetName})` : ''}
+                          </>
+                        ) : (
+                          '-'
+                        )}
                       </TableCell>
-                      <TableCell className="text-sm">{log.user}</TableCell>
                     </TableRow>
                   ))
                 )}

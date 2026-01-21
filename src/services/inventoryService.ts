@@ -20,6 +20,14 @@ const KEYS = {
 
 const CHANNEL_NAME = 'inventory_sync_channel'
 
+export type ServiceEvent =
+  | { type: 'UPDATE'; key: string }
+  | {
+      type: 'NOTIFICATION'
+      message: string
+      variant?: 'default' | 'destructive'
+    }
+
 // Mock Data
 const INITIAL_STREETS: Street[] = [
   { id: 'rua-a', name: 'Rua A' },
@@ -141,19 +149,33 @@ class InventoryService {
     this.channel.postMessage({ type: 'UPDATE', key })
   }
 
+  public notifyEvent(
+    message: string,
+    variant: 'default' | 'destructive' = 'default',
+  ) {
+    this.channel.postMessage({
+      type: 'NOTIFICATION',
+      message,
+      variant,
+    })
+  }
+
   /**
    * Subscribes to changes from other instances
    */
-  public subscribe(callback: (key: string) => void) {
+  public subscribe(callback: (event: ServiceEvent) => void) {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'UPDATE' && event.data?.key) {
-        callback(event.data.key)
+      if (
+        event.data?.type === 'UPDATE' ||
+        event.data?.type === 'NOTIFICATION'
+      ) {
+        callback(event.data)
       }
     }
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key && Object.values(KEYS).includes(event.key)) {
-        callback(event.key)
+        callback({ type: 'UPDATE', key: event.key })
       }
     }
 

@@ -7,7 +7,6 @@ export interface Location {
   id: string
   streetId: string
   name: string
-  // needsVerification removed from logic, keeping optional for backward compatibility if needed, but we will ignore it.
   needsVerification?: boolean
 }
 
@@ -35,22 +34,26 @@ export interface Pallet {
   quantity: number
   entryDate: string
   type: MaterialType
-  // Helper to link back to material definition for image
   materialId?: string
   image?: string
 }
+
+export type LogType = 'ENTRY' | 'EXIT' | 'SYSTEM'
 
 export interface MovementLog {
   id: string
   date: string
   user: string
-  type: 'ENTRY' | 'EXIT'
-  materialType: MaterialType
-  materialName: string
-  quantity: number
-  locationName: string
+  type: LogType
+  // Material/Stock specific fields (optional)
+  materialType?: MaterialType
+  materialName?: string
+  quantity?: number
   streetName?: string
+  locationName?: string
   image?: string
+  // System specific fields
+  description?: string
 }
 
 export interface Equipment {

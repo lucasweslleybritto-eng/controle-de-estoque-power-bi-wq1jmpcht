@@ -14,8 +14,10 @@ import {
   Material,
   SystemSettings,
   Equipment,
+  LogType,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
+import { useToast } from '@/hooks/use-toast'
 
 interface InventoryContextType {
   streets: Street[]
@@ -60,7 +62,7 @@ interface InventoryContextType {
   updateSettings: (settings: Partial<SystemSettings>) => void
 
   // Pallet/Movement Actions
-  addPallet: (pallet: Omit<Pallet, 'id' | 'entryDate'>) => void
+  addPallet: (pallet: Omit<Pallet, 'id' | 'entryDate'>, user?: string) => void
   updatePallet: (id: string, updates: Partial<Pallet>) => void
   movePallet: (id: string, newLocationId: string) => void
   removePallet: (id: string, user: string) => void
@@ -76,7 +78,9 @@ export const InventoryProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  // Initialize state from Service (simulating Cloud/DB fetch)
+  const { toast } = useToast()
+
+  // Initialize state from Service
   const [streets, setStreets] = useState<Street[]>(() =>
     inventoryService.getStreets(),
   )
@@ -101,33 +105,41 @@ export const InventoryProvider = ({
 
   // Subscription to Service Updates (Real-Time Sync)
   useEffect(() => {
-    const unsubscribe = inventoryService.subscribe((key) => {
-      switch (key) {
-        case inventoryService.keys.STREETS:
-          setStreets(inventoryService.getStreets())
-          break
-        case inventoryService.keys.LOCATIONS:
-          setLocations(inventoryService.getLocations())
-          break
-        case inventoryService.keys.MATERIALS:
-          setMaterials(inventoryService.getMaterials())
-          break
-        case inventoryService.keys.EQUIPMENTS:
-          setEquipments(inventoryService.getEquipments())
-          break
-        case inventoryService.keys.SETTINGS:
-          setSettings(inventoryService.getSettings())
-          break
-        case inventoryService.keys.PALLETS:
-          setPallets(inventoryService.getPallets())
-          break
-        case inventoryService.keys.HISTORY:
-          setHistory(inventoryService.getHistory())
-          break
+    const unsubscribe = inventoryService.subscribe((event) => {
+      if (event.type === 'UPDATE') {
+        switch (event.key) {
+          case inventoryService.keys.STREETS:
+            setStreets(inventoryService.getStreets())
+            break
+          case inventoryService.keys.LOCATIONS:
+            setLocations(inventoryService.getLocations())
+            break
+          case inventoryService.keys.MATERIALS:
+            setMaterials(inventoryService.getMaterials())
+            break
+          case inventoryService.keys.EQUIPMENTS:
+            setEquipments(inventoryService.getEquipments())
+            break
+          case inventoryService.keys.SETTINGS:
+            setSettings(inventoryService.getSettings())
+            break
+          case inventoryService.keys.PALLETS:
+            setPallets(inventoryService.getPallets())
+            break
+          case inventoryService.keys.HISTORY:
+            setHistory(inventoryService.getHistory())
+            break
+        }
+      } else if (event.type === 'NOTIFICATION') {
+        toast({
+          title: 'Atualização Remota',
+          description: event.message,
+          variant: event.variant,
+        })
       }
     })
     return unsubscribe
-  }, [])
+  }, [toast])
 
   // Getters
   const getLocationsByStreet = useCallback(
@@ -168,46 +180,58 @@ export const InventoryProvider = ({
     [materials],
   )
 
-  // Helper to persist history
   const _persistHistory = (logs: MovementLog[]) => {
     setHistory(logs)
     inventoryService.saveHistory(logs)
   }
 
-  // Actions
+  // Helper to add logs (Internal)
   const addLog = (
-    type: 'ENTRY' | 'EXIT',
-    pallet: Pallet,
-    user: string = 'Operador',
+    type: LogType,
+    params: {
+      pallet?: Pallet
+      details?: string
+    },
+    user: string = 'Sistema',
   ) => {
-    // Re-fetch location/street data to ensure log accuracy even if state is slightly stale
-    const currentLocations = inventoryService.getLocations()
-    const currentStreets = inventoryService.getStreets()
+    const { pallet, details } = params
+    let locName = 'N/A'
+    let streetName = 'N/A'
+    let image = undefined
+    let materialName = undefined
+    let materialType = undefined
+    let quantity = undefined
 
-    const loc = currentLocations.find((l) => l.id === pallet.locationId)
-    const locName = loc
-      ? loc.name
-      : pallet.locationId === 'TRP_AREA'
-        ? 'Zona TRP'
-        : 'N/A'
-    const streetName = loc
-      ? currentStreets.find((s) => s.id === loc.streetId)?.name || 'N/A'
-      : 'Zona de Entrada'
-
-    // Determine image source: pallet specific or material default
-    const image = pallet.image || getMaterialImage(pallet.materialName)
+    if (pallet) {
+      const currentLocations = inventoryService.getLocations()
+      const currentStreets = inventoryService.getStreets()
+      const loc = currentLocations.find((l) => l.id === pallet.locationId)
+      locName = loc
+        ? loc.name
+        : pallet.locationId === 'TRP_AREA'
+          ? 'Zona TRP'
+          : 'N/A'
+      streetName = loc
+        ? currentStreets.find((s) => s.id === loc.streetId)?.name || 'N/A'
+        : 'Zona de Entrada'
+      image = pallet.image || getMaterialImage(pallet.materialName)
+      materialName = pallet.materialName
+      materialType = pallet.type
+      quantity = pallet.quantity
+    }
 
     const log: MovementLog = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
       user,
       type,
-      materialType: pallet.type,
-      materialName: pallet.materialName,
-      quantity: pallet.quantity,
+      materialType,
+      materialName,
+      quantity,
       locationName: locName,
       streetName,
       image,
+      description: details,
     }
 
     const newHistory = [log, ...inventoryService.getHistory()]
@@ -219,23 +243,32 @@ export const InventoryProvider = ({
     const newStreets = [...streets, { id: crypto.randomUUID(), name }]
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
+    addLog('SYSTEM', { details: `Rua criada: ${name}` }, 'Gerente')
+    inventoryService.notifyEvent(`Nova rua criada: ${name}`)
   }
 
   const updateStreet = (id: string, name: string) => {
+    const oldName = streets.find((s) => s.id === id)?.name
     const newStreets = streets.map((s) => (s.id === id ? { ...s, name } : s))
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
+    addLog(
+      'SYSTEM',
+      { details: `Rua renomeada: ${oldName} -> ${name}` },
+      'Gerente',
+    )
+    inventoryService.notifyEvent(`Rua ${oldName} renomeada para ${name}`)
   }
 
   const deleteStreet = (id: string) => {
-    // Logic to cascade delete
+    const streetName = streets.find((s) => s.id === id)?.name || 'Unknown'
     const newStreets = streets.filter((s) => s.id !== id)
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
 
+    // Cleanup dependencies
     const streetLocations = locations.filter((l) => l.streetId === id)
     const streetLocationIds = streetLocations.map((l) => l.id)
-
     const newLocations = locations.filter((l) => l.streetId !== id)
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
@@ -245,6 +278,9 @@ export const InventoryProvider = ({
     )
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+
+    addLog('SYSTEM', { details: `Rua excluída: ${streetName}` }, 'Gerente')
+    inventoryService.notifyEvent(`Rua ${streetName} excluída`, 'destructive')
   }
 
   const moveStreet = (id: string, direction: 'up' | 'down') => {
@@ -261,27 +297,48 @@ export const InventoryProvider = ({
     ]
     setStreets(newStreets)
     inventoryService.saveStreets(newStreets)
+    addLog(
+      'SYSTEM',
+      {
+        details: `Rua ${newStreets[swapIndex].name} reordenada (${direction})`,
+      },
+      'Gerente',
+    )
   }
 
   // Location CRUD
   const addLocation = (streetId: string, name: string) => {
+    const street = streets.find((s) => s.id === streetId)
     const newLocations = [
       ...locations,
       { id: crypto.randomUUID(), streetId, name },
     ]
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
+    addLog(
+      'SYSTEM',
+      { details: `Local ${name} criado na rua ${street?.name}` },
+      'Gerente',
+    )
+    inventoryService.notifyEvent(`Novo local ${name} em ${street?.name}`)
   }
 
   const updateLocation = (id: string, name: string) => {
+    const oldName = locations.find((l) => l.id === id)?.name
     const newLocations = locations.map((l) =>
       l.id === id ? { ...l, name } : l,
     )
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
+    addLog(
+      'SYSTEM',
+      { details: `Local renomeado: ${oldName} -> ${name}` },
+      'Gerente',
+    )
   }
 
   const deleteLocation = (id: string) => {
+    const locName = locations.find((l) => l.id === id)?.name || 'Unknown'
     const newLocations = locations.filter((l) => l.id !== id)
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
@@ -289,45 +346,57 @@ export const InventoryProvider = ({
     const newPallets = pallets.filter((p) => p.locationId !== id)
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+    addLog('SYSTEM', { details: `Local excluído: ${locName}` }, 'Gerente')
+    inventoryService.notifyEvent(`Local ${locName} excluído`, 'destructive')
   }
 
   const moveLocation = (locationId: string, direction: 'up' | 'down') => {
     const location = locations.find((l) => l.id === locationId)
     if (!location) return
-
     const streetLocations = locations.filter(
       (l) => l.streetId === location.streetId,
     )
     const indexInStreet = streetLocations.findIndex((l) => l.id === locationId)
-
     if (direction === 'up' && indexInStreet === 0) return
     if (direction === 'down' && indexInStreet === streetLocations.length - 1)
       return
 
     const swapIndex = direction === 'up' ? indexInStreet - 1 : indexInStreet + 1
-
-    // Swap within the streetLocations array copy
     const temp = streetLocations[indexInStreet]
     streetLocations[indexInStreet] = streetLocations[swapIndex]
     streetLocations[swapIndex] = temp
 
-    // To persist this order globally, we can reconstruct the global list
-    // by filtering out this street's items and appending the reordered list.
     const otherLocations = locations.filter(
       (l) => l.streetId !== location.streetId,
     )
     const newLocations = [...otherLocations, ...streetLocations]
-
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
+    addLog(
+      'SYSTEM',
+      { details: `Local ${location.name} reordenado (${direction})` },
+      'Gerente',
+    )
   }
 
   const changeLocationStreet = (locationId: string, newStreetId: string) => {
+    const loc = locations.find((l) => l.id === locationId)
+    const newStreet = streets.find((s) => s.id === newStreetId)
     const newLocations = locations.map((l) =>
       l.id === locationId ? { ...l, streetId: newStreetId } : l,
     )
     setLocations(newLocations)
     inventoryService.saveLocations(newLocations)
+    addLog(
+      'SYSTEM',
+      {
+        details: `Local ${loc?.name} movido para rua ${newStreet?.name}`,
+      },
+      'Gerente',
+    )
+    inventoryService.notifyEvent(
+      `Local ${loc?.name} movido para ${newStreet?.name}`,
+    )
   }
 
   // Material CRUD
@@ -375,10 +444,18 @@ export const InventoryProvider = ({
     const newSettings = { ...settings, ...updates }
     setSettings(newSettings)
     inventoryService.saveSettings(newSettings)
+    addLog(
+      'SYSTEM',
+      { details: 'Configurações do sistema atualizadas' },
+      'Admin',
+    )
   }
 
   // Pallet Actions
-  const addPallet = (palletData: Omit<Pallet, 'id' | 'entryDate'>) => {
+  const addPallet = (
+    palletData: Omit<Pallet, 'id' | 'entryDate'>,
+    user: string = 'Operador',
+  ) => {
     let materialId = palletData.materialId
     if (!materialId) {
       const mat = materials.find((m) => m.name === palletData.materialName)
@@ -392,11 +469,13 @@ export const InventoryProvider = ({
       entryDate: new Date().toISOString(),
     }
 
-    // Optimistic Update
     const newPallets = [...pallets, newPallet]
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
-    addLog('ENTRY', newPallet)
+    addLog('ENTRY', { pallet: newPallet }, user)
+    inventoryService.notifyEvent(
+      `Nova entrada: ${palletData.materialName} (${palletData.quantity})`,
+    )
   }
 
   const updatePallet = (id: string, updates: Partial<Pallet>) => {
@@ -405,6 +484,7 @@ export const InventoryProvider = ({
     )
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+    // Could log update if needed
   }
 
   const movePallet = (id: string, newLocationId: string) => {
@@ -418,20 +498,27 @@ export const InventoryProvider = ({
   const removePallet = (id: string, user: string) => {
     const pallet = pallets.find((p) => p.id === id)
     if (pallet) {
-      addLog('EXIT', pallet, user)
+      addLog('EXIT', { pallet }, user)
       const newPallets = pallets.filter((p) => p.id !== id)
       setPallets(newPallets)
       inventoryService.savePallets(newPallets)
+      inventoryService.notifyEvent(
+        `Saída de material: ${pallet.materialName} (${pallet.quantity})`,
+        'destructive',
+      )
     }
   }
 
   const clearLocation = (locationId: string) => {
     const locationPallets = pallets.filter((p) => p.locationId === locationId)
-    locationPallets.forEach((p) => addLog('EXIT', p, 'Sistema - Esvaziar'))
+    locationPallets.forEach((p) =>
+      addLog('EXIT', { pallet: p }, 'Sistema - Esvaziar'),
+    )
 
     const newPallets = pallets.filter((p) => p.locationId !== locationId)
     setPallets(newPallets)
     inventoryService.savePallets(newPallets)
+    inventoryService.notifyEvent('Localização esvaziada', 'destructive')
   }
 
   const value = useMemo(

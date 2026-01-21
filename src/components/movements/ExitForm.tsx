@@ -37,9 +37,6 @@ export function ExitForm() {
 
   // Filter matching pallets
   const filteredPallets = pallets.filter((p) => {
-    // Only TRD for exit? Previous logic said "Only TRD materials ... eligible for Exit", but user story implies generalized manual input.
-    // However, strictly adhering to inventory logic: we can only exit what is IN STOCK.
-    // And usually exits are for materials stored in streets (TRD).
     if (p.type !== 'TRD') return false
     if (!searchTerm) return false
     return p.materialName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -62,7 +59,7 @@ export function ExitForm() {
     removePallet(selectedPalletId, data.user)
     toast({
       title: 'Saída Registrada',
-      description: 'Material removido do estoque.',
+      description: `Material removido do estoque por ${data.user}.`,
     })
     exitForm.reset({ user: '' })
     setSelectedPalletId(null)

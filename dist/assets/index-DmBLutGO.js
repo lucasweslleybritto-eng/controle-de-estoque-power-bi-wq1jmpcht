@@ -25946,6 +25946,16 @@ var Label$1 = import_react.forwardRef(({ className, ...props }, ref) => /* @__PU
 	...props
 }));
 Label$1.displayName = Root$4.displayName;
+var KEYS = {
+	STREETS: "inventory_streets",
+	LOCATIONS: "inventory_locations",
+	MATERIALS: "inventory_materials",
+	PALLETS: "inventory_pallets",
+	HISTORY: "inventory_history",
+	EQUIPMENTS: "inventory_equipments",
+	SETTINGS: "inventory_settings"
+};
+var CHANNEL_NAME = "inventory_sync_channel";
 var INITIAL_STREETS = [{
 	id: "rua-a",
 	name: "Rua A"
@@ -26032,45 +26042,131 @@ var INITIAL_PALLETS = [{
 	type: "TRP",
 	materialId: "mat-2"
 }];
+var InventoryService = class {
+	channel;
+	constructor() {
+		this.channel = new BroadcastChannel(CHANNEL_NAME);
+	}
+	get(key, defaultValue) {
+		try {
+			const data = localStorage.getItem(key);
+			return data ? JSON.parse(data) : defaultValue;
+		} catch (error) {
+			console.error(`Error reading key ${key}:`, error);
+			return defaultValue;
+		}
+	}
+	set(key, value) {
+		try {
+			localStorage.setItem(key, JSON.stringify(value));
+			this.notifyChange(key);
+		} catch (error) {
+			console.error(`Error writing key ${key}:`, error);
+		}
+	}
+	notifyChange(key) {
+		this.channel.postMessage({
+			type: "UPDATE",
+			key
+		});
+	}
+	subscribe(callback) {
+		const handleMessage = (event) => {
+			if (event.data?.type === "UPDATE" && event.data?.key) callback(event.data.key);
+		};
+		const handleStorage = (event) => {
+			if (event.key && Object.values(KEYS).includes(event.key)) callback(event.key);
+		};
+		this.channel.addEventListener("message", handleMessage);
+		window.addEventListener("storage", handleStorage);
+		return () => {
+			this.channel.removeEventListener("message", handleMessage);
+			window.removeEventListener("storage", handleStorage);
+		};
+	}
+	getStreets() {
+		return this.get(KEYS.STREETS, INITIAL_STREETS);
+	}
+	saveStreets(data) {
+		this.set(KEYS.STREETS, data);
+	}
+	getLocations() {
+		return this.get(KEYS.LOCATIONS, INITIAL_LOCATIONS);
+	}
+	saveLocations(data) {
+		this.set(KEYS.LOCATIONS, data);
+	}
+	getMaterials() {
+		return this.get(KEYS.MATERIALS, INITIAL_MATERIALS);
+	}
+	saveMaterials(data) {
+		this.set(KEYS.MATERIALS, data);
+	}
+	getPallets() {
+		return this.get(KEYS.PALLETS, INITIAL_PALLETS);
+	}
+	savePallets(data) {
+		this.set(KEYS.PALLETS, data);
+	}
+	getHistory() {
+		return this.get(KEYS.HISTORY, []);
+	}
+	saveHistory(data) {
+		this.set(KEYS.HISTORY, data);
+	}
+	getEquipments() {
+		return this.get(KEYS.EQUIPMENTS, INITIAL_EQUIPMENTS);
+	}
+	saveEquipments(data) {
+		this.set(KEYS.EQUIPMENTS, data);
+	}
+	getSettings() {
+		return this.get(KEYS.SETTINGS, INITIAL_SETTINGS);
+	}
+	saveSettings(data) {
+		this.set(KEYS.SETTINGS, data);
+	}
+	get keys() {
+		return KEYS;
+	}
+};
+const inventoryService = new InventoryService();
 var InventoryContext = (0, import_react.createContext)(void 0);
 const InventoryProvider = ({ children }) => {
-	const [streets, setStreets] = (0, import_react.useState)(() => {
-		const saved = localStorage.getItem("inventory_streets");
-		return saved ? JSON.parse(saved) : INITIAL_STREETS;
-	});
-	const [locations, setLocations] = (0, import_react.useState)(() => {
-		const saved = localStorage.getItem("inventory_locations");
-		return saved ? JSON.parse(saved) : INITIAL_LOCATIONS;
-	});
-	const [materials, setMaterials] = (0, import_react.useState)(() => {
-		const saved = localStorage.getItem("inventory_materials");
-		return saved ? JSON.parse(saved) : INITIAL_MATERIALS;
-	});
-	const [equipments, setEquipments] = (0, import_react.useState)(() => {
-		const saved = localStorage.getItem("inventory_equipments");
-		return saved ? JSON.parse(saved) : INITIAL_EQUIPMENTS;
-	});
-	const [settings, setSettings] = (0, import_react.useState)(() => {
-		const saved = localStorage.getItem("inventory_settings");
-		return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
-	});
-	const [pallets, setPallets] = (0, import_react.useState)(INITIAL_PALLETS);
-	const [history, setHistory] = (0, import_react.useState)([]);
+	const [streets, setStreets] = (0, import_react.useState)(() => inventoryService.getStreets());
+	const [locations, setLocations] = (0, import_react.useState)(() => inventoryService.getLocations());
+	const [materials, setMaterials] = (0, import_react.useState)(() => inventoryService.getMaterials());
+	const [equipments, setEquipments] = (0, import_react.useState)(() => inventoryService.getEquipments());
+	const [settings, setSettings] = (0, import_react.useState)(() => inventoryService.getSettings());
+	const [pallets, setPallets] = (0, import_react.useState)(() => inventoryService.getPallets());
+	const [history, setHistory] = (0, import_react.useState)(() => inventoryService.getHistory());
 	(0, import_react.useEffect)(() => {
-		localStorage.setItem("inventory_streets", JSON.stringify(streets));
-	}, [streets]);
-	(0, import_react.useEffect)(() => {
-		localStorage.setItem("inventory_locations", JSON.stringify(locations));
-	}, [locations]);
-	(0, import_react.useEffect)(() => {
-		localStorage.setItem("inventory_materials", JSON.stringify(materials));
-	}, [materials]);
-	(0, import_react.useEffect)(() => {
-		localStorage.setItem("inventory_equipments", JSON.stringify(equipments));
-	}, [equipments]);
-	(0, import_react.useEffect)(() => {
-		localStorage.setItem("inventory_settings", JSON.stringify(settings));
-	}, [settings]);
+		return inventoryService.subscribe((key) => {
+			switch (key) {
+				case inventoryService.keys.STREETS:
+					setStreets(inventoryService.getStreets());
+					break;
+				case inventoryService.keys.LOCATIONS:
+					setLocations(inventoryService.getLocations());
+					break;
+				case inventoryService.keys.MATERIALS:
+					setMaterials(inventoryService.getMaterials());
+					break;
+				case inventoryService.keys.EQUIPMENTS:
+					setEquipments(inventoryService.getEquipments());
+					break;
+				case inventoryService.keys.SETTINGS:
+					setSettings(inventoryService.getSettings());
+					break;
+				case inventoryService.keys.PALLETS:
+					setPallets(inventoryService.getPallets());
+					break;
+				case inventoryService.keys.HISTORY:
+					setHistory(inventoryService.getHistory());
+					break;
+			}
+		});
+	}, []);
 	const getLocationsByStreet = (0, import_react.useCallback)((streetId) => locations.filter((l) => l.streetId === streetId), [locations]);
 	const getPalletsByLocation = (0, import_react.useCallback)((locationId) => pallets.filter((p) => p.locationId === locationId), [pallets]);
 	const getLocationStatus = (0, import_react.useCallback)((locationId) => {
@@ -26081,11 +26177,17 @@ const InventoryProvider = ({ children }) => {
 	const getMaterialImage = (0, import_react.useCallback)((materialName) => {
 		return materials.find((m) => m.name === materialName)?.image;
 	}, [materials]);
+	const _persistHistory = (logs) => {
+		setHistory(logs);
+		inventoryService.saveHistory(logs);
+	};
 	const addLog = (type, pallet, user = "Operador") => {
-		const locName = getLocationName(pallet.locationId);
-		const loc = locations.find((l) => l.id === pallet.locationId);
-		const streetName = loc ? getStreetName(loc.streetId) : "Zona de Entrada";
-		const log = {
+		const currentLocations = inventoryService.getLocations();
+		const currentStreets = inventoryService.getStreets();
+		const loc = currentLocations.find((l) => l.id === pallet.locationId);
+		const locName = loc ? loc.name : pallet.locationId === "TRP_AREA" ? "Zona TRP" : "N/A";
+		const streetName = loc ? currentStreets.find((s$2) => s$2.id === loc.streetId)?.name || "N/A" : "Zona de Entrada";
+		_persistHistory([{
 			id: crypto.randomUUID(),
 			date: (/* @__PURE__ */ new Date()).toISOString(),
 			user,
@@ -26095,73 +26197,102 @@ const InventoryProvider = ({ children }) => {
 			quantity: pallet.quantity,
 			locationName: locName,
 			streetName
-		};
-		setHistory((prev) => [log, ...prev]);
+		}, ...inventoryService.getHistory()]);
 	};
 	const addStreet = (name) => {
-		setStreets((prev) => [...prev, {
+		const newStreets = [...streets, {
 			id: crypto.randomUUID(),
 			name
-		}]);
+		}];
+		setStreets(newStreets);
+		inventoryService.saveStreets(newStreets);
 	};
 	const updateStreet = (id, name) => {
-		setStreets((prev) => prev.map((s$2) => s$2.id === id ? {
+		const newStreets = streets.map((s$2) => s$2.id === id ? {
 			...s$2,
 			name
-		} : s$2));
+		} : s$2);
+		setStreets(newStreets);
+		inventoryService.saveStreets(newStreets);
 	};
 	const deleteStreet = (id) => {
-		setStreets((prev) => prev.filter((s$2) => s$2.id !== id));
+		const newStreets = streets.filter((s$2) => s$2.id !== id);
+		setStreets(newStreets);
+		inventoryService.saveStreets(newStreets);
 		const streetLocationIds = locations.filter((l) => l.streetId === id).map((l) => l.id);
-		setLocations((prev) => prev.filter((l) => l.streetId !== id));
-		setPallets((prev) => prev.filter((p) => !streetLocationIds.includes(p.locationId)));
+		const newLocations = locations.filter((l) => l.streetId !== id);
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
+		const newPallets = pallets.filter((p) => !streetLocationIds.includes(p.locationId));
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 	};
 	const addLocation = (streetId, name) => {
-		setLocations((prev) => [...prev, {
+		const newLocations = [...locations, {
 			id: crypto.randomUUID(),
 			streetId,
 			name
-		}]);
+		}];
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
 	};
 	const updateLocation = (id, name) => {
-		setLocations((prev) => prev.map((l) => l.id === id ? {
+		const newLocations = locations.map((l) => l.id === id ? {
 			...l,
 			name
-		} : l));
+		} : l);
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
 	};
 	const deleteLocation = (id) => {
-		setLocations((prev) => prev.filter((l) => l.id !== id));
-		setPallets((prev) => prev.filter((p) => p.locationId !== id));
+		const newLocations = locations.filter((l) => l.id !== id);
+		setLocations(newLocations);
+		inventoryService.saveLocations(newLocations);
+		const newPallets = pallets.filter((p) => p.locationId !== id);
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 	};
 	const addMaterial = (material) => {
-		setMaterials((prev) => [...prev, {
+		const newMaterials = [...materials, {
 			...material,
 			id: crypto.randomUUID()
-		}]);
+		}];
+		setMaterials(newMaterials);
+		inventoryService.saveMaterials(newMaterials);
 	};
 	const updateMaterial = (id, updates) => {
-		setMaterials((prev) => prev.map((m) => m.id === id ? {
+		const newMaterials = materials.map((m) => m.id === id ? {
 			...m,
 			...updates
-		} : m));
+		} : m);
+		setMaterials(newMaterials);
+		inventoryService.saveMaterials(newMaterials);
 	};
 	const deleteMaterial = (id) => {
-		setMaterials((prev) => prev.filter((m) => m.id !== id));
+		const newMaterials = materials.filter((m) => m.id !== id);
+		setMaterials(newMaterials);
+		inventoryService.saveMaterials(newMaterials);
 	};
 	const addEquipment = (equipment) => {
-		setEquipments((prev) => [...prev, {
+		const newEquipments = [...equipments, {
 			...equipment,
 			id: crypto.randomUUID()
-		}]);
+		}];
+		setEquipments(newEquipments);
+		inventoryService.saveEquipments(newEquipments);
 	};
 	const deleteEquipment = (id) => {
-		setEquipments((prev) => prev.filter((e) => e.id !== id));
+		const newEquipments = equipments.filter((e) => e.id !== id);
+		setEquipments(newEquipments);
+		inventoryService.saveEquipments(newEquipments);
 	};
 	const updateSettings = (updates) => {
-		setSettings((prev) => ({
-			...prev,
+		const newSettings = {
+			...settings,
 			...updates
-		}));
+		};
+		setSettings(newSettings);
+		inventoryService.saveSettings(newSettings);
 	};
 	const addPallet = (palletData) => {
 		let materialId = palletData.materialId;
@@ -26172,31 +26303,41 @@ const InventoryProvider = ({ children }) => {
 			id: crypto.randomUUID(),
 			entryDate: (/* @__PURE__ */ new Date()).toISOString()
 		};
-		setPallets((prev) => [...prev, newPallet]);
+		const newPallets = [...pallets, newPallet];
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 		addLog("ENTRY", newPallet);
 	};
 	const updatePallet = (id, updates) => {
-		setPallets((prev) => prev.map((p) => p.id === id ? {
+		const newPallets = pallets.map((p) => p.id === id ? {
 			...p,
 			...updates
-		} : p));
+		} : p);
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 	};
 	const movePallet = (id, newLocationId) => {
-		setPallets((prev) => prev.map((p) => p.id === id ? {
+		const newPallets = pallets.map((p) => p.id === id ? {
 			...p,
 			locationId: newLocationId
-		} : p));
+		} : p);
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 	};
 	const removePallet = (id, user) => {
 		const pallet = pallets.find((p) => p.id === id);
 		if (pallet) {
 			addLog("EXIT", pallet, user);
-			setPallets((prev) => prev.filter((p) => p.id !== id));
+			const newPallets = pallets.filter((p) => p.id !== id);
+			setPallets(newPallets);
+			inventoryService.savePallets(newPallets);
 		}
 	};
 	const clearLocation = (locationId) => {
 		pallets.filter((p) => p.locationId === locationId).forEach((p) => addLog("EXIT", p, "Sistema - Esvaziar"));
-		setPallets((prev) => prev.filter((p) => p.locationId !== locationId));
+		const newPallets = pallets.filter((p) => p.locationId !== locationId);
+		setPallets(newPallets);
+		inventoryService.savePallets(newPallets);
 	};
 	const value = (0, import_react.useMemo)(() => ({
 		streets,
@@ -37523,10 +37664,10 @@ function Settings() {
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "flex items-center gap-3 border-b pb-6",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "p-2 bg-slate-100 rounded-lg",
+				className: "p-2 bg-slate-100 dark:bg-slate-800 rounded-lg",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Settings$1, { className: "h-8 w-8 text-primary" })
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-				className: "text-3xl font-bold tracking-tight text-slate-900",
+				className: "text-3xl font-bold tracking-tight",
 				children: "Configurações Globais"
 			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "text-muted-foreground",
@@ -37537,21 +37678,21 @@ function Settings() {
 			className: "space-y-6",
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsList, {
-					className: "grid w-full grid-cols-3 h-14 bg-slate-100 p-1",
+					className: "grid w-full grid-cols-1 md:grid-cols-3 h-auto md:h-14 bg-muted p-1 gap-1",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
 							value: "warehouse",
-							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							className: "text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LayoutGrid, { className: "mr-2 h-4 w-4" }), " Ruas e Prédios"]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
 							value: "materials",
-							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							className: "text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Database, { className: "mr-2 h-4 w-4" }), " Catálogo de Materiais"]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(TabsTrigger, {
 							value: "system",
-							className: "text-base data-[state=active]:bg-white data-[state=active]:shadow-sm",
+							className: "text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, { className: "mr-2 h-4 w-4" }), " Preferências"]
 						})
 					]
@@ -39429,4 +39570,4 @@ var App = () => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(J, {
 var App_default = App;
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(App_default, {}));
 
-//# sourceMappingURL=index-CVKM6ezU.js.map
+//# sourceMappingURL=index-DmBLutGO.js.map

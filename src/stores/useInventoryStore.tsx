@@ -15,91 +15,7 @@ import {
   SystemSettings,
   Equipment,
 } from '@/types'
-
-// Mock Data Setup
-const INITIAL_STREETS: Street[] = [
-  { id: 'rua-a', name: 'Rua A' },
-  { id: 'rua-b', name: 'Rua B' },
-]
-
-const INITIAL_LOCATIONS: Location[] = [
-  { id: 'loc-a-1', streetId: 'rua-a', name: 'A-001' },
-  { id: 'loc-a-2', streetId: 'rua-a', name: 'A-002' },
-  { id: 'loc-b-1', streetId: 'rua-b', name: 'B-001' },
-]
-
-const INITIAL_MATERIALS: Material[] = [
-  {
-    id: 'mat-1',
-    name: 'Gandola Camuflada',
-    type: 'TRD',
-    description: 'Tamanho M - Padrão Exército',
-    image: 'https://img.usecurling.com/p/200/200?q=camo%20jacket',
-  },
-  {
-    id: 'mat-2',
-    name: 'Coturno Tático',
-    type: 'TRP',
-    description: 'Preto - Tamanho 42',
-    image: 'https://img.usecurling.com/p/200/200?q=combat%20boots',
-  },
-  {
-    id: 'mat-3',
-    name: 'Cinto NA',
-    type: 'TRP',
-    description: 'Verde Oliva',
-    image: 'https://img.usecurling.com/p/200/200?q=military%20belt',
-  },
-]
-
-const INITIAL_EQUIPMENTS: Equipment[] = [
-  {
-    id: '1',
-    name: 'Empilhadeira Elétrica 01',
-    model: 'Toyota 8FBE',
-    status: 'available',
-    image: 'https://img.usecurling.com/p/300/200?q=forklift&color=yellow',
-    operator: null,
-  },
-  {
-    id: '2',
-    name: 'Paleteira Manual 05',
-    model: 'Standard',
-    status: 'in-use',
-    image:
-      'https://img.usecurling.com/p/300/200?q=hand%20pallet%20truck&color=blue',
-    operator: 'Sd. Silva',
-  },
-]
-
-const INITIAL_SETTINGS: SystemSettings = {
-  systemName: 'Depósito de Fardamento',
-  lowStockThreshold: 10,
-  highOccupancyThreshold: 80,
-}
-
-const INITIAL_PALLETS: Pallet[] = [
-  {
-    id: 'plt-1',
-    locationId: 'loc-a-1',
-    materialName: 'Gandola Camuflada',
-    description: 'Lote 2024',
-    quantity: 50,
-    entryDate: new Date().toISOString(),
-    type: 'TRD',
-    materialId: 'mat-1',
-  },
-  {
-    id: 'plt-2',
-    locationId: 'TRP_AREA',
-    materialName: 'Coturno Tático',
-    description: 'Recebimento Pendente',
-    quantity: 20,
-    entryDate: new Date().toISOString(),
-    type: 'TRP',
-    materialId: 'mat-2',
-  },
-]
+import { inventoryService } from '@/services/inventoryService'
 
 interface InventoryContextType {
   streets: Street[]
@@ -157,49 +73,58 @@ export const InventoryProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  const [streets, setStreets] = useState<Street[]>(() => {
-    const saved = localStorage.getItem('inventory_streets')
-    return saved ? JSON.parse(saved) : INITIAL_STREETS
-  })
-  const [locations, setLocations] = useState<Location[]>(() => {
-    const saved = localStorage.getItem('inventory_locations')
-    return saved ? JSON.parse(saved) : INITIAL_LOCATIONS
-  })
-  const [materials, setMaterials] = useState<Material[]>(() => {
-    const saved = localStorage.getItem('inventory_materials')
-    return saved ? JSON.parse(saved) : INITIAL_MATERIALS
-  })
-  const [equipments, setEquipments] = useState<Equipment[]>(() => {
-    const saved = localStorage.getItem('inventory_equipments')
-    return saved ? JSON.parse(saved) : INITIAL_EQUIPMENTS
-  })
-  const [settings, setSettings] = useState<SystemSettings>(() => {
-    const saved = localStorage.getItem('inventory_settings')
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS
-  })
-  const [pallets, setPallets] = useState<Pallet[]>(INITIAL_PALLETS)
-  const [history, setHistory] = useState<MovementLog[]>([])
+  // Initialize state from Service (simulating Cloud/DB fetch)
+  const [streets, setStreets] = useState<Street[]>(() =>
+    inventoryService.getStreets(),
+  )
+  const [locations, setLocations] = useState<Location[]>(() =>
+    inventoryService.getLocations(),
+  )
+  const [materials, setMaterials] = useState<Material[]>(() =>
+    inventoryService.getMaterials(),
+  )
+  const [equipments, setEquipments] = useState<Equipment[]>(() =>
+    inventoryService.getEquipments(),
+  )
+  const [settings, setSettings] = useState<SystemSettings>(() =>
+    inventoryService.getSettings(),
+  )
+  const [pallets, setPallets] = useState<Pallet[]>(() =>
+    inventoryService.getPallets(),
+  )
+  const [history, setHistory] = useState<MovementLog[]>(() =>
+    inventoryService.getHistory(),
+  )
 
-  // Persistence Effects
+  // Subscription to Service Updates (Real-Time Sync)
   useEffect(() => {
-    localStorage.setItem('inventory_streets', JSON.stringify(streets))
-  }, [streets])
-
-  useEffect(() => {
-    localStorage.setItem('inventory_locations', JSON.stringify(locations))
-  }, [locations])
-
-  useEffect(() => {
-    localStorage.setItem('inventory_materials', JSON.stringify(materials))
-  }, [materials])
-
-  useEffect(() => {
-    localStorage.setItem('inventory_equipments', JSON.stringify(equipments))
-  }, [equipments])
-
-  useEffect(() => {
-    localStorage.setItem('inventory_settings', JSON.stringify(settings))
-  }, [settings])
+    const unsubscribe = inventoryService.subscribe((key) => {
+      switch (key) {
+        case inventoryService.keys.STREETS:
+          setStreets(inventoryService.getStreets())
+          break
+        case inventoryService.keys.LOCATIONS:
+          setLocations(inventoryService.getLocations())
+          break
+        case inventoryService.keys.MATERIALS:
+          setMaterials(inventoryService.getMaterials())
+          break
+        case inventoryService.keys.EQUIPMENTS:
+          setEquipments(inventoryService.getEquipments())
+          break
+        case inventoryService.keys.SETTINGS:
+          setSettings(inventoryService.getSettings())
+          break
+        case inventoryService.keys.PALLETS:
+          setPallets(inventoryService.getPallets())
+          break
+        case inventoryService.keys.HISTORY:
+          setHistory(inventoryService.getHistory())
+          break
+      }
+    })
+    return unsubscribe
+  }, [])
 
   // Getters
   const getLocationsByStreet = useCallback(
@@ -214,7 +139,6 @@ export const InventoryProvider = ({
 
   const getLocationStatus = useCallback(
     (locationId: string) => {
-      // Removed verification logic as per user story requirement
       const hasPallet = pallets.some((p) => p.locationId === locationId)
       return hasPallet ? 'occupied' : 'empty'
     },
@@ -241,15 +165,31 @@ export const InventoryProvider = ({
     [materials],
   )
 
+  // Helper to persist history
+  const _persistHistory = (logs: MovementLog[]) => {
+    setHistory(logs)
+    inventoryService.saveHistory(logs)
+  }
+
   // Actions
   const addLog = (
     type: 'ENTRY' | 'EXIT',
     pallet: Pallet,
     user: string = 'Operador',
   ) => {
-    const locName = getLocationName(pallet.locationId)
-    const loc = locations.find((l) => l.id === pallet.locationId)
-    const streetName = loc ? getStreetName(loc.streetId) : 'Zona de Entrada'
+    // Re-fetch location/street data to ensure log accuracy even if state is slightly stale
+    const currentLocations = inventoryService.getLocations()
+    const currentStreets = inventoryService.getStreets()
+
+    const loc = currentLocations.find((l) => l.id === pallet.locationId)
+    const locName = loc
+      ? loc.name
+      : pallet.locationId === 'TRP_AREA'
+        ? 'Zona TRP'
+        : 'N/A'
+    const streetName = loc
+      ? currentStreets.find((s) => s.id === loc.streetId)?.name || 'N/A'
+      : 'Zona de Entrada'
 
     const log: MovementLog = {
       id: crypto.randomUUID(),
@@ -262,80 +202,121 @@ export const InventoryProvider = ({
       locationName: locName,
       streetName,
     }
-    setHistory((prev) => [log, ...prev])
+
+    const newHistory = [log, ...inventoryService.getHistory()]
+    _persistHistory(newHistory)
   }
 
   // Street CRUD
   const addStreet = (name: string) => {
-    setStreets((prev) => [...prev, { id: crypto.randomUUID(), name }])
+    const newStreets = [...streets, { id: crypto.randomUUID(), name }]
+    setStreets(newStreets)
+    inventoryService.saveStreets(newStreets)
   }
 
   const updateStreet = (id: string, name: string) => {
-    setStreets((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)))
+    const newStreets = streets.map((s) => (s.id === id ? { ...s, name } : s))
+    setStreets(newStreets)
+    inventoryService.saveStreets(newStreets)
   }
 
   const deleteStreet = (id: string) => {
-    setStreets((prev) => prev.filter((s) => s.id !== id))
+    // Logic to cascade delete
+    const newStreets = streets.filter((s) => s.id !== id)
+    setStreets(newStreets)
+    inventoryService.saveStreets(newStreets)
+
     const streetLocations = locations.filter((l) => l.streetId === id)
     const streetLocationIds = streetLocations.map((l) => l.id)
-    setLocations((prev) => prev.filter((l) => l.streetId !== id))
-    setPallets((prev) =>
-      prev.filter((p) => !streetLocationIds.includes(p.locationId)),
+
+    const newLocations = locations.filter((l) => l.streetId !== id)
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
+
+    const newPallets = pallets.filter(
+      (p) => !streetLocationIds.includes(p.locationId),
     )
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
   }
 
   // Location CRUD
   const addLocation = (streetId: string, name: string) => {
-    setLocations((prev) => [
-      ...prev,
+    const newLocations = [
+      ...locations,
       { id: crypto.randomUUID(), streetId, name },
-    ])
+    ]
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
   }
 
   const updateLocation = (id: string, name: string) => {
-    setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)))
+    const newLocations = locations.map((l) =>
+      l.id === id ? { ...l, name } : l,
+    )
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
   }
 
   const deleteLocation = (id: string) => {
-    setLocations((prev) => prev.filter((l) => l.id !== id))
-    setPallets((prev) => prev.filter((p) => p.locationId !== id))
+    const newLocations = locations.filter((l) => l.id !== id)
+    setLocations(newLocations)
+    inventoryService.saveLocations(newLocations)
+
+    const newPallets = pallets.filter((p) => p.locationId !== id)
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
   }
 
   // Material CRUD
   const addMaterial = (material: Omit<Material, 'id'>) => {
-    setMaterials((prev) => [...prev, { ...material, id: crypto.randomUUID() }])
+    const newMaterials = [
+      ...materials,
+      { ...material, id: crypto.randomUUID() },
+    ]
+    setMaterials(newMaterials)
+    inventoryService.saveMaterials(newMaterials)
   }
 
   const updateMaterial = (id: string, updates: Partial<Material>) => {
-    setMaterials((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+    const newMaterials = materials.map((m) =>
+      m.id === id ? { ...m, ...updates } : m,
     )
+    setMaterials(newMaterials)
+    inventoryService.saveMaterials(newMaterials)
   }
 
   const deleteMaterial = (id: string) => {
-    setMaterials((prev) => prev.filter((m) => m.id !== id))
+    const newMaterials = materials.filter((m) => m.id !== id)
+    setMaterials(newMaterials)
+    inventoryService.saveMaterials(newMaterials)
   }
 
   // Equipment CRUD
   const addEquipment = (equipment: Omit<Equipment, 'id'>) => {
-    setEquipments((prev) => [
-      ...prev,
+    const newEquipments = [
+      ...equipments,
       { ...equipment, id: crypto.randomUUID() },
-    ])
+    ]
+    setEquipments(newEquipments)
+    inventoryService.saveEquipments(newEquipments)
   }
 
   const deleteEquipment = (id: string) => {
-    setEquipments((prev) => prev.filter((e) => e.id !== id))
+    const newEquipments = equipments.filter((e) => e.id !== id)
+    setEquipments(newEquipments)
+    inventoryService.saveEquipments(newEquipments)
   }
 
   // Settings
   const updateSettings = (updates: Partial<SystemSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates }))
+    const newSettings = { ...settings, ...updates }
+    setSettings(newSettings)
+    inventoryService.saveSettings(newSettings)
   }
 
   // Pallet Actions
   const addPallet = (palletData: Omit<Pallet, 'id' | 'entryDate'>) => {
-    // Try to find material ID if not provided
     let materialId = palletData.materialId
     if (!materialId) {
       const mat = materials.find((m) => m.name === palletData.materialName)
@@ -348,34 +329,47 @@ export const InventoryProvider = ({
       id: crypto.randomUUID(),
       entryDate: new Date().toISOString(),
     }
-    setPallets((prev) => [...prev, newPallet])
+
+    // Optimistic Update
+    const newPallets = [...pallets, newPallet]
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
     addLog('ENTRY', newPallet)
   }
 
   const updatePallet = (id: string, updates: Partial<Pallet>) => {
-    setPallets((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    const newPallets = pallets.map((p) =>
+      p.id === id ? { ...p, ...updates } : p,
     )
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
   }
 
   const movePallet = (id: string, newLocationId: string) => {
-    setPallets((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, locationId: newLocationId } : p)),
+    const newPallets = pallets.map((p) =>
+      p.id === id ? { ...p, locationId: newLocationId } : p,
     )
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
   }
 
   const removePallet = (id: string, user: string) => {
     const pallet = pallets.find((p) => p.id === id)
     if (pallet) {
       addLog('EXIT', pallet, user)
-      setPallets((prev) => prev.filter((p) => p.id !== id))
+      const newPallets = pallets.filter((p) => p.id !== id)
+      setPallets(newPallets)
+      inventoryService.savePallets(newPallets)
     }
   }
 
   const clearLocation = (locationId: string) => {
     const locationPallets = pallets.filter((p) => p.locationId === locationId)
     locationPallets.forEach((p) => addLog('EXIT', p, 'Sistema - Esvaziar'))
-    setPallets((prev) => prev.filter((p) => p.locationId !== locationId))
+
+    const newPallets = pallets.filter((p) => p.locationId !== locationId)
+    setPallets(newPallets)
+    inventoryService.savePallets(newPallets)
   }
 
   const value = useMemo(

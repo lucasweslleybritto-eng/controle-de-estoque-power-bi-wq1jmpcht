@@ -1180,9 +1180,6 @@ section[aria-label='Notifications alt+T'] {
 .grid-cols-2{
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.grid-cols-3{
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .flex-row{
   flex-direction: row;
 }
@@ -2709,10 +2706,6 @@ section[aria-label='Notifications alt+T'] {
   --tw-bg-opacity: 1;
   background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
 }
-.data-\[state\=active\]\:bg-white[data-state="active"]{
-  --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
-}
 .data-\[state\=checked\]\:bg-primary[data-state="checked"]{
   background-color: hsl(var(--primary));
 }
@@ -3294,6 +3287,9 @@ section[aria-label='Notifications alt+T'] {
   .md\:table-cell{
     display: table-cell;
   }
+  .md\:h-14{
+    height: 3.5rem;
+  }
   .md\:w-48{
     width: 12rem;
   }
@@ -3329,6 +3325,14 @@ section[aria-label='Notifications alt+T'] {
   }
   .md\:p-8{
     padding: 2rem;
+  }
+  .md\:py-0{
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+  .md\:text-base{
+    font-size: 1rem;
+    line-height: 1.5rem;
   }
   .md\:text-sm{
     font-size: 0.875rem;

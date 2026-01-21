@@ -13,11 +13,11 @@ export default function Settings() {
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex items-center gap-3 border-b pb-6">
-        <div className="p-2 bg-slate-100 rounded-lg">
+        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
           <SettingsIcon className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight">
             Configurações Globais
           </h1>
           <p className="text-muted-foreground">
@@ -27,22 +27,23 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="warehouse" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 h-14 bg-slate-100 p-1">
+        {/* Improved mobile responsiveness for TabsList */}
+        <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 h-auto md:h-14 bg-muted p-1 gap-1">
           <TabsTrigger
             value="warehouse"
-            className="text-base data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0"
           >
             <LayoutGrid className="mr-2 h-4 w-4" /> Ruas e Prédios
           </TabsTrigger>
           <TabsTrigger
             value="materials"
-            className="text-base data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0"
           >
             <Database className="mr-2 h-4 w-4" /> Catálogo de Materiais
           </TabsTrigger>
           <TabsTrigger
             value="system"
-            className="text-base data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="text-sm md:text-base data-[state=active]:bg-background data-[state=active]:shadow-sm py-2 md:py-0"
           >
             <Sliders className="mr-2 h-4 w-4" /> Preferências
           </TabsTrigger>

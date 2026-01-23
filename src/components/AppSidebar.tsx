@@ -8,6 +8,7 @@ import {
   Settings,
   Users,
   BarChart,
+  Building2,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -39,6 +40,11 @@ export function AppSidebar() {
       title: 'Entrada/Saída',
       url: '/movements',
       icon: ArrowLeftRight,
+    },
+    {
+      title: 'Gestão de OMs',
+      url: '/oms',
+      icon: Building2,
     },
     {
       title: 'Histórico',

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ArrowRightCircle,
   Save,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -69,6 +70,7 @@ export default function StreetDetail() {
   const [editLocation, setEditLocation] = useState<{
     id: string
     name: string
+    needsRecount?: boolean
   } | null>(null)
   const [moveLocationDialog, setMoveLocationDialog] = useState<{
     locationId: string
@@ -114,11 +116,14 @@ export default function StreetDetail() {
 
   const handleUpdateLocation = () => {
     if (editLocation && editLocation.name.trim()) {
-      updateLocation(editLocation.id, editLocation.name)
+      updateLocation(editLocation.id, {
+        name: editLocation.name,
+        needsRecount: editLocation.needsRecount,
+      })
       setEditLocation(null)
       toast({
         title: 'Alterações salvas',
-        description: 'O nome do local foi atualizado.',
+        description: 'Local atualizado.',
       })
     }
   }
@@ -231,6 +236,7 @@ export default function StreetDetail() {
           const status = getLocationStatus(location.id)
           const pallets = getPalletsByLocation(location.id)
           const isOccupied = status === 'occupied'
+          const needsRecount = location.needsRecount
           const isFirst = index === 0
           const isLast = index === filteredLocations.length - 1
 
@@ -288,12 +294,13 @@ export default function StreetDetail() {
                     variant="secondary"
                     size="icon"
                     className="h-6 w-6 shadow-sm"
-                    title="Editar Nome"
+                    title="Editar"
                     onClick={(e) => {
                       e.preventDefault()
                       setEditLocation({
                         id: location.id,
                         name: location.name,
+                        needsRecount: location.needsRecount,
                       })
                     }}
                   >
@@ -339,20 +346,31 @@ export default function StreetDetail() {
                   variant="outline"
                   className={cn(
                     'w-full h-32 flex flex-col items-center justify-center gap-2 relative transition-all duration-300 hover:scale-[1.03] border-2 shadow-sm',
-                    isOccupied
-                      ? 'bg-green-600/20 dark:bg-green-900/40 hover:bg-green-600/30 border-green-600 text-green-800 dark:text-green-300'
-                      : 'bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-800 dark:text-red-400',
+                    needsRecount
+                      ? 'bg-yellow-100 border-yellow-500 hover:bg-yellow-200 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200'
+                      : isOccupied
+                        ? 'bg-green-600/20 dark:bg-green-900/40 hover:bg-green-600/30 border-green-600 text-green-800 dark:text-green-300'
+                        : 'bg-red-600/10 dark:bg-red-900/20 hover:bg-red-600/20 border-red-600 text-red-800 dark:text-red-400',
                   )}
                 >
                   <span className="text-2xl font-bold tracking-tighter">
                     {location.name}
                   </span>
 
+                  {needsRecount && (
+                    <div className="absolute top-2 right-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                  )}
+
                   {isOccupied ? (
                     <div className="flex flex-col items-center gap-1">
                       <Badge
                         variant="secondary"
-                        className="bg-green-600 text-white border-0 text-[10px] px-1.5 h-5 pointer-events-none"
+                        className={cn(
+                          'text-white border-0 text-[10px] px-1.5 h-5 pointer-events-none',
+                          needsRecount ? 'bg-yellow-600' : 'bg-green-600',
+                        )}
                       >
                         {pallets.length} Item{pallets.length > 1 ? 's' : ''}
                       </Badge>
@@ -394,6 +412,24 @@ export default function StreetDetail() {
                   )
                 }
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="needs-recount"
+                checked={editLocation?.needsRecount || false}
+                onCheckedChange={(c) =>
+                  setEditLocation((prev) =>
+                    prev ? { ...prev, needsRecount: c } : null,
+                  )
+                }
+              />
+              <Label
+                htmlFor="needs-recount"
+                className="flex items-center gap-2"
+              >
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                Necessita Recontagem
+              </Label>
             </div>
           </div>
           <DialogFooter>

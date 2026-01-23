@@ -5,6 +5,7 @@ import {
   Plus,
   LayoutDashboard,
   GripVertical,
+  AlertTriangle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,7 +36,6 @@ export function WarehouseMap() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  // Initialize with sorted streets
   const [orderedStreets, setOrderedStreets] = useState(streets)
   const [newStreetName, setNewStreetName] = useState('')
   const [isAddStreetOpen, setIsAddStreetOpen] = useState(false)
@@ -45,9 +45,7 @@ export function WarehouseMap() {
     currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
   useEffect(() => {
-    // Sync local state when streets update from store (unless dragging)
     if (!draggedId) {
-      // Sort by order before setting
       const sorted = [...streets].sort(
         (a, b) => (a.order || 0) - (b.order || 0),
       )
@@ -67,7 +65,6 @@ export function WarehouseMap() {
     }
   }
 
-  // HTML5 Drag and Drop Handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id)
     e.dataTransfer.effectAllowed = 'move'
@@ -84,7 +81,6 @@ export function WarehouseMap() {
 
     if (oldIndex === -1 || newIndex === -1) return
 
-    // Optimistic reorder in UI
     const newOrder = [...orderedStreets]
     const [movedItem] = newOrder.splice(oldIndex, 1)
     newOrder.splice(newIndex, 0, movedItem)
@@ -94,13 +90,11 @@ export function WarehouseMap() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     if (draggedId) {
-      // Commit new order to store/DB
       reorderStreets(orderedStreets)
       setDraggedId(null)
     }
   }
 
-  // Touch Support
   const touchStartItemRef = useRef<string | null>(null)
 
   const handleTouchStart = (id: string) => {
@@ -191,6 +185,7 @@ export function WarehouseMap() {
               ? Math.round((streetOccupied / streetTotal) * 100)
               : 0
 
+          const hasRecount = streetLocations.some((l) => l.needsRecount)
           const isDragging = draggedId === street.id
 
           return (
@@ -210,17 +205,20 @@ export function WarehouseMap() {
                 className={cn(
                   'h-full border-t-8 transition-all duration-300 overflow-hidden relative bg-card flex flex-col',
                   !isDragging && 'hover:shadow-xl hover:-translate-y-1',
+                  hasRecount && 'border-yellow-500 shadow-yellow-500/20',
                 )}
                 onClick={() => navigate(`/street/${street.id}`)}
               >
                 <div
                   className={cn(
                     'absolute top-0 left-0 right-0 h-2',
-                    streetOccupancy > 90
-                      ? 'bg-green-600'
-                      : streetOccupancy < 10
-                        ? 'bg-red-500'
-                        : 'bg-blue-500',
+                    hasRecount
+                      ? 'bg-yellow-500'
+                      : streetOccupancy > 90
+                        ? 'bg-green-600'
+                        : streetOccupancy < 10
+                          ? 'bg-red-500'
+                          : 'bg-blue-500',
                   )}
                 />
                 <CardHeader className="pb-4">
@@ -228,6 +226,9 @@ export function WarehouseMap() {
                     <CardTitle className="text-2xl font-bold flex items-center gap-2">
                       <Building className="h-6 w-6 text-muted-foreground" />
                       {street.name}
+                      {hasRecount && (
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                      )}
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       {canEdit && (
@@ -264,9 +265,11 @@ export function WarehouseMap() {
                       <span
                         className={cn(
                           'font-bold px-2 py-0.5 rounded text-xs',
-                          streetOccupancy > 90
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-slate-100 text-slate-800',
+                          hasRecount
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : streetOccupancy > 90
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-slate-100 text-slate-800',
                         )}
                       >
                         {streetOccupancy}% Ocupado
@@ -283,9 +286,13 @@ export function WarehouseMap() {
                             key={loc.id}
                             className={cn(
                               'h-3 w-3 rounded-sm',
-                              isLocOccupied ? 'bg-green-500' : 'bg-red-200',
+                              loc.needsRecount
+                                ? 'bg-yellow-500'
+                                : isLocOccupied
+                                  ? 'bg-green-500'
+                                  : 'bg-red-200',
                             )}
-                            title={`${loc.name}: ${isLocOccupied ? 'Ocupado' : 'Vazio'}`}
+                            title={`${loc.name}: ${loc.needsRecount ? 'Recontagem' : isLocOccupied ? 'Ocupado' : 'Vazio'}`}
                           />
                         )
                       })}

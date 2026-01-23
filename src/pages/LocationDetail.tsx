@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Box, Trash2, Edit2 } from 'lucide-react'
+import { ArrowLeft, Box, Trash2, Edit2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -49,6 +50,7 @@ export default function LocationDetail() {
     getLocationStatus,
     updatePallet,
     clearLocation,
+    updateLocation,
     getMaterialImage,
     currentUser,
   } = useInventoryStore()
@@ -87,6 +89,13 @@ export default function LocationDetail() {
     })
   }
 
+  const toggleRecount = (checked: boolean) => {
+    updateLocation(location.id, { needsRecount: checked })
+    toast({
+      title: checked ? 'Marcado para recontagem' : 'Recontagem finalizada',
+    })
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in">
       <div className="flex items-center gap-4 mb-6">
@@ -111,6 +120,11 @@ export default function LocationDetail() {
             >
               {isOccupied ? 'Ocupado' : 'Vazio'}
             </Badge>
+            {location.needsRecount && (
+              <Badge className="bg-yellow-500 text-yellow-950 hover:bg-yellow-600">
+                <AlertTriangle className="h-3 w-3 mr-1" /> Recontagem Necessária
+              </Badge>
+            )}
             <span className="text-muted-foreground text-sm">
               ID: {location.id}
             </span>
@@ -120,7 +134,12 @@ export default function LocationDetail() {
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <Card>
+          <Card
+            className={cn(
+              location.needsRecount &&
+                'border-yellow-500 shadow-yellow-500/20 shadow-sm',
+            )}
+          >
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Conteúdo Atual (TRD)</CardTitle>
             </CardHeader>
@@ -266,6 +285,21 @@ export default function LocationDetail() {
                 <CardTitle className="text-lg">Ações Rápidas</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
+                <div className="flex items-center justify-between bg-background p-3 rounded border shadow-sm">
+                  <Label
+                    className="flex items-center gap-2 cursor-pointer"
+                    htmlFor="recount-toggle"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    Necessita Recontagem
+                  </Label>
+                  <Switch
+                    id="recount-toggle"
+                    checked={!!location.needsRecount}
+                    onCheckedChange={toggleRecount}
+                  />
+                </div>
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button

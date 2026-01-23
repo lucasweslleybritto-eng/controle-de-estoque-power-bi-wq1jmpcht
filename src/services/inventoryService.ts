@@ -7,6 +7,8 @@ import {
   SystemSettings,
   Equipment,
   User,
+  OM,
+  Guia,
   SyncStatus,
 } from '@/types'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +22,8 @@ const KEYS = {
   EQUIPMENTS: 'equipments',
   SETTINGS: 'settings',
   USERS: 'users',
+  OMS: 'oms',
+  GUIAS: 'guias',
 }
 
 export type NotificationCategory = 'movement' | 'low-stock' | 'system'
@@ -59,6 +63,8 @@ class InventoryService {
     equipments: Equipment[]
     settings: SystemSettings
     users: User[]
+    oms: OM[]
+    guias: Guia[]
     [key: string]: any
   } = {
     streets: [],
@@ -73,6 +79,8 @@ class InventoryService {
       highOccupancyThreshold: 80,
     },
     users: [],
+    oms: [],
+    guias: [],
   }
 
   constructor() {
@@ -138,6 +146,7 @@ class InventoryService {
   }
 
   private async fetchAll() {
+    if (!this.isOnline) return
     this.setSyncStatus('syncing')
     try {
       const tables = Object.values(KEYS)
@@ -157,6 +166,8 @@ class InventoryService {
               this.cache[table] = [...list]
             }
             this.notifyChange(table)
+          } else if (error) {
+            console.warn(`Could not fetch ${table}:`, error.message)
           }
         }),
       )
@@ -189,7 +200,6 @@ class InventoryService {
     const newRecord = payload.new ? this.fromDb(table, payload.new) : null
     const oldRecord = payload.old ? this.fromDb(table, payload.old) : null
 
-    // Ensure we are tracking this table
     if (!Object.values(KEYS).includes(table)) return
 
     if (table === KEYS.SETTINGS) {
@@ -200,7 +210,6 @@ class InventoryService {
       if (eventType === 'INSERT') {
         const idx = list.findIndex((i) => i.id === newRecord.id)
         if (idx >= 0) {
-          // Update existing (echo or conflict)
           list[idx] = newRecord
         } else {
           list.push(newRecord)
@@ -208,11 +217,8 @@ class InventoryService {
       } else if (eventType === 'UPDATE') {
         const index = list.findIndex((i) => i.id === newRecord.id)
         if (index !== -1) {
-          // Merge to handle potential partial updates, though Supabase usually sends full row
-          // Prioritize newRecord
           list[index] = { ...list[index], ...newRecord }
         } else {
-          // Edge case: Update came but we don't have it? Treat as insert if possible
           list.push(newRecord)
         }
       } else if (eventType === 'DELETE') {
@@ -258,7 +264,6 @@ class InventoryService {
       } catch (error: any) {
         console.error('Queue processing error', error)
 
-        // Check for specific network error "Failed to fetch"
         const isNetworkError =
           error?.message === 'Failed to fetch' ||
           error?.message?.includes('NetworkError') ||
@@ -268,7 +273,6 @@ class InventoryService {
           console.log(
             'Network error detected during queue processing. Pausing.',
           )
-          // Restore remaining items to the front of the queue to preserve order
           const remaining = queueCopy.slice(i)
           this.queue = [...remaining, ...this.queue]
           this.setSyncStatus('error')
@@ -277,7 +281,6 @@ class InventoryService {
           return
         }
 
-        // For non-network errors, we move the item to the end of the queue (retry later)
         this.queue.push(item)
         this.setSyncStatus('error')
       }
@@ -304,7 +307,6 @@ class InventoryService {
   }
 
   public async upsertItem(table: string, item: any) {
-    // Optimistic Update
     if (table === KEYS.SETTINGS) {
       this.cache.settings = item
     } else {
@@ -326,7 +328,6 @@ class InventoryService {
   }
 
   public async deleteItem(table: string, id: string) {
-    // Optimistic Update
     const list = [...((this.cache[table] as any[]) || [])]
     this.cache[table] = list.filter((i) => i.id !== id)
     this.notifyChange(table)
@@ -336,7 +337,6 @@ class InventoryService {
   }
 
   public async upsertMany(table: string, items: any[]) {
-    // Optimistic Update
     const list = [...((this.cache[table] as any[]) || [])]
     items.forEach((item) => {
       const idx = list.findIndex((i) => i.id === item.id)
@@ -378,6 +378,12 @@ class InventoryService {
   }
   getUsers() {
     return this.cache.users
+  }
+  getOMs() {
+    return this.cache.oms
+  }
+  getGuias() {
+    return this.cache.guias
   }
 
   private notifyChange(key: string) {

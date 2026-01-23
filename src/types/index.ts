@@ -9,6 +9,7 @@ export interface Location {
   streetId: string
   name: string
   needsVerification?: boolean
+  needsRecount?: boolean
 }
 
 export type MaterialType = 'TRP' | 'TRD'
@@ -80,6 +81,24 @@ export interface User {
   role: UserRole
   avatar?: string
   preferences: UserPreferences
+}
+
+export interface OM {
+  id: string
+  name: string
+  image: string
+}
+
+export type GuiaStatus = 'pending' | 'separating' | 'completed'
+
+export interface Guia {
+  id: string
+  omId: string
+  title: string
+  pdfUrl?: string
+  status: GuiaStatus
+  createdAt: string
+  updatedAt?: string
 }
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'

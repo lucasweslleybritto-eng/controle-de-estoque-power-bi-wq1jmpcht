@@ -18,6 +18,8 @@ import {
   User,
   UserPreferences,
   SyncStatus,
+  OM,
+  Guia,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -31,6 +33,8 @@ interface InventoryContextType {
   equipments: Equipment[]
   settings: SystemSettings
   users: User[]
+  oms: OM[]
+  guias: Guia[]
   currentUser: User | null
   alerts: Array<{ id: string; message: string; type: 'low-stock' | 'system' }>
   syncStatus: SyncStatus
@@ -45,6 +49,7 @@ interface InventoryContextType {
   getMaterialImage: (materialName: string) => string | undefined
   getMaterialTotalStock: (materialId: string) => number
   isLowStock: (materialId: string) => boolean
+  getGuiasByOM: (omId: string) => Guia[]
 
   addStreet: (name: string) => void
   updateStreet: (id: string, name: string) => void
@@ -53,7 +58,7 @@ interface InventoryContextType {
   reorderStreets: (newStreets: Street[]) => void
 
   addLocation: (streetId: string, name: string) => void
-  updateLocation: (id: string, name: string) => void
+  updateLocation: (id: string, updates: Partial<Location>) => void
   deleteLocation: (id: string) => void
   moveLocation: (locationId: string, direction: 'up' | 'down') => void
   changeLocationStreet: (locationId: string, newStreetId: string) => void
@@ -67,6 +72,14 @@ interface InventoryContextType {
 
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void
   deleteEquipment: (id: string) => void
+
+  addOM: (om: Omit<OM, 'id'>) => void
+  updateOM: (id: string, updates: Partial<OM>) => void
+  deleteOM: (id: string) => void
+
+  addGuia: (guia: Omit<Guia, 'id' | 'createdAt'>) => void
+  updateGuia: (id: string, updates: Partial<Guia>) => void
+  deleteGuia: (id: string) => void
 
   login: (userIdOrUser: string | User) => void
   logout: () => void
@@ -124,6 +137,8 @@ export const InventoryProvider = ({
     inventoryService.getHistory(),
   )
   const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
+  const [oms, setOms] = useState<OM[]>(() => inventoryService.getOMs())
+  const [guias, setGuias] = useState<Guia[]>(() => inventoryService.getGuias())
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
@@ -197,6 +212,12 @@ export const InventoryProvider = ({
           case inventoryService.keys.USERS:
             setUsers([...inventoryService.getUsers()])
             break
+          case inventoryService.keys.OMS:
+            setOms([...inventoryService.getOMs()])
+            break
+          case inventoryService.keys.GUIAS:
+            setGuias([...inventoryService.getGuias()])
+            break
         }
       } else if (event.type === 'SYNC_STATUS') {
         setSyncStatus(event.status)
@@ -229,6 +250,11 @@ export const InventoryProvider = ({
   const getPalletsByLocation = useCallback(
     (locationId: string) => pallets.filter((p) => p.locationId === locationId),
     [pallets],
+  )
+
+  const getGuiasByOM = useCallback(
+    (omId: string) => guias.filter((g) => g.omId === omId),
+    [guias],
   )
 
   const getLocationStatus = useCallback(
@@ -498,18 +524,20 @@ export const InventoryProvider = ({
     )
   }
 
-  const updateLocation = (id: string, name: string) => {
+  const updateLocation = (id: string, updates: Partial<Location>) => {
     const location = locations.find((l) => l.id === id)
     if (location) {
       inventoryService.upsertItem(inventoryService.keys.LOCATIONS, {
         ...location,
-        name,
+        ...updates,
       })
-      addLog(
-        'SYSTEM',
-        { details: `Local renomeado: ${location.name} -> ${name}` },
-        currentUser?.name || 'Gerente',
-      )
+      if (updates.name) {
+        addLog(
+          'SYSTEM',
+          { details: `Local renomeado: ${location.name} -> ${updates.name}` },
+          currentUser?.name || 'Gerente',
+        )
+      }
     }
   }
 
@@ -624,6 +652,55 @@ export const InventoryProvider = ({
     inventoryService.deleteItem(inventoryService.keys.EQUIPMENTS, id)
   }
 
+  const addOM = (om: Omit<OM, 'id'>) => {
+    const newOM = { ...om, id: crypto.randomUUID() }
+    inventoryService.upsertItem(inventoryService.keys.OMS, newOM)
+    inventoryService.notifyEvent(`Nova OM: ${om.name}`, 'system')
+  }
+
+  const updateOM = (id: string, updates: Partial<OM>) => {
+    const om = oms.find((o) => o.id === id)
+    if (om) {
+      inventoryService.upsertItem(inventoryService.keys.OMS, {
+        ...om,
+        ...updates,
+      })
+    }
+  }
+
+  const deleteOM = (id: string) => {
+    inventoryService.deleteItem(inventoryService.keys.OMS, id)
+    const guiasToDelete = guias.filter((g) => g.omId === id)
+    guiasToDelete.forEach((g) =>
+      inventoryService.deleteItem(inventoryService.keys.GUIAS, g.id),
+    )
+  }
+
+  const addGuia = (guia: Omit<Guia, 'id' | 'createdAt'>) => {
+    const newGuia = {
+      ...guia,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    }
+    inventoryService.upsertItem(inventoryService.keys.GUIAS, newGuia)
+    inventoryService.notifyEvent(`Nova guia criada`, 'system')
+  }
+
+  const updateGuia = (id: string, updates: Partial<Guia>) => {
+    const guia = guias.find((g) => g.id === id)
+    if (guia) {
+      inventoryService.upsertItem(inventoryService.keys.GUIAS, {
+        ...guia,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  const deleteGuia = (id: string) => {
+    inventoryService.deleteItem(inventoryService.keys.GUIAS, id)
+  }
+
   const updateSettings = (updates: Partial<SystemSettings>) => {
     const newSettings = { ...settings, ...updates }
     inventoryService.upsertItem(inventoryService.keys.SETTINGS, newSettings)
@@ -724,6 +801,8 @@ export const InventoryProvider = ({
       equipments,
       settings,
       users,
+      oms,
+      guias,
       currentUser,
       alerts,
       syncStatus,
@@ -737,6 +816,7 @@ export const InventoryProvider = ({
       getMaterialImage,
       getMaterialTotalStock,
       isLowStock,
+      getGuiasByOM,
       addStreet,
       updateStreet,
       deleteStreet,
@@ -753,6 +833,12 @@ export const InventoryProvider = ({
       importMaterials,
       addEquipment,
       deleteEquipment,
+      addOM,
+      updateOM,
+      deleteOM,
+      addGuia,
+      updateGuia,
+      deleteGuia,
       login,
       logout,
       addUser,
@@ -777,6 +863,8 @@ export const InventoryProvider = ({
       equipments,
       settings,
       users,
+      oms,
+      guias,
       currentUser,
       alerts,
       syncStatus,

@@ -241,7 +241,8 @@ class InventoryService {
     this.queue = []
     this.saveToLocalStorage()
 
-    for (const item of queueCopy) {
+    for (let i = 0; i < queueCopy.length; i++) {
+      const item = queueCopy[i]
       try {
         if (item.action === 'UPSERT') {
           const dbData = this.toDb(item.table, item.data)
@@ -254,9 +255,30 @@ class InventoryService {
             .eq('id', item.id)
           if (error) throw error
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Queue processing error', error)
-        this.queue.push(item) // Add back to queue
+
+        // Check for specific network error "Failed to fetch"
+        const isNetworkError =
+          error?.message === 'Failed to fetch' ||
+          error?.message?.includes('NetworkError') ||
+          (error instanceof TypeError && error.message === 'Failed to fetch')
+
+        if (isNetworkError) {
+          console.log(
+            'Network error detected during queue processing. Pausing.',
+          )
+          // Restore remaining items to the front of the queue to preserve order
+          const remaining = queueCopy.slice(i)
+          this.queue = [...remaining, ...this.queue]
+          this.setSyncStatus('error')
+          this.isProcessingQueue = false
+          this.saveToLocalStorage()
+          return
+        }
+
+        // For non-network errors, we move the item to the end of the queue (retry later)
+        this.queue.push(item)
         this.setSyncStatus('error')
       }
     }

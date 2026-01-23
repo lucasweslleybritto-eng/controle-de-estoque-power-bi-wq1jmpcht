@@ -1,15 +1,14 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import {
   Plus,
   Trash2,
   FileText,
-  Upload,
-  ExternalLink,
-  Edit2,
   Building,
   CheckCircle2,
   Clock,
   CircleDashed,
+  MoreVertical,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -48,14 +47,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
-import { OM, Guia, GuiaStatus } from '@/types'
+import { GuiaStatus } from '@/types'
 import { fileToBase64, cn } from '@/lib/utils'
 import { ImagePreview } from '@/components/ui/image-preview'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 
 export default function OMManagement() {
   const {
@@ -68,21 +72,18 @@ export default function OMManagement() {
     updateGuia,
     deleteGuia,
     currentUser,
+    getGuiasByOM,
   } = useInventoryStore()
   const { toast } = useToast()
 
-  const [activeOM, setActiveOM] = useState<string | null>(null)
   const [isAddOMOpen, setIsAddOMOpen] = useState(false)
   const [newOMName, setNewOMName] = useState('')
   const [newOMImage, setNewOMImage] = useState('')
   const [isLoadingImage, setIsLoadingImage] = useState(false)
 
-  const [isAddGuiaOpen, setIsAddGuiaOpen] = useState(false)
+  const [activeOMForGuia, setActiveOMForGuia] = useState<string | null>(null)
   const [newGuiaTitle, setNewGuiaTitle] = useState('')
   const [newGuiaFile, setNewGuiaFile] = useState('')
-  const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(
-    null,
-  )
 
   const canEdit =
     currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
@@ -115,16 +116,16 @@ export default function OMManagement() {
   }
 
   const handleAddGuia = () => {
-    if (!newGuiaTitle.trim() || !activeOM) return
+    if (!newGuiaTitle.trim() || !activeOMForGuia) return
     addGuia({
-      omId: activeOM,
+      omId: activeOMForGuia,
       title: newGuiaTitle,
       pdfUrl: newGuiaFile,
       status: 'pending',
     })
     setNewGuiaTitle('')
     setNewGuiaFile('')
-    setIsAddGuiaOpen(false)
+    setActiveOMForGuia(null)
     toast({ title: 'Guia Adicionada' })
   }
 
@@ -152,11 +153,11 @@ export default function OMManagement() {
   const getStatusColor = (status: GuiaStatus) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+        return 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200 dark:bg-green-900/40 dark:text-green-300'
       case 'separating':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300'
       default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+        return 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200 dark:bg-slate-800 dark:text-slate-300'
     }
   }
 
@@ -173,19 +174,17 @@ export default function OMManagement() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <div className="flex justify-between items-center border-b pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Gestão de OMs e Guias
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestão de OMs</h1>
           <p className="text-muted-foreground">
-            Gerencie Organizações Militares e suas guias de separação.
+            Controle visual de Organizações Militares e separação de material.
           </p>
         </div>
         {canEdit && (
           <Dialog open={isAddOMOpen} onOpenChange={setIsAddOMOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="shadow-sm">
                 <Plus className="mr-2 h-4 w-4" /> Nova OM
               </Button>
             </DialogTrigger>
@@ -208,6 +207,7 @@ export default function OMManagement() {
                     {newOMImage && (
                       <img
                         src={newOMImage}
+                        alt="Preview"
                         className="h-10 w-10 object-cover rounded"
                       />
                     )}
@@ -231,64 +231,60 @@ export default function OMManagement() {
       </div>
 
       {oms.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
-          <Building className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-3" />
-          <p className="text-muted-foreground">Nenhuma OM cadastrada.</p>
+        <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-lg bg-muted/20">
+          <Building className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
+          <h3 className="text-lg font-medium">Nenhuma OM cadastrada</h3>
+          <p className="text-muted-foreground mb-4">
+            Adicione uma Organização Militar para começar.
+          </p>
+          {canEdit && (
+            <Button variant="outline" onClick={() => setIsAddOMOpen(true)}>
+              Adicionar OM
+            </Button>
+          )}
         </div>
       ) : (
-        <Tabs
-          defaultValue={oms[0]?.id}
-          onValueChange={setActiveOM}
-          className="w-full"
-        >
-          <div className="flex items-center justify-between mb-4 overflow-x-auto pb-2">
-            <TabsList className="bg-transparent h-auto p-0 gap-2">
-              {oms.map((om) => (
-                <TabsTrigger
-                  key={om.id}
-                  value={om.id}
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card hover:bg-accent px-4 py-2 h-auto"
-                >
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={om.image}
-                      alt={om.name}
-                      className="h-6 w-6 rounded-full object-cover bg-white"
-                    />
-                    <span>{om.name}</span>
-                  </div>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {oms.map((om) => {
+            const omGuias = getGuiasByOM(om.id)
+            const completedGuias = omGuias.filter(
+              (g) => g.status === 'completed',
+            ).length
+            const totalGuias = omGuias.length
+            const progress =
+              totalGuias > 0 ? (completedGuias / totalGuias) * 100 : 0
 
-          {oms.map((om) => (
-            <TabsContent
-              key={om.id}
-              value={om.id}
-              className="animate-fade-in-up"
-            >
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-4">
+            return (
+              <Card
+                key={om.id}
+                className="flex flex-col h-[600px] overflow-hidden group hover:shadow-lg transition-all duration-300 border-muted"
+              >
+                <CardHeader className="pb-3 bg-muted/30">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
                       <ImagePreview
                         src={om.image}
-                        className="h-16 w-16 rounded-lg bg-white border"
+                        className="h-12 w-12 rounded-lg bg-white p-0.5 border shadow-sm overflow-hidden shrink-0"
                       />
-                      <div>
-                        <CardTitle>{om.name}</CardTitle>
-                        <CardDescription>
-                          {guias.filter((g) => g.omId === om.id).length} Guias
-                          registradas
+                      <div className="overflow-hidden">
+                        <CardTitle className="truncate text-lg" title={om.name}>
+                          {om.name}
+                        </CardTitle>
+                        <CardDescription className="text-xs flex items-center gap-1">
+                          {totalGuias} Guias &bull; {Math.round(progress)}%
+                          Concluído
                         </CardDescription>
                       </div>
                     </div>
                     {canEdit && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="mr-2 h-4 w-4" /> Remover OM
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive -mr-2 -mt-2"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -297,7 +293,8 @@ export default function OMManagement() {
                               Excluir {om.name}?
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Todas as guias associadas serão perdidas.
+                              Esta ação removerá a OM e todas as suas guias
+                              associadas permanentemente.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -312,173 +309,218 @@ export default function OMManagement() {
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                  </CardHeader>
-                </Card>
+                  </div>
+                </CardHeader>
 
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Guias de Separação</h3>
-                  {canEdit && (
-                    <Dialog
-                      open={isAddGuiaOpen}
-                      onOpenChange={setIsAddGuiaOpen}
-                    >
-                      <DialogTrigger asChild>
-                        <Button size="sm">
-                          <Plus className="mr-2 h-4 w-4" /> Nova Guia
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Anexar Guia para {om.name}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label>Título / Número</Label>
-                            <Input
-                              value={newGuiaTitle}
-                              onChange={(e) => setNewGuiaTitle(e.target.value)}
-                              placeholder="Ex: Guia 001/2024"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Arquivo PDF</Label>
-                            <Input
-                              type="file"
-                              accept="application/pdf"
-                              onChange={handleGuiaFileUpload}
-                              disabled={isLoadingImage}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            onClick={handleAddGuia}
-                            disabled={isLoadingImage || !newGuiaFile}
-                          >
-                            Salvar
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {guias
-                    .filter((g) => g.omId === om.id)
-                    .map((guia) => (
-                      <Card
-                        key={guia.id}
-                        className="group relative overflow-hidden"
+                <CardContent className="flex-1 p-0 flex flex-col min-h-0 bg-card">
+                  <div className="p-3 border-b bg-slate-50 dark:bg-slate-900/20 flex justify-between items-center">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+                      Guias de Separação
+                    </h4>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => setActiveOMForGuia(om.id)}
                       >
-                        <div
-                          className={`absolute top-0 left-0 w-1 h-full ${
-                            guia.status === 'completed'
-                              ? 'bg-green-500'
-                              : guia.status === 'separating'
-                                ? 'bg-blue-500'
-                                : 'bg-slate-300'
-                          }`}
-                        />
-                        <CardHeader className="pb-2 pl-6">
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-base truncate pr-2">
-                              {guia.title}
-                            </CardTitle>
-                            {canEdit && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 -mt-1 -mr-2 text-muted-foreground hover:text-destructive"
-                                onClick={() => deleteGuia(guia.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                          <CardDescription className="text-xs">
-                            Criado em{' '}
-                            {format(new Date(guia.createdAt), 'dd/MM/yyyy', {
-                              locale: ptBR,
-                            })}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pl-6 pb-2">
-                          <div className="flex items-center gap-2 mb-3">
-                            {guia.status === 'completed' && (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            )}
-                            {guia.status === 'separating' && (
-                              <Clock className="h-4 w-4 text-blue-500" />
-                            )}
-                            {guia.status === 'pending' && (
-                              <CircleDashed className="h-4 w-4 text-slate-400" />
-                            )}
+                        <Plus className="mr-1 h-3 w-3" /> Adicionar
+                      </Button>
+                    )}
+                  </div>
 
-                            {canEdit ? (
-                              <Select
-                                value={guia.status}
-                                onValueChange={(v: GuiaStatus) =>
-                                  updateGuia(guia.id, { status: v })
-                                }
-                              >
-                                <SelectTrigger className="h-7 text-xs w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pending">
-                                    Não separado
-                                  </SelectItem>
-                                  <SelectItem value="separating">
-                                    Separando
-                                  </SelectItem>
-                                  <SelectItem value="completed">
-                                    Separado
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
+                  <ScrollArea className="flex-1">
+                    <div className="p-3 space-y-2">
+                      {omGuias.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          <FileText className="h-8 w-8 mx-auto opacity-20 mb-2" />
+                          Nenhuma guia
+                        </div>
+                      ) : (
+                        omGuias.map((guia) => (
+                          <div
+                            key={guia.id}
+                            className="flex flex-col gap-2 p-3 rounded-lg border bg-background shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex justify-between items-start gap-2">
                               <span
-                                className={cn(
-                                  'text-xs font-medium px-2 py-0.5 rounded',
-                                  getStatusColor(guia.status),
-                                )}
+                                className="font-medium text-sm line-clamp-2"
+                                title={guia.title}
                               >
-                                {getStatusLabel(guia.status)}
+                                {guia.title}
                               </span>
-                            )}
+                              {canEdit && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 -mt-1 -mr-1"
+                                    >
+                                      <MoreVertical className="h-3 w-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => deleteGuia(guia.id)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />{' '}
+                                      Excluir Guia
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              {canEdit ? (
+                                <Select
+                                  value={guia.status}
+                                  onValueChange={(v: GuiaStatus) =>
+                                    updateGuia(guia.id, { status: v })
+                                  }
+                                >
+                                  <SelectTrigger
+                                    className={cn(
+                                      'h-7 text-xs flex-1 border-0 focus:ring-0',
+                                      getStatusColor(guia.status),
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-1.5 overflow-hidden">
+                                      {guia.status === 'completed' && (
+                                        <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                      )}
+                                      {guia.status === 'separating' && (
+                                        <Clock className="h-3 w-3 shrink-0" />
+                                      )}
+                                      {guia.status === 'pending' && (
+                                        <CircleDashed className="h-3 w-3 shrink-0" />
+                                      )}
+                                      <span className="truncate">
+                                        {getStatusLabel(guia.status)}
+                                      </span>
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">
+                                      <div className="flex items-center gap-2">
+                                        <CircleDashed className="h-3 w-3" /> Não
+                                        separado
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="separating">
+                                      <div className="flex items-center gap-2">
+                                        <Clock className="h-3 w-3" /> Separando
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="completed">
+                                      <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="h-3 w-3" />{' '}
+                                        Separado
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'text-xs font-normal',
+                                    getStatusColor(guia.status),
+                                  )}
+                                >
+                                  {guia.status === 'completed' && (
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                  )}
+                                  {guia.status === 'separating' && (
+                                    <Clock className="mr-1 h-3 w-3" />
+                                  )}
+                                  {guia.status === 'pending' && (
+                                    <CircleDashed className="mr-1 h-3 w-3" />
+                                  )}
+                                  {getStatusLabel(guia.status)}
+                                </Badge>
+                              )}
+
+                              {guia.pdfUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0"
+                                  asChild
+                                  title="Baixar PDF"
+                                >
+                                  <a
+                                    href={guia.pdfUrl}
+                                    download={`Guia-${guia.title}.pdf`}
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </CardContent>
-                        <CardFooter className="pl-6 pt-0">
-                          {guia.pdfUrl && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full gap-2"
-                              asChild
-                            >
-                              <a
-                                href={guia.pdfUrl}
-                                download={`Guia-${guia.title}.pdf`}
-                              >
-                                <FileText className="h-3 w-3" /> Baixar PDF
-                              </a>
-                            </Button>
-                          )}
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  {guias.filter((g) => g.omId === om.id).length === 0 && (
-                    <div className="col-span-full py-8 text-center text-muted-foreground text-sm border border-dashed rounded bg-muted/20">
-                      Nenhuma guia anexada.
+                        ))
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+                  </ScrollArea>
+                </CardContent>
+
+                {canEdit && (
+                  <CardFooter className="p-3 border-t bg-muted/10">
+                    <Button
+                      className="w-full"
+                      variant="secondary"
+                      onClick={() => setActiveOMForGuia(om.id)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Adicionar Guia
+                    </Button>
+                  </CardFooter>
+                )}
+              </Card>
+            )
+          })}
+        </div>
       )}
+
+      <Dialog
+        open={!!activeOMForGuia}
+        onOpenChange={(open) => !open && setActiveOMForGuia(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Guia de Separação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Título / Número da Guia</Label>
+              <Input
+                value={newGuiaTitle}
+                onChange={(e) => setNewGuiaTitle(e.target.value)}
+                placeholder="Ex: Guia 001/2024"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Arquivo PDF (Opcional)</Label>
+              <Input
+                type="file"
+                accept="application/pdf"
+                onChange={handleGuiaFileUpload}
+                disabled={isLoadingImage}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleAddGuia}
+              disabled={isLoadingImage || !newGuiaTitle.trim()}
+            >
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

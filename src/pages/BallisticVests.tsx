@@ -1,11 +1,4 @@
-import { BallisticManager } from '@/components/ballistic/BallisticManager'
-
+// This file is deprecated. Please use /ballistic-control
 export default function BallisticVests() {
-  return (
-    <BallisticManager
-      category="vest"
-      title="Coletes Balísticos"
-      description="Gestão de coletes por Organização Militar."
-    />
-  )
+  return null
 }

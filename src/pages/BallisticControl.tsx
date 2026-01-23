@@ -11,6 +11,8 @@ import {
   Clock,
   UserCheck,
   HardHat,
+  History,
+  FileText,
 } from 'lucide-react'
 import {
   Table,
@@ -43,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -56,10 +59,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { useToast } from '@/hooks/use-toast'
-import { BallisticStatus, BallisticCategory } from '@/types'
+import { BallisticStatus, BallisticCategory, BallisticItem } from '@/types'
 import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function BallisticControl() {
   const {
@@ -75,7 +81,9 @@ export default function BallisticControl() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'vest' | 'helmet'>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
+  const [historyItem, setHistoryItem] = useState<BallisticItem | null>(null)
 
   const [formData, setFormData] = useState({
     category: 'vest' as BallisticCategory,
@@ -140,6 +148,11 @@ export default function BallisticControl() {
       })
     }
     setIsDialogOpen(true)
+  }
+
+  const handleViewHistory = (item: BallisticItem) => {
+    setHistoryItem(item)
+    setIsHistoryOpen(true)
   }
 
   const handleSave = () => {
@@ -336,52 +349,62 @@ export default function BallisticControl() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {canEdit && (
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenDialog(item)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Excluir Item?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta ação removerá permanentemente o item
-                                      do inventário.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancelar
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-destructive"
-                                      onClick={() =>
-                                        deleteBallisticItem(item.id)
-                                      }
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewHistory(item)}
+                              title="Ver Histórico"
+                            >
+                              <History className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            {canEdit && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleOpenDialog(item)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive hover:bg-destructive/10"
                                     >
-                                      Excluir
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          )}
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Excluir Item?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta ação removerá permanentemente o
+                                        item do inventário.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancelar
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive"
+                                        onClick={() =>
+                                          deleteBallisticItem(item.id)
+                                        }
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -393,6 +416,69 @@ export default function BallisticControl() {
         </CardContent>
       </Card>
 
+      {/* History Dialog */}
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Histórico de Movimentação
+            </DialogTitle>
+            <DialogDescription>
+              Rastreamento completo do item:{' '}
+              <span className="font-semibold text-foreground">
+                {historyItem?.identification}
+              </span>{' '}
+              ({historyItem?.serialNumber})
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-slate-50 dark:bg-slate-900/50">
+            {historyItem?.history && historyItem.history.length > 0 ? (
+              <div className="space-y-6">
+                {[...historyItem.history].reverse().map((entry, index) => (
+                  <div key={entry.id || index} className="relative pl-6 pb-2">
+                    {/* Timeline line */}
+                    {index !== historyItem.history!.length - 1 && (
+                      <div className="absolute left-[5px] top-2 h-full w-[2px] bg-slate-200 dark:bg-slate-800" />
+                    )}
+                    {/* Timeline dot */}
+                    <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full border-2 border-primary bg-background" />
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">
+                          {entry.action}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(entry.date), "dd/MM/yy 'às' HH:mm", {
+                            locale: ptBR,
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground bg-white dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700 shadow-sm">
+                        {entry.details}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <UserCheck className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {entry.user}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-60">
+                <FileText className="h-12 w-12 mb-2" />
+                <p>Nenhum histórico registrado.</p>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit/Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

@@ -21,6 +21,7 @@ import {
   OM,
   Guia,
   BallisticItem,
+  BallisticStatus,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -115,6 +116,20 @@ const InventoryContext = createContext<InventoryContextType | undefined>(
 )
 
 const USER_STORAGE_KEY = 'inventory_current_user'
+
+const translateBallisticStatus = (status: BallisticStatus) => {
+  const map: Record<BallisticStatus, string> = {
+    active: 'Disponível',
+    'in-use': 'Em uso',
+    reserved: 'Reservado',
+    obsolete: 'Obsoleto',
+    condemned: 'Condenado',
+    maintenance: 'Manutenção',
+    lost: 'Extraviado',
+    distributed: 'Distribuído',
+  }
+  return map[status] || status
+}
 
 export const InventoryProvider = ({
   children,
@@ -724,6 +739,15 @@ export const InventoryProvider = ({
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      history: [
+        {
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          user: currentUser?.name || 'Sistema',
+          action: 'Criação',
+          details: 'Item adicionado ao inventário',
+        },
+      ],
     }
     inventoryService.upsertItem(inventoryService.keys.BALLISTIC_ITEMS, newItem)
     inventoryService.notifyEvent(`Novo item balístico/obsoleto`, 'system')
@@ -732,9 +756,53 @@ export const InventoryProvider = ({
   const updateBallisticItem = (id: string, updates: Partial<BallisticItem>) => {
     const item = ballisticItems.find((i) => i.id === id)
     if (item) {
+      const changes: string[] = []
+
+      // Status Change
+      if (updates.status && updates.status !== item.status) {
+        changes.push(
+          `Situação: '${translateBallisticStatus(item.status)}' -> '${translateBallisticStatus(updates.status)}'`,
+        )
+      }
+
+      // OM Change
+      if (updates.omId && updates.omId !== item.omId) {
+        const oldOmName =
+          oms.find((o) => o.id === item.omId)?.name || 'Sem vínculo'
+        const newOmName =
+          oms.find((o) => o.id === updates.omId)?.name || 'Sem vínculo'
+        changes.push(`OM: '${oldOmName}' -> '${newOmName}'`)
+      }
+
+      // Serial Change
+      if (updates.serialNumber && updates.serialNumber !== item.serialNumber) {
+        changes.push(`Serial: ${item.serialNumber} -> ${updates.serialNumber}`)
+      }
+
+      // Identification Change
+      if (
+        updates.identification &&
+        updates.identification !== item.identification
+      ) {
+        changes.push(`ID: ${item.identification} -> ${updates.identification}`)
+      }
+
+      const newHistory = item.history ? [...item.history] : []
+
+      if (changes.length > 0) {
+        newHistory.push({
+          id: crypto.randomUUID(),
+          date: new Date().toISOString(),
+          user: currentUser?.name || 'Sistema',
+          action: 'Atualização',
+          details: changes.join('; '),
+        })
+      }
+
       inventoryService.upsertItem(inventoryService.keys.BALLISTIC_ITEMS, {
         ...item,
         ...updates,
+        history: newHistory,
         updatedAt: new Date().toISOString(),
       })
     }

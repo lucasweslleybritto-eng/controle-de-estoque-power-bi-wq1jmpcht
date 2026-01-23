@@ -24,6 +24,7 @@ import { ptBR } from 'date-fns/locale'
 import { exportToCSV, cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { LogType } from '@/types'
+import { ImagePreview } from '@/components/ui/image-preview'
 
 export default function History() {
   const { history, currentUser } = useInventoryStore()
@@ -31,9 +32,6 @@ export default function History() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | LogType>('ALL')
 
-  // RBAC: Maybe allow only Admin/Operator to export?
-  // User Story says Viewer has "Read-only access to inventory and reports".
-  // So Viewer can see history, but typically export is also read-access. We'll allow it.
   const canExport = true
 
   const filteredHistory = history.filter((log) => {
@@ -239,15 +237,24 @@ export default function History() {
                             {log.description}
                           </span>
                         ) : (
-                          <div>
-                            <span className="font-medium text-sm">
-                              {log.materialName}
-                            </span>
-                            {log.description && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {log.description}
-                              </p>
+                          <div className="flex gap-2 items-center">
+                            {log.image && (
+                              <ImagePreview
+                                src={log.image}
+                                className="h-8 w-8 rounded border bg-white"
+                                fallbackText="Log"
+                              />
                             )}
+                            <div>
+                              <span className="font-medium text-sm">
+                                {log.materialName}
+                              </span>
+                              {log.description && (
+                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                  {log.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </TableCell>

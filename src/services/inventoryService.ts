@@ -207,7 +207,14 @@ class InventoryService {
         }
       } else if (eventType === 'UPDATE') {
         const index = list.findIndex((i) => i.id === newRecord.id)
-        if (index !== -1) list[index] = newRecord
+        if (index !== -1) {
+          // Merge to handle potential partial updates, though Supabase usually sends full row
+          // Prioritize newRecord
+          list[index] = { ...list[index], ...newRecord }
+        } else {
+          // Edge case: Update came but we don't have it? Treat as insert if possible
+          list.push(newRecord)
+        }
       } else if (eventType === 'DELETE') {
         list = list.filter((i) => i.id !== oldRecord.id)
       }
@@ -275,6 +282,7 @@ class InventoryService {
   }
 
   public async upsertItem(table: string, item: any) {
+    // Optimistic Update
     if (table === KEYS.SETTINGS) {
       this.cache.settings = item
     } else {
@@ -296,6 +304,7 @@ class InventoryService {
   }
 
   public async deleteItem(table: string, id: string) {
+    // Optimistic Update
     const list = [...((this.cache[table] as any[]) || [])]
     this.cache[table] = list.filter((i) => i.id !== id)
     this.notifyChange(table)
@@ -305,6 +314,7 @@ class InventoryService {
   }
 
   public async upsertMany(table: string, items: any[]) {
+    // Optimistic Update
     const list = [...((this.cache[table] as any[]) || [])]
     items.forEach((item) => {
       const idx = list.findIndex((i) => i.id === item.id)
@@ -419,8 +429,6 @@ class InventoryService {
   }
 
   public simulateRemoteUpdate() {
-    // Manually trigger a fake event for demo purposes
-    // This simulates an INSERT on history to verify UI reaction
     const fakeLog: MovementLog = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
@@ -431,7 +439,6 @@ class InventoryService {
       streetName: 'N/A',
     }
 
-    // Simulate incoming DB change
     this.handleRealtimeEvent({
       table: KEYS.HISTORY,
       eventType: 'INSERT',
@@ -443,12 +450,10 @@ class InventoryService {
 
   public resetDatabase(userId: string) {
     console.log('Reset requested by', userId)
-    // Clear all tables locally and trigger deletes
-    // In a real app this would be a single RPC call
     const tables = Object.values(KEYS)
     tables.forEach((table) => {
       if (table !== KEYS.SETTINGS && table !== KEYS.USERS) {
-        // @ts-expect-error - Dynamic access
+        // @ts-expect-error - Dynamic access to cache
         const items = this.cache[table] || []
         items.forEach((i: any) => this.deleteItem(table, i.id))
       }

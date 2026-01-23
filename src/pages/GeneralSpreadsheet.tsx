@@ -17,14 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
-import {
-  Download,
-  Search,
-  FilterX,
-  Trash2,
-  AlertTriangle,
-  ArrowDownCircle,
-} from 'lucide-react'
+import { Download, Search, FilterX, Trash2, AlertTriangle } from 'lucide-react'
 import useInventoryStore from '@/stores/useInventoryStore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -45,6 +38,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ImagePreview } from '@/components/ui/image-preview'
 
 export default function GeneralSpreadsheet() {
   const {
@@ -55,6 +49,7 @@ export default function GeneralSpreadsheet() {
     removePallet,
     currentUser,
     isLowStock,
+    getMaterialImage,
   } = useInventoryStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [streetFilter, setStreetFilter] = useState('all')
@@ -194,7 +189,8 @@ export default function GeneralSpreadsheet() {
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
-                  <TableHead className="w-[100px]">Tipo</TableHead>
+                  <TableHead className="w-[60px]">Img</TableHead>
+                  <TableHead className="w-[80px]">Tipo</TableHead>
                   <TableHead>Material</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Localização</TableHead>
@@ -209,7 +205,7 @@ export default function GeneralSpreadsheet() {
                 {filteredPallets.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center h-32 text-muted-foreground"
                     >
                       Nenhum resultado encontrado.
@@ -219,6 +215,9 @@ export default function GeneralSpreadsheet() {
                   filteredPallets.map((pallet) => {
                     const lowStock =
                       pallet.materialId && isLowStock(pallet.materialId)
+                    const imageUrl =
+                      pallet.image || getMaterialImage(pallet.materialName)
+
                     return (
                       <TableRow
                         key={pallet.id}
@@ -227,6 +226,14 @@ export default function GeneralSpreadsheet() {
                           lowStock && 'bg-red-50 hover:bg-red-100/50',
                         )}
                       >
+                        <TableCell>
+                          <ImagePreview
+                            src={imageUrl}
+                            alt={pallet.materialName}
+                            className="h-10 w-10 rounded object-cover border bg-white"
+                            fallbackText="Sem img"
+                          />
+                        </TableCell>
                         <TableCell>
                           <span className="font-bold text-xs border px-1 rounded bg-slate-100">
                             {pallet.type}

@@ -125,7 +125,6 @@ export const InventoryProvider = ({
   )
   const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
 
-  // Persistent User State
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem(USER_STORAGE_KEY)
@@ -146,23 +145,19 @@ export const InventoryProvider = ({
     inventoryService.getStatus().isOnline,
   )
 
-  // Initialize Service
   useEffect(() => {
     inventoryService.init()
   }, [])
 
-  // Sync currentUser with latest data from users list
   useEffect(() => {
     if (currentUser) {
       const freshUser = users.find((u) => u.id === currentUser.id)
       if (freshUser) {
-        // Update session if user details changed
         if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
           setCurrentUser(freshUser)
           localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshUser))
         }
       } else if (users.length > 0 && syncStatus === 'synced') {
-        // User was deleted remotely
         setCurrentUser(null)
         localStorage.removeItem(USER_STORAGE_KEY)
         toast({
@@ -177,8 +172,6 @@ export const InventoryProvider = ({
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
       if (event.type === 'UPDATE') {
-        // We use spread syntax to ensure new array references are passed to React
-        // even if the service returned a mutated array (although service is fixed now)
         switch (event.key) {
           case inventoryService.keys.STREETS:
             setStreets([...inventoryService.getStreets()])
@@ -353,7 +346,6 @@ export const InventoryProvider = ({
     let user: User | undefined
     if (typeof userIdOrUser === 'string') {
       user = users.find((u) => u.id === userIdOrUser)
-      // Fallback to service cache if state hasn't updated yet (e.g. fresh creation)
       if (!user) {
         user = inventoryService.getUsers().find((u) => u.id === userIdOrUser)
       }
@@ -441,7 +433,6 @@ export const InventoryProvider = ({
   const deleteStreet = (id: string) => {
     const streetName = streets.find((s) => s.id === id)?.name || 'Unknown'
 
-    // 1. Delete Pallets first (Children of Locations)
     const streetLocations = locations.filter((l) => l.streetId === id)
     const streetLocationIds = streetLocations.map((l) => l.id)
     const palletsToDelete = pallets.filter((p) =>
@@ -451,12 +442,10 @@ export const InventoryProvider = ({
       inventoryService.deleteItem(inventoryService.keys.PALLETS, p.id),
     )
 
-    // 2. Delete Locations (Children of Street)
     streetLocations.forEach((l) =>
       inventoryService.deleteItem(inventoryService.keys.LOCATIONS, l.id),
     )
 
-    // 3. Delete Street (Parent)
     inventoryService.deleteItem(inventoryService.keys.STREETS, id)
 
     addLog(

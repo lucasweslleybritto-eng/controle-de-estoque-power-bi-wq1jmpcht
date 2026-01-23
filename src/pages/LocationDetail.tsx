@@ -1,13 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Box,
-  Trash2,
-  Edit2,
-  AlertTriangle,
-  ImageIcon,
-} from 'lucide-react'
+import { ArrowLeft, Box, Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -45,6 +38,7 @@ import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { ImagePreview } from '@/components/ui/image-preview'
 
 export default function LocationDetail() {
   const { id } = useParams<{ id: string }>()
@@ -152,23 +146,18 @@ export default function LocationDetail() {
                     </TableHeader>
                     <TableBody>
                       {locationPallets.map((pallet) => {
-                        const imageUrl = getMaterialImage(pallet.materialName)
+                        // Use pallet image first, then fallback to material catalog image
+                        const imageUrl =
+                          pallet.image || getMaterialImage(pallet.materialName)
                         return (
                           <TableRow key={pallet.id}>
                             <TableCell>
-                              {imageUrl ? (
-                                <div className="h-12 w-12 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden border">
-                                  <img
-                                    src={imageUrl}
-                                    alt={pallet.materialName}
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="h-12 w-12 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-muted-foreground">
-                                  <ImageIcon className="h-6 w-6 opacity-20" />
-                                </div>
-                              )}
+                              <ImagePreview
+                                src={imageUrl}
+                                alt={pallet.materialName}
+                                className="h-12 w-12 rounded border bg-white"
+                                fallbackText="No img"
+                              />
                             </TableCell>
                             <TableCell>
                               <div className="font-medium">

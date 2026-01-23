@@ -20,6 +20,7 @@ import {
   SyncStatus,
   OM,
   Guia,
+  BallisticItem,
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
@@ -35,6 +36,7 @@ interface InventoryContextType {
   users: User[]
   oms: OM[]
   guias: Guia[]
+  ballisticItems: BallisticItem[]
   currentUser: User | null
   alerts: Array<{ id: string; message: string; type: 'low-stock' | 'system' }>
   syncStatus: SyncStatus
@@ -80,6 +82,12 @@ interface InventoryContextType {
   addGuia: (guia: Omit<Guia, 'id' | 'createdAt'>) => void
   updateGuia: (id: string, updates: Partial<Guia>) => void
   deleteGuia: (id: string) => void
+
+  addBallisticItem: (
+    item: Omit<BallisticItem, 'id' | 'createdAt' | 'updatedAt'>,
+  ) => void
+  updateBallisticItem: (id: string, updates: Partial<BallisticItem>) => void
+  deleteBallisticItem: (id: string) => void
 
   login: (userIdOrUser: string | User) => void
   logout: () => void
@@ -139,6 +147,9 @@ export const InventoryProvider = ({
   const [users, setUsers] = useState<User[]>(() => inventoryService.getUsers())
   const [oms, setOms] = useState<OM[]>(() => inventoryService.getOMs())
   const [guias, setGuias] = useState<Guia[]>(() => inventoryService.getGuias())
+  const [ballisticItems, setBallisticItems] = useState<BallisticItem[]>(() =>
+    inventoryService.getBallisticItems(),
+  )
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
@@ -217,6 +228,10 @@ export const InventoryProvider = ({
             break
           case inventoryService.keys.GUIAS:
             setGuias([...inventoryService.getGuias()])
+            break
+          case 'ballisticItems': // Custom key handling in service
+          case inventoryService.keys.BALLISTIC_ITEMS:
+            setBallisticItems([...inventoryService.getBallisticItems()])
             break
         }
       } else if (event.type === 'SYNC_STATUS') {
@@ -701,6 +716,34 @@ export const InventoryProvider = ({
     inventoryService.deleteItem(inventoryService.keys.GUIAS, id)
   }
 
+  const addBallisticItem = (
+    item: Omit<BallisticItem, 'id' | 'createdAt' | 'updatedAt'>,
+  ) => {
+    const newItem: BallisticItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    inventoryService.upsertItem(inventoryService.keys.BALLISTIC_ITEMS, newItem)
+    inventoryService.notifyEvent(`Novo item balístico/obsoleto`, 'system')
+  }
+
+  const updateBallisticItem = (id: string, updates: Partial<BallisticItem>) => {
+    const item = ballisticItems.find((i) => i.id === id)
+    if (item) {
+      inventoryService.upsertItem(inventoryService.keys.BALLISTIC_ITEMS, {
+        ...item,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  const deleteBallisticItem = (id: string) => {
+    inventoryService.deleteItem(inventoryService.keys.BALLISTIC_ITEMS, id)
+  }
+
   const updateSettings = (updates: Partial<SystemSettings>) => {
     const newSettings = { ...settings, ...updates }
     inventoryService.upsertItem(inventoryService.keys.SETTINGS, newSettings)
@@ -803,6 +846,7 @@ export const InventoryProvider = ({
       users,
       oms,
       guias,
+      ballisticItems,
       currentUser,
       alerts,
       syncStatus,
@@ -839,6 +883,9 @@ export const InventoryProvider = ({
       addGuia,
       updateGuia,
       deleteGuia,
+      addBallisticItem,
+      updateBallisticItem,
+      deleteBallisticItem,
       login,
       logout,
       addUser,
@@ -865,6 +912,7 @@ export const InventoryProvider = ({
       users,
       oms,
       guias,
+      ballisticItems,
       currentUser,
       alerts,
       syncStatus,

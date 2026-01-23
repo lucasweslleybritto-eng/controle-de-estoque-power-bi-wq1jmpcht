@@ -9,6 +9,7 @@ import {
   Users,
   BarChart,
   Building2,
+  ShieldAlert,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -45,6 +46,11 @@ export function AppSidebar() {
       title: 'Gestão de OMs',
       url: '/oms',
       icon: Building2,
+    },
+    {
+      title: 'Obsoletos / Balísticos',
+      url: '/obsolete',
+      icon: ShieldAlert,
     },
     {
       title: 'Histórico',

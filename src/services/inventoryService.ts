@@ -10,6 +10,7 @@ import {
   OM,
   Guia,
   SyncStatus,
+  BallisticItem,
 } from '@/types'
 import { supabase } from '@/lib/supabase'
 
@@ -24,6 +25,7 @@ const KEYS = {
   USERS: 'users',
   OMS: 'oms',
   GUIAS: 'guias',
+  BALLISTIC_ITEMS: 'ballistic_items',
 }
 
 export type NotificationCategory = 'movement' | 'low-stock' | 'system'
@@ -65,6 +67,7 @@ class InventoryService {
     users: User[]
     oms: OM[]
     guias: Guia[]
+    ballisticItems: BallisticItem[]
     [key: string]: any
   } = {
     streets: [],
@@ -81,6 +84,7 @@ class InventoryService {
     users: [],
     oms: [],
     guias: [],
+    ballisticItems: [],
   }
 
   constructor() {
@@ -163,7 +167,9 @@ class InventoryService {
               if (table === KEYS.STREETS) {
                 list.sort((a: Street, b: Street) => a.order - b.order)
               }
-              this.cache[table] = [...list]
+              const cacheKey =
+                table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
+              this.cache[cacheKey] = [...list]
             }
             this.notifyChange(table)
           } else if (error) {
@@ -202,10 +208,12 @@ class InventoryService {
 
     if (!Object.values(KEYS).includes(table)) return
 
+    const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
+
     if (table === KEYS.SETTINGS) {
       if (newRecord) this.cache.settings = newRecord
     } else {
-      let list = [...((this.cache[table] as any[]) || [])]
+      let list = [...((this.cache[cacheKey] as any[]) || [])]
 
       if (eventType === 'INSERT') {
         const idx = list.findIndex((i) => i.id === newRecord.id)
@@ -229,10 +237,10 @@ class InventoryService {
         list.sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
       }
 
-      this.cache[table] = list
+      this.cache[cacheKey] = list
     }
 
-    this.notifyChange(table)
+    this.notifyChange(cacheKey)
     this.saveToLocalStorage()
   }
 
@@ -303,20 +311,22 @@ class InventoryService {
   }
 
   public get<T>(key: string): T {
-    return this.cache[key]
+    const cacheKey = key === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : key
+    return this.cache[cacheKey]
   }
 
   public async upsertItem(table: string, item: any) {
+    const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
     if (table === KEYS.SETTINGS) {
       this.cache.settings = item
     } else {
-      const list = [...((this.cache[table] as any[]) || [])]
+      const list = [...((this.cache[cacheKey] as any[]) || [])]
       const idx = list.findIndex((i) => i.id === item.id)
       if (idx >= 0) list[idx] = item
       else list.push(item)
-      this.cache[table] = list
+      this.cache[cacheKey] = list
     }
-    this.notifyChange(table)
+    this.notifyChange(cacheKey)
     this.saveToLocalStorage()
 
     this.addToQueue({
@@ -328,16 +338,18 @@ class InventoryService {
   }
 
   public async deleteItem(table: string, id: string) {
-    const list = [...((this.cache[table] as any[]) || [])]
-    this.cache[table] = list.filter((i) => i.id !== id)
-    this.notifyChange(table)
+    const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
+    const list = [...((this.cache[cacheKey] as any[]) || [])]
+    this.cache[cacheKey] = list.filter((i) => i.id !== id)
+    this.notifyChange(cacheKey)
     this.saveToLocalStorage()
 
     this.addToQueue({ table, action: 'DELETE', data: null, id })
   }
 
   public async upsertMany(table: string, items: any[]) {
-    const list = [...((this.cache[table] as any[]) || [])]
+    const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
+    const list = [...((this.cache[cacheKey] as any[]) || [])]
     items.forEach((item) => {
       const idx = list.findIndex((i) => i.id === item.id)
       if (idx >= 0) list[idx] = item
@@ -350,8 +362,8 @@ class InventoryService {
         id: item.id,
       })
     })
-    this.cache[table] = list
-    this.notifyChange(table)
+    this.cache[cacheKey] = list
+    this.notifyChange(cacheKey)
     this.saveToLocalStorage()
   }
 
@@ -384,6 +396,9 @@ class InventoryService {
   }
   getGuias() {
     return this.cache.guias
+  }
+  getBallisticItems() {
+    return this.cache.ballisticItems
   }
 
   private notifyChange(key: string) {
@@ -481,8 +496,10 @@ class InventoryService {
     const tables = Object.values(KEYS)
     tables.forEach((table) => {
       if (table !== KEYS.SETTINGS && table !== KEYS.USERS) {
+        const cacheKey =
+          table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
         // @ts-expect-error - Dynamic access to cache
-        const items = this.cache[table] || []
+        const items = this.cache[cacheKey] || []
         items.forEach((i: any) => this.deleteItem(table, i.id))
       }
     })

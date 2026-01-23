@@ -102,3 +102,27 @@ export interface Guia {
 }
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'
+
+export type BallisticCategory = 'vest' | 'helmet' | 'plate' | 'other'
+export type BallisticStatus =
+  | 'active'
+  | 'obsolete'
+  | 'condemned'
+  | 'maintenance'
+  | 'lost'
+
+export interface BallisticItem {
+  id: string
+  category: BallisticCategory
+  status: BallisticStatus
+  serialNumber: string
+  identification: string
+  model?: string
+  manufacturingDate?: string
+  expirationDate?: string
+  image?: string
+  notes?: string
+  location?: string
+  createdAt: string
+  updatedAt: string
+}

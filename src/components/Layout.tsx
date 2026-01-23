@@ -43,6 +43,7 @@ export default function Layout() {
     if (decoded === 'settings') return 'Configurações'
     if (decoded === 'users') return 'Usuários'
     if (decoded === 'reports') return 'Relatórios'
+    if (decoded === 'obsolete') return 'Obsoletos / Balísticos'
     return decoded.charAt(0).toUpperCase() + decoded.slice(1)
   }
 

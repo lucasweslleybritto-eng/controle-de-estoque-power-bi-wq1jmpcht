@@ -9,7 +9,9 @@ import {
   Users,
   BarChart,
   Building2,
-  ShieldAlert,
+  Shield,
+  HardHat,
+  Archive,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -48,9 +50,19 @@ export function AppSidebar() {
       icon: Building2,
     },
     {
-      title: 'Obsoletos / Balísticos',
+      title: 'Coletes Balísticos',
+      url: '/vests',
+      icon: Shield,
+    },
+    {
+      title: 'Capacetes Balísticos',
+      url: '/helmets',
+      icon: HardHat,
+    },
+    {
+      title: 'Materiais Obsoletos',
       url: '/obsolete',
-      icon: ShieldAlert,
+      icon: Archive,
     },
     {
       title: 'Histórico',

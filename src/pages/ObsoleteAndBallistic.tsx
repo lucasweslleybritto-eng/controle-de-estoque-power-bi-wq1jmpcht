@@ -1,21 +1,6 @@
 import { useState } from 'react'
-import {
-  Shield,
-  Search,
-  Plus,
-  Trash2,
-  Pencil,
-  AlertTriangle,
-  Archive,
-  HardHat,
-} from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card'
+import { Search, Plus, Trash2, Pencil, Archive, Layers } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,7 +8,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
@@ -60,7 +44,6 @@ import { useToast } from '@/hooks/use-toast'
 import { BallisticCategory, BallisticStatus } from '@/types'
 import { ImagePreview } from '@/components/ui/image-preview'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 
 export default function ObsoleteAndBallistic() {
   const {
@@ -76,10 +59,9 @@ export default function ObsoleteAndBallistic() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
 
-  // Default new item state
   const [formData, setFormData] = useState({
-    category: 'vest' as BallisticCategory,
-    status: 'active' as BallisticStatus,
+    category: 'other' as BallisticCategory,
+    status: 'obsolete' as BallisticStatus,
     serialNumber: '',
     identification: '',
     model: '',
@@ -109,8 +91,8 @@ export default function ObsoleteAndBallistic() {
     } else {
       setEditingItem(null)
       setFormData({
-        category: 'vest',
-        status: 'active',
+        category: 'other',
+        status: 'obsolete',
         serialNumber: '',
         identification: '',
         model: '',
@@ -124,61 +106,40 @@ export default function ObsoleteAndBallistic() {
   }
 
   const handleSave = () => {
-    if (!formData.serialNumber || !formData.identification) {
+    if (!formData.identification) {
       toast({
         variant: 'destructive',
-        title: 'Campos Obrigatórios',
-        description: 'Preencha o Número de Série e a Identificação.',
+        title: 'Erro',
+        description: 'Identificação é obrigatória.',
       })
       return
     }
 
     if (editingItem) {
       updateBallisticItem(editingItem.id, formData)
-      toast({ title: 'Item atualizado com sucesso' })
+      toast({ title: 'Item atualizado' })
     } else {
       addBallisticItem(formData)
-      toast({ title: 'Item adicionado com sucesso' })
+      toast({ title: 'Item adicionado' })
     }
     setIsDialogOpen(false)
   }
 
+  // Filter only obsolete relevant items
   const filteredItems = ballisticItems.filter((item) => {
+    // Show plates, others, OR any item marked as obsolete/condemned/lost
+    const isRelevant =
+      ['plate', 'other'].includes(item.category) ||
+      ['obsolete', 'condemned', 'lost'].includes(item.status)
+
     const term = searchTerm.toLowerCase()
-    return (
+    const matchesSearch =
       item.serialNumber.toLowerCase().includes(term) ||
       item.identification.toLowerCase().includes(term) ||
       item.model?.toLowerCase().includes(term)
-    )
+
+    return isRelevant && matchesSearch
   })
-
-  const getStatusColor = (status: BallisticStatus) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-      case 'obsolete':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300'
-      case 'condemned':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-      case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
-      case 'lost':
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
-      default:
-        return 'bg-slate-100 text-slate-800'
-    }
-  }
-
-  const getStatusLabel = (status: BallisticStatus) => {
-    const map: Record<BallisticStatus, string> = {
-      active: 'Ativo',
-      obsolete: 'Obsoleto',
-      condemned: 'Baixado/Condenado',
-      maintenance: 'Manutenção',
-      lost: 'Perdido/Extraviado',
-    }
-    return map[status] || status
-  }
 
   const renderTable = (categoryFilter: string | string[]) => {
     const items = filteredItems.filter((i) =>
@@ -191,7 +152,7 @@ export default function ObsoleteAndBallistic() {
       return (
         <div className="text-center py-12 text-muted-foreground bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-dashed">
           <Archive className="h-12 w-12 mx-auto mb-3 opacity-20" />
-          <p>Nenhum item encontrado nesta categoria.</p>
+          <p>Nenhum item encontrado.</p>
         </div>
       )
     }
@@ -203,10 +164,10 @@ export default function ObsoleteAndBallistic() {
             <TableRow>
               <TableHead className="w-[60px]">Img</TableHead>
               <TableHead>Identificação</TableHead>
-              <TableHead>Série</TableHead>
+              <TableHead>Categoria</TableHead>
               <TableHead>Modelo</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Validade</TableHead>
+              <TableHead>Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -222,17 +183,28 @@ export default function ObsoleteAndBallistic() {
                 </TableCell>
                 <TableCell className="font-medium">
                   {item.identification}
+                  <div className="text-xs text-muted-foreground">
+                    {item.serialNumber}
+                  </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {item.serialNumber}
+                <TableCell>
+                  <Badge variant="secondary" className="text-xs font-normal">
+                    {item.category === 'plate'
+                      ? 'Placa'
+                      : item.category === 'vest'
+                        ? 'Colete'
+                        : item.category === 'helmet'
+                          ? 'Capacete'
+                          : 'Outro'}
+                  </Badge>
                 </TableCell>
                 <TableCell>{item.model || '-'}</TableCell>
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className={getStatusColor(item.status)}
+                    className="bg-slate-100 dark:bg-slate-800"
                   >
-                    {getStatusLabel(item.status)}
+                    {item.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm">
@@ -263,10 +235,6 @@ export default function ObsoleteAndBallistic() {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir Item?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação é irreversível. O item será removido
-                              permanentemente.
-                            </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -295,15 +263,15 @@ export default function ObsoleteAndBallistic() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Materiais Obsoletos / Itens Balísticos
+            Materiais Obsoletos
           </h1>
           <p className="text-muted-foreground">
-            Controle de Coletes, Capacetes e itens fora de operação.
+            Controle de placas balísticas e outros materiais fora de uso.
           </p>
         </div>
         {canEdit && (
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Novo Item
+            <Plus className="mr-2 h-4 w-4" /> Novo Obsoleto
           </Button>
         )}
       </div>
@@ -313,7 +281,7 @@ export default function ObsoleteAndBallistic() {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por número de série, identificação ou modelo..."
+              placeholder="Buscar..."
               className="pl-9"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -321,27 +289,21 @@ export default function ObsoleteAndBallistic() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="vests" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="vests" className="gap-2">
-                <Shield className="h-4 w-4" /> Coletes
-              </TabsTrigger>
-              <TabsTrigger value="helmets" className="gap-2">
-                <HardHat className="h-4 w-4" /> Capacetes
+          <Tabs defaultValue="plates" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="plates" className="gap-2">
+                <Layers className="h-4 w-4" /> Placas Balísticas
               </TabsTrigger>
               <TabsTrigger value="others" className="gap-2">
-                <Archive className="h-4 w-4" /> Outros / Obsoletos
+                <Archive className="h-4 w-4" /> Outros / Diversos
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="vests" className="space-y-4 animate-fade-in">
-              {renderTable('vest')}
-            </TabsContent>
-            <TabsContent value="helmets" className="space-y-4 animate-fade-in">
-              {renderTable('helmet')}
+            <TabsContent value="plates" className="space-y-4 animate-fade-in">
+              {renderTable('plate')}
             </TabsContent>
             <TabsContent value="others" className="space-y-4 animate-fade-in">
-              {renderTable(['plate', 'other'])}
+              {renderTable(['other', 'vest', 'helmet'])}
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -351,7 +313,7 @@ export default function ObsoleteAndBallistic() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Editar Item' : 'Novo Item Balístico / Obsoleto'}
+              {editingItem ? 'Editar Obsoleto' : 'Novo Material Obsoleto'}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -368,12 +330,8 @@ export default function ObsoleteAndBallistic() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="vest">Colete Balístico</SelectItem>
-                    <SelectItem value="helmet">Capacete Balístico</SelectItem>
                     <SelectItem value="plate">Placa Balística</SelectItem>
-                    <SelectItem value="other">
-                      Outro / Material Obsoleto
-                    </SelectItem>
+                    <SelectItem value="other">Outro Material</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -389,12 +347,8 @@ export default function ObsoleteAndBallistic() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
                     <SelectItem value="obsolete">Obsoleto</SelectItem>
-                    <SelectItem value="condemned">
-                      Baixado (Condenado)
-                    </SelectItem>
-                    <SelectItem value="maintenance">Manutenção</SelectItem>
+                    <SelectItem value="condemned">Baixado</SelectItem>
                     <SelectItem value="lost">Extraviado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -403,11 +357,8 @@ export default function ObsoleteAndBallistic() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Identificação <span className="text-red-500">*</span>
-                </Label>
+                <Label>Identificação</Label>
                 <Input
-                  placeholder="Ex: Patrimônio 12345"
                   value={formData.identification}
                   onChange={(e) =>
                     setFormData({ ...formData, identification: e.target.value })
@@ -415,11 +366,8 @@ export default function ObsoleteAndBallistic() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Número de Série <span className="text-red-500">*</span>
-                </Label>
+                <Label>Nº Série (Opcional)</Label>
                 <Input
-                  placeholder="Ex: SN-987654"
                   value={formData.serialNumber}
                   onChange={(e) =>
                     setFormData({ ...formData, serialNumber: e.target.value })
@@ -431,7 +379,6 @@ export default function ObsoleteAndBallistic() {
             <div className="space-y-2">
               <Label>Modelo / Descrição</Label>
               <Input
-                placeholder="Ex: Colete Nível IIIA - Tamanho G"
                 value={formData.model}
                 onChange={(e) =>
                   setFormData({ ...formData, model: e.target.value })
@@ -439,47 +386,9 @@ export default function ObsoleteAndBallistic() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Data Fabricação</Label>
-                <Input
-                  type="date"
-                  value={formData.manufacturingDate}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      manufacturingDate: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Data Validade</Label>
-                <Input
-                  type="date"
-                  value={formData.expirationDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, expirationDate: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input
-                placeholder="https://..."
-                value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
-              />
-            </div>
-
             <div className="space-y-2">
               <Label>Observações</Label>
               <Input
-                placeholder="Detalhes adicionais..."
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })

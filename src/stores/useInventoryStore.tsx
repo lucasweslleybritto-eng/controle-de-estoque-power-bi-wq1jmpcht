@@ -229,7 +229,7 @@ export const InventoryProvider = ({
           case inventoryService.keys.GUIAS:
             setGuias([...inventoryService.getGuias()])
             break
-          case 'ballisticItems': // Custom key handling in service
+          case 'ballisticItems':
           case inventoryService.keys.BALLISTIC_ITEMS:
             setBallisticItems([...inventoryService.getBallisticItems()])
             break

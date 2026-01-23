@@ -106,6 +106,8 @@ export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'
 export type BallisticCategory = 'vest' | 'helmet' | 'plate' | 'other'
 export type BallisticStatus =
   | 'active'
+  | 'in-use'
+  | 'reserved'
   | 'obsolete'
   | 'condemned'
   | 'maintenance'
@@ -117,6 +119,7 @@ export interface BallisticItem {
   status: BallisticStatus
   serialNumber: string
   identification: string
+  omId?: string
   model?: string
   manufacturingDate?: string
   expirationDate?: string

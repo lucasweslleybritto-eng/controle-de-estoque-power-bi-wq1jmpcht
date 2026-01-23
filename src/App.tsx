@@ -16,6 +16,8 @@ import Users from './pages/Users'
 import Reports from './pages/Reports'
 import OMManagement from './pages/OMManagement'
 import ObsoleteAndBallistic from './pages/ObsoleteAndBallistic'
+import BallisticVests from './pages/BallisticVests'
+import BallisticHelmets from './pages/BallisticHelmets'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -39,6 +41,8 @@ const App = () => (
               <Route path="/equipment" element={<Equipment />} />
               <Route path="/oms" element={<OMManagement />} />
               <Route path="/obsolete" element={<ObsoleteAndBallistic />} />
+              <Route path="/vests" element={<BallisticVests />} />
+              <Route path="/helmets" element={<BallisticHelmets />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/movements" element={<EntryExit />} />
               <Route path="/history" element={<History />} />

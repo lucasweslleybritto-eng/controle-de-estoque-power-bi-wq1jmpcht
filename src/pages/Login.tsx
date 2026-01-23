@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ShieldCheck, User } from 'lucide-react'
 import {
   Card,
@@ -11,7 +13,14 @@ import useInventoryStore from '@/stores/useInventoryStore'
 import logo8BSup from '@/assets/8-b-sup.jpg'
 
 export default function Login() {
-  const { users, login, addUser } = useInventoryStore()
+  const { users, login, addUser, currentUser } = useInventoryStore()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/')
+    }
+  }, [currentUser, navigate])
 
   const handleRoleSelect = (role: 'ADMIN' | 'VIEWER') => {
     const name = role === 'ADMIN' ? 'Administrador' : 'Visitante'
@@ -34,6 +43,7 @@ export default function Login() {
       // Immediately login with the new user object
       login(newUser)
     }
+    navigate('/')
   }
 
   return (

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -17,6 +17,7 @@ import Reports from './pages/Reports'
 import OMManagement from './pages/OMManagement'
 import ObsoleteAndBallistic from './pages/ObsoleteAndBallistic'
 import BallisticControl from './pages/BallisticControl'
+import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -31,6 +32,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            <Route path="/login" element={<Login />} />
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/street/:id" element={<StreetDetail />} />
@@ -47,6 +49,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/users" element={<Users />} />
             </Route>
+            {/* Catch all route - redirects to 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

@@ -1,4 +1,4 @@
-import { Outlet, useLocation, Link } from 'react-router-dom'
+import { Outlet, useLocation, Link, Navigate } from 'react-router-dom'
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -16,7 +16,6 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from './ThemeToggle'
 import useInventoryStore from '@/stores/useInventoryStore'
-import Login from '@/pages/Login'
 import { UserNav } from './UserNav'
 import { Notifications } from './Notifications'
 import { ConnectionStatus } from './ConnectionStatus'
@@ -26,7 +25,7 @@ export default function Layout() {
   const location = useLocation()
 
   if (!currentUser) {
-    return <Login />
+    return <Navigate to="/login" replace />
   }
 
   const pathSegments = location.pathname.split('/').filter(Boolean)
@@ -44,6 +43,8 @@ export default function Layout() {
     if (decoded === 'users') return 'Usuários'
     if (decoded === 'reports') return 'Relatórios'
     if (decoded === 'obsolete') return 'Obsoletos / Balísticos'
+    if (decoded === 'ballistic-control') return 'Controle Balístico'
+    if (decoded === 'oms') return 'Gestão de OMs'
     return decoded.charAt(0).toUpperCase() + decoded.slice(1)
   }
 

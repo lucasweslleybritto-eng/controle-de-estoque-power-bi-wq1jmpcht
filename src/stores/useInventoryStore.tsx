@@ -43,6 +43,7 @@ interface InventoryContextType {
   syncStatus: SyncStatus
   lastSync: Date
   isOnline: boolean
+  isLoading: boolean
 
   getLocationsByStreet: (streetId: string) => Location[]
   getPalletsByLocation: (locationId: string) => Pallet[]
@@ -185,6 +186,9 @@ export const InventoryProvider = ({
   const [isOnline, setIsOnline] = useState<boolean>(
     inventoryService.getStatus().isOnline,
   )
+  const [isLoading, setIsLoading] = useState<boolean>(
+    inventoryService.getIsLoading(),
+  )
 
   useEffect(() => {
     inventoryService.init()
@@ -253,6 +257,8 @@ export const InventoryProvider = ({
         setSyncStatus(event.status)
         if (event.lastSync) setLastSync(event.lastSync)
         setIsOnline(event.status !== 'offline')
+      } else if (event.type === 'LOADING_CHANGE') {
+        setIsLoading(event.isLoading)
       } else if (event.type === 'NOTIFICATION') {
         if (currentUser) {
           const { preferences } = currentUser
@@ -920,6 +926,7 @@ export const InventoryProvider = ({
       syncStatus,
       lastSync,
       isOnline,
+      isLoading,
       getLocationsByStreet,
       getPalletsByLocation,
       getLocationStatus,
@@ -986,6 +993,7 @@ export const InventoryProvider = ({
       syncStatus,
       lastSync,
       isOnline,
+      isLoading,
     ],
   )
 

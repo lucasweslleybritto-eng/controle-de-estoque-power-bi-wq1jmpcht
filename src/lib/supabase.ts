@@ -1,10 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Attempt to resolve Supabase credentials from various environment variable patterns
+// Attempt to resolve Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Helper to validate URL structure
 const isValidUrl = (url: string | undefined): boolean => {
@@ -17,23 +15,22 @@ const isValidUrl = (url: string | undefined): boolean => {
   }
 }
 
-// Helper to validate Key (avoid placeholders)
-const isValidKey = (key: string | undefined): boolean => {
-  if (!key) return false
-  if (key === 'your-anon-key') return false
-  if (key === 'placeholder') return false
-  return true
-}
-
+// Determine final credentials to use
+// If invalid, fallback to placeholder to prevent crashes, but warn in console
 const finalUrl = isValidUrl(supabaseUrl)
   ? supabaseUrl!
   : 'https://placeholder.supabase.co'
-const finalKey = isValidKey(supabaseKey) ? supabaseKey! : 'placeholder'
+const finalKey = supabaseKey || 'placeholder-key'
 
-if (!isValidUrl(supabaseUrl) || !isValidKey(supabaseKey)) {
+if (!isValidUrl(supabaseUrl) || !supabaseKey) {
   console.warn(
-    'Supabase Client Warning: Missing or invalid credentials. Please connect your Supabase project.',
+    'Supabase Client Warning: Missing or invalid VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Application will run in offline/demo mode.',
   )
 }
 
-export const supabase = createClient(finalUrl, finalKey)
+export const supabase = createClient(finalUrl, finalKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})

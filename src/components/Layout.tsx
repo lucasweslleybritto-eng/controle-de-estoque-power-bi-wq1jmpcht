@@ -24,6 +24,8 @@ export default function Layout() {
   const { currentUser } = useInventoryStore()
   const location = useLocation()
 
+  // Dynamic Authentication Routing:
+  // If no user is logged in, redirect to login page
   if (!currentUser) {
     return <Navigate to="/login" replace />
   }

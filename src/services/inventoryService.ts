@@ -33,6 +33,7 @@ export type NotificationCategory = 'movement' | 'low-stock' | 'system'
 export type ServiceEvent =
   | { type: 'UPDATE'; key: string }
   | { type: 'SYNC_STATUS'; status: SyncStatus; lastSync?: Date }
+  | { type: 'LOADING_CHANGE'; isLoading: boolean }
   | {
       type: 'NOTIFICATION'
       message: string
@@ -52,6 +53,7 @@ class InventoryService {
   private syncStatus: SyncStatus = 'offline'
   private lastSync: Date = new Date()
   private isOnline: boolean = navigator.onLine
+  private isLoading: boolean = true
   private queue: QueueItem[] = []
   private isProcessingQueue = false
   private realtimeChannel: any = null
@@ -93,10 +95,24 @@ class InventoryService {
   }
 
   public async init() {
-    if (this.isOnline) {
-      this.subscribeToRealtime()
-      await this.fetchAll()
-      this.processQueue()
+    // If we have data in cache, we can treat loading as false initially for better UX,
+    // but typically we want to show we are syncing.
+    // For this requirements, we'll wait for the initial fetch.
+    try {
+      if (this.isOnline) {
+        this.setSyncStatus('syncing')
+        this.subscribeToRealtime()
+        await this.fetchAll()
+        this.processQueue()
+      } else {
+        this.setSyncStatus('offline')
+      }
+    } catch (error) {
+      console.error('Initialization error:', error)
+      this.setSyncStatus('error')
+    } finally {
+      this.isLoading = false
+      this.notifyLoadingChange()
     }
   }
 
@@ -106,7 +122,10 @@ class InventoryService {
       this.setSyncStatus('syncing')
       this.subscribeToRealtime()
       this.processQueue()
-      this.fetchAll()
+      this.fetchAll().finally(() => {
+        this.isLoading = false
+        this.notifyLoadingChange()
+      })
     })
     window.addEventListener('offline', () => {
       this.isOnline = false
@@ -151,36 +170,42 @@ class InventoryService {
 
   private async fetchAll() {
     if (!this.isOnline) return
-    this.setSyncStatus('syncing')
     try {
       const tables = Object.values(KEYS)
 
       await Promise.all(
         tables.map(async (table) => {
-          const { data, error } = await supabase.from(table).select('*')
-          if (!error && data) {
-            if (table === KEYS.SETTINGS) {
-              if (data.length > 0)
-                this.cache.settings = this.fromDb(table, data[0])
-            } else {
-              const list = this.fromDb(table, data)
-              if (table === KEYS.STREETS) {
-                list.sort((a: Street, b: Street) => a.order - b.order)
+          // Graceful handling of connection errors
+          try {
+            const { data, error } = await supabase.from(table).select('*')
+            if (!error && data) {
+              if (table === KEYS.SETTINGS) {
+                if (data.length > 0)
+                  this.cache.settings = this.fromDb(table, data[0])
+              } else {
+                const list = this.fromDb(table, data)
+                if (table === KEYS.STREETS) {
+                  list.sort((a: Street, b: Street) => a.order - b.order)
+                }
+                const cacheKey =
+                  table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
+                this.cache[cacheKey] = [...list]
               }
-              const cacheKey =
-                table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
-              this.cache[cacheKey] = [...list]
+              this.notifyChange(table)
+            } else if (error) {
+              console.warn(
+                `Supabase error fetching ${table}: ${error.message}. Using cached data.`,
+              )
             }
-            this.notifyChange(table)
-          } else if (error) {
-            console.warn(`Could not fetch ${table}:`, error.message)
+          } catch (innerError) {
+            console.warn(`Network/Client error fetching ${table}:`, innerError)
           }
         }),
       )
       this.saveToLocalStorage()
       this.setSyncStatus('synced')
     } catch (error) {
-      console.error('Fetch error:', error)
+      console.error('Fetch all error:', error)
       this.setSyncStatus('error')
     }
   }
@@ -188,16 +213,20 @@ class InventoryService {
   private subscribeToRealtime() {
     if (this.realtimeChannel) return
 
-    this.realtimeChannel = supabase
-      .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-        this.handleRealtimeEvent(payload)
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime connected')
-        }
-      })
+    try {
+      this.realtimeChannel = supabase
+        .channel('db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+          this.handleRealtimeEvent(payload)
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Realtime connected')
+          }
+        })
+    } catch (e) {
+      console.warn('Realtime subscription failed', e)
+    }
   }
 
   private handleRealtimeEvent(payload: any) {
@@ -315,6 +344,10 @@ class InventoryService {
     return this.cache[cacheKey]
   }
 
+  public getIsLoading(): boolean {
+    return this.isLoading
+  }
+
   public async upsertItem(table: string, item: any) {
     const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
     if (table === KEYS.SETTINGS) {
@@ -405,12 +438,23 @@ class InventoryService {
     this.listeners.forEach((l) => l({ type: 'UPDATE', key }))
   }
 
+  private notifyLoadingChange() {
+    this.listeners.forEach((l) =>
+      l({ type: 'LOADING_CHANGE', isLoading: this.isLoading }),
+    )
+  }
+
   public subscribe(callback: (event: ServiceEvent) => void) {
     this.listeners.push(callback)
+    // Emit initial state
     callback({
       type: 'SYNC_STATUS',
       status: this.syncStatus,
       lastSync: this.lastSync,
+    })
+    callback({
+      type: 'LOADING_CHANGE',
+      isLoading: this.isLoading,
     })
     return () => {
       this.listeners = this.listeners.filter((l) => l !== callback)

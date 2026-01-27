@@ -1,4 +1,4 @@
-import { Outlet, useLocation, Link, Navigate } from 'react-router-dom'
+import { Outlet, useLocation, Link } from 'react-router-dom'
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -15,21 +15,12 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from './ThemeToggle'
-import useInventoryStore from '@/stores/useInventoryStore'
 import { UserNav } from './UserNav'
 import { Notifications } from './Notifications'
 import { ConnectionStatus } from './ConnectionStatus'
 
 export default function Layout() {
-  const { currentUser } = useInventoryStore()
   const location = useLocation()
-
-  // Dynamic Authentication Routing:
-  // If no user is logged in, redirect to login page
-  if (!currentUser) {
-    return <Navigate to="/login" replace />
-  }
-
   const pathSegments = location.pathname.split('/').filter(Boolean)
 
   const getBreadcrumbName = (segment: string) => {

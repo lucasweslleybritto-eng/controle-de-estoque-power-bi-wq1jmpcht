@@ -1,122 +1,149 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShieldCheck, User } from 'lucide-react'
+import { Loader2, LogIn, ShieldAlert } from 'lucide-react'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import useInventoryStore from '@/stores/useInventoryStore'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import logo8BSup from '@/assets/8-b-sup.jpg'
+import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function Login() {
-  const { users, login, addUser, currentUser } = useInventoryStore()
+  const { signIn, user, loading } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (currentUser) {
+    if (user && !loading) {
       navigate('/')
     }
-  }, [currentUser, navigate])
+  }, [user, loading, navigate])
 
-  const handleRoleSelect = (role: 'ADMIN' | 'VIEWER') => {
-    const name = role === 'ADMIN' ? 'Administrador' : 'Visitante'
-    // Find generic user for this role or create if not exists
-    const existingUser = users.find((u) => u.name === name && u.role === role)
-
-    if (existingUser) {
-      login(existingUser)
-    } else {
-      const newUser = addUser({
-        name,
-        email: `${role.toLowerCase()}@sistema.com`,
-        role,
-        preferences: {
-          lowStockAlerts: true,
-          movementAlerts: true,
-          emailNotifications: false,
-        },
-      })
-      // Immediately login with the new user object
-      login(newUser)
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos.')
+      return
     }
-    navigate('/')
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const { error } = await signIn(email, password)
+      if (error) {
+        throw error
+      }
+      toast({
+        title: 'Login realizado com sucesso',
+        description: 'Redirecionando para o painel...',
+      })
+    } catch (err: any) {
+      console.error(err)
+      setError(
+        err.message === 'Invalid login credentials'
+          ? 'Email ou senha inválidos.'
+          : 'Erro ao conectar. Tente novamente.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 p-4 animate-fade-in">
-      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8">
-        <div className="md:col-span-2 text-center mb-8">
-          <div className="mx-auto w-24 h-24 mb-4 rounded-full overflow-hidden border-4 border-slate-200 dark:border-slate-800 bg-black shadow-lg">
+      <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-primary">
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto w-24 h-24 rounded-full overflow-hidden border-4 border-slate-200 dark:border-slate-800 bg-black shadow-lg">
             <img
               src={logo8BSup}
               alt="Logo"
               className="w-full h-full object-cover"
             />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Estoque Classe 2
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Selecione seu perfil de acesso
+          <div>
+            <CardTitle className="text-3xl font-bold tracking-tight">
+              Estoque Classe 2
+            </CardTitle>
+            <CardDescription className="text-lg mt-1">
+              8º B Sup Sl - Depósito de Fardamento
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Erro de Acesso</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Institucional</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="nome@organizacao.mil.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha de Acesso</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isSubmitting}
+                className="h-11"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-semibold"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Autenticando...
+                </>
+              ) : (
+                <>
+                  <LogIn className="mr-2 h-4 w-4" /> Entrar no Sistema
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-2 text-center text-sm text-muted-foreground border-t pt-6">
+          <p>Acesso restrito a pessoal autorizado.</p>
+          <p className="text-xs opacity-70">
+            Contate o administrador para solicitar credenciais.
           </p>
-        </div>
-
-        {/* Admin Card */}
-        <Card
-          className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer border-t-4 border-t-primary"
-          onClick={() => handleRoleSelect('ADMIN')}
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <ShieldCheck className="w-32 h-32" />
-          </div>
-          <CardHeader>
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <CardTitle className="text-2xl">Administrador</CardTitle>
-            <CardDescription>Acesso total ao sistema</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-6">
-              Gerenciamento completo de estoque, usuários, relatórios e
-              configurações do sistema.
-            </p>
-            <Button className="w-full" size="lg">
-              Entrar como Adm
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Visitor Card */}
-        <Card
-          className="relative overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer border-t-4 border-t-slate-500"
-          onClick={() => handleRoleSelect('VIEWER')}
-        >
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <User className="w-32 h-32" />
-          </div>
-          <CardHeader>
-            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center mb-4 text-slate-600 dark:text-slate-400">
-              <User className="w-6 h-6" />
-            </div>
-            <CardTitle className="text-2xl">Visitante</CardTitle>
-            <CardDescription>Acesso somente leitura</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-6">
-              Visualização de mapas, relatórios e status do estoque sem
-              permissão de edição.
-            </p>
-            <Button variant="secondary" className="w-full" size="lg">
-              Entrar como Visitante
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

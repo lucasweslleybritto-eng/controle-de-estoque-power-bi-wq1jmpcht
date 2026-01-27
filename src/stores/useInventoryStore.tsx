@@ -25,6 +25,7 @@ import {
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
 
 interface InventoryContextType {
   streets: Street[]
@@ -91,7 +92,7 @@ interface InventoryContextType {
   updateBallisticItem: (id: string, updates: Partial<BallisticItem>) => void
   deleteBallisticItem: (id: string) => void
 
-  login: (userIdOrUser: string | User) => void
+  setSessionUser: (user: User) => void
   logout: () => void
   addUser: (user: Omit<User, 'id'>) => User
   updateUser: (id: string, user: Partial<User>) => void
@@ -167,15 +168,7 @@ export const InventoryProvider = ({
     inventoryService.getBallisticItems(),
   )
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    try {
-      const stored = localStorage.getItem(USER_STORAGE_KEY)
-      return stored ? JSON.parse(stored) : null
-    } catch (e) {
-      console.error('Failed to parse user from storage', e)
-      return null
-    }
-  })
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(
     inventoryService.getStatus().status,
@@ -193,26 +186,6 @@ export const InventoryProvider = ({
   useEffect(() => {
     inventoryService.init()
   }, [])
-
-  useEffect(() => {
-    if (currentUser) {
-      const freshUser = users.find((u) => u.id === currentUser.id)
-      if (freshUser) {
-        if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
-          setCurrentUser(freshUser)
-          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshUser))
-        }
-      } else if (users.length > 0 && syncStatus === 'synced') {
-        setCurrentUser(null)
-        localStorage.removeItem(USER_STORAGE_KEY)
-        toast({
-          variant: 'destructive',
-          title: 'Sessão Expirada',
-          description: 'Seu usuário foi removido do sistema.',
-        })
-      }
-    }
-  }, [users, currentUser, syncStatus, toast])
 
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
@@ -356,8 +329,6 @@ export const InventoryProvider = ({
     return stockAlerts
   }, [materials, isLowStock, getMaterialTotalStock])
 
-  // --- CRUD Methods Wrapper ---
-
   const addLog = (
     type: LogType,
     params: { pallet?: Pallet; details?: string; date?: string },
@@ -404,37 +375,20 @@ export const InventoryProvider = ({
     inventoryService.upsertItem(inventoryService.keys.HISTORY, log)
   }
 
-  const login = (userIdOrUser: string | User) => {
-    let user: User | undefined
-    if (typeof userIdOrUser === 'string') {
-      user = users.find((u) => u.id === userIdOrUser)
-      if (!user) {
-        user = inventoryService.getUsers().find((u) => u.id === userIdOrUser)
-      }
-    } else {
-      user = userIdOrUser
-    }
-
-    if (user) {
-      setCurrentUser(user)
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
-      toast({ title: `Bem-vindo, ${user.name}` })
-    } else {
-      toast({
-        title: 'Erro no login',
-        description: 'Usuário não encontrado.',
-        variant: 'destructive',
-      })
-    }
+  const setSessionUser = (user: User) => {
+    setCurrentUser(user)
   }
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut()
     setCurrentUser(null)
-    localStorage.removeItem(USER_STORAGE_KEY)
     toast({ title: 'Logout realizado' })
   }
 
   const addUser = (userData: Omit<User, 'id'>) => {
+    // Note: Creating a user via this method is purely virtual in this version,
+    // real users must be created via Auth Sign Up.
+    // However, we can create a profile entry in the DB.
     const newUser = { ...userData, id: crypto.randomUUID() }
     inventoryService.upsertItem(inventoryService.keys.USERS, newUser)
     return newUser
@@ -462,7 +416,6 @@ export const InventoryProvider = ({
     }
     updateUser(currentUser.id, updatedUser)
     setCurrentUser(updatedUser)
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser))
   }
 
   const addStreet = (name: string) => {
@@ -764,14 +717,12 @@ export const InventoryProvider = ({
     if (item) {
       const changes: string[] = []
 
-      // Status Change
       if (updates.status && updates.status !== item.status) {
         changes.push(
           `Situação: '${translateBallisticStatus(item.status)}' -> '${translateBallisticStatus(updates.status)}'`,
         )
       }
 
-      // OM Change
       if (updates.omId && updates.omId !== item.omId) {
         const oldOmName =
           oms.find((o) => o.id === item.omId)?.name || 'Sem vínculo'
@@ -780,12 +731,10 @@ export const InventoryProvider = ({
         changes.push(`OM: '${oldOmName}' -> '${newOmName}'`)
       }
 
-      // Serial Change
       if (updates.serialNumber && updates.serialNumber !== item.serialNumber) {
         changes.push(`Serial: ${item.serialNumber} -> ${updates.serialNumber}`)
       }
 
-      // Identification Change
       if (
         updates.identification &&
         updates.identification !== item.identification
@@ -961,7 +910,7 @@ export const InventoryProvider = ({
       addBallisticItem,
       updateBallisticItem,
       deleteBallisticItem,
-      login,
+      setSessionUser,
       logout,
       addUser,
       updateUser,

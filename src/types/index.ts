@@ -1,107 +1,105 @@
-export interface Street {
+export type Street = {
   id: string
   name: string
   order: number
 }
 
-export interface Location {
+export type Location = {
   id: string
   streetId: string
   name: string
-  needsVerification?: boolean
   needsRecount?: boolean
 }
 
 export type MaterialType = 'TRP' | 'TRD'
 
-export interface Material {
+export type Material = {
   id: string
   name: string
-  type: MaterialType
   description?: string
-  image?: string
+  type: MaterialType
   minStock?: number
+  image?: string
 }
 
-export interface SystemSettings {
-  systemName: string
-  lowStockThreshold: number
-  highOccupancyThreshold: number
-}
-
-export interface Pallet {
+export type Pallet = {
   id: string
-  locationId: string | 'TRP_AREA'
+  locationId: string
+  materialId?: string
   materialName: string
   description: string
   quantity: number
-  entryDate: string
   type: MaterialType
-  materialId?: string
+  entryDate: string
   image?: string
 }
 
 export type LogType = 'ENTRY' | 'EXIT' | 'SYSTEM'
 
-export interface MovementLog {
+export type MovementLog = {
   id: string
   date: string
   user: string
   type: LogType
-  materialType?: MaterialType
+  materialType?: string
   materialName?: string
   quantity?: number
-  streetName?: string
   locationName?: string
+  streetName?: string
   image?: string
   description?: string
 }
 
-export interface Equipment {
+export type EquipmentStatus = 'available' | 'in-use' | 'maintenance'
+
+export type Equipment = {
   id: string
   name: string
-  status: 'available' | 'in-use' | 'maintenance'
-  image: string
   model?: string
-  operator?: string | null
+  image?: string
+  status: EquipmentStatus
+  operator?: string
+}
+
+export type SystemSettings = {
+  systemName: string
+  lowStockThreshold: number
+  highOccupancyThreshold: number
 }
 
 export type UserRole = 'ADMIN' | 'OPERATOR' | 'VIEWER'
 
-export interface UserPreferences {
+export type UserPreferences = {
   lowStockAlerts: boolean
   movementAlerts: boolean
   emailNotifications: boolean
 }
 
-export interface User {
+export type User = {
   id: string
   name: string
   email: string
   role: UserRole
-  avatar?: string
   preferences: UserPreferences
 }
 
-export interface OM {
+export type OM = {
   id: string
   name: string
-  image: string
+  image?: string
 }
 
 export type GuiaStatus = 'pending' | 'separating' | 'completed'
 
-export interface Guia {
+export type Guia = {
   id: string
   omId: string
   title: string
-  pdfUrl?: string
   status: GuiaStatus
+  pdfUrl?: string
   createdAt: string
   updatedAt?: string
 }
-
-export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'
 
 export type BallisticCategory = 'vest' | 'helmet' | 'plate' | 'other'
 export type BallisticStatus =
@@ -114,7 +112,7 @@ export type BallisticStatus =
   | 'lost'
   | 'distributed'
 
-export interface BallisticHistoryEntry {
+export type BallisticHistoryEntry = {
   id: string
   date: string
   user: string
@@ -122,20 +120,21 @@ export interface BallisticHistoryEntry {
   details: string
 }
 
-export interface BallisticItem {
+export type BallisticItem = {
   id: string
   category: BallisticCategory
   status: BallisticStatus
   serialNumber: string
   identification: string
-  omId?: string
   model?: string
-  manufacturingDate?: string
-  expirationDate?: string
-  image?: string
+  omId?: string
   notes?: string
-  location?: string
+  image?: string
+  expirationDate?: string
+  manufacturingDate?: string
+  history?: BallisticHistoryEntry[]
   createdAt: string
   updatedAt: string
-  history?: BallisticHistoryEntry[]
 }
+
+export type SyncStatus = 'synced' | 'syncing' | 'error' | 'offline'

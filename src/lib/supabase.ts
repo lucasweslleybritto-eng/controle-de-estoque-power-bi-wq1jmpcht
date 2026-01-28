@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
 
-// Attempt to resolve Supabase credentials from environment variables
+// Attempt to resolve Supabase credentials from environment variables for validation
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
@@ -18,20 +18,18 @@ const isValidUrl = (url: string | undefined): boolean => {
 
 const isValidKey = (key: string | undefined): boolean => {
   if (!key) return false
-  if (key === 'your-anon-key' || key === 'placeholder-key') return false
+  if (
+    key === 'your-anon-key' ||
+    key === 'placeholder-key' ||
+    key === 'placeholder'
+  )
+    return false
   return true
 }
 
+// Export configuration status
 export const isSupabaseConfigured =
   isValidUrl(supabaseUrl) && isValidKey(supabaseKey)
-
-// Determine final credentials to use
-// If invalid, fallback to placeholder to prevent crashes during static analysis or initial load
-// The App component will handle blocking the UI if isSupabaseConfigured is false
-const finalUrl = isSupabaseConfigured
-  ? supabaseUrl!
-  : 'https://placeholder.supabase.co'
-const finalKey = isSupabaseConfigured ? supabaseKey! : 'placeholder'
 
 if (!isSupabaseConfigured) {
   console.warn(
@@ -39,9 +37,5 @@ if (!isSupabaseConfigured) {
   )
 }
 
-export const supabase = createClient(finalUrl, finalKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
+// Re-export the singleton client to maintain backward compatibility and ensure single instance
+export { supabase }

@@ -25,7 +25,7 @@ import {
 } from '@/types'
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 
 interface InventoryContextType {

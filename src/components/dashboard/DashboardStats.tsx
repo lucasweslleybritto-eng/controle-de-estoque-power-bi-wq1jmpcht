@@ -14,16 +14,17 @@ import { ChartContainer } from '@/components/ui/chart'
 import useInventoryStore from '@/stores/useInventoryStore'
 
 export function DashboardStats() {
-  const { pallets, history, materials, isLowStock } = useInventoryStore()
+  const { pallets, history, materials, isLowStock, syncStatus } =
+    useInventoryStore()
 
   const stats = useMemo(() => {
-    const totalItems = pallets.reduce((acc, p) => acc + p.quantity, 0)
+    const totalItems = pallets.reduce((acc, p) => acc + (p.quantity || 0), 0)
     const lowStockItems = materials.filter((m) => isLowStock(m.id)).length
     const thirtyDaysAgo = subDays(new Date(), 30)
     const movementsLast30Days = history.filter((h) =>
       isAfter(new Date(h.date), thirtyDaysAgo),
     ).length
-    const healthyItems = materials.length - lowStockItems
+    const healthyItems = Math.max(0, materials.length - lowStockItems)
 
     return {
       totalItems,
@@ -35,6 +36,10 @@ export function DashboardStats() {
       ],
     }
   }, [pallets, materials, history, isLowStock])
+
+  if (syncStatus === 'error' && materials.length === 0) {
+    return null
+  }
 
   return (
     <div className="border-t pt-8">
@@ -95,7 +100,7 @@ export function DashboardStats() {
             <div className="h-[200px] w-full">
               {materials.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-                  Sem dados.
+                  {syncStatus === 'syncing' ? 'Carregando...' : 'Sem dados.'}
                 </div>
               ) : (
                 <ChartContainer

@@ -22,9 +22,12 @@ import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { InventoryProvider } from './stores/useInventoryStore'
 import { AuthProvider, useAuth } from './hooks/use-auth'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertTriangle } from 'lucide-react'
 import useInventoryStore from './stores/useInventoryStore'
 import { useEffect } from 'react'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth()
@@ -38,8 +41,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         setSessionUser(dbUser)
       } else {
         // Fallback if user is authenticated but not yet in the cached users list
-        // This might happen on first login before sync completes
-        // We set a temporary user object based on Auth metadata
         setSessionUser({
           id: user.id,
           name: user.user_metadata.name || user.email || 'Usuário',
@@ -72,6 +73,42 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />
   }
 
+  return <>{children}</>
+}
+
+const ConfigurationCheck = ({ children }: { children: React.ReactNode }) => {
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+        <Card className="max-w-md w-full shadow-lg border-destructive/20">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <CardTitle className="text-xl text-destructive">
+              Erro de Configuração
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <p className="text-muted-foreground">
+              A conexão com o banco de dados não pôde ser estabelecida porque as
+              variáveis de ambiente estão faltando ou incorretas.
+            </p>
+            <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded text-xs font-mono text-left space-y-1">
+              <p>VITE_SUPABASE_URL</p>
+              <p>VITE_SUPABASE_ANON_KEY</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Verifique o arquivo <code>.env</code> na raiz do projeto.
+            </p>
+            <Button className="w-full" onClick={() => window.location.reload()}>
+              Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   return <>{children}</>
 }
 
@@ -108,21 +145,23 @@ const AppRoutes = () => {
 }
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-    <AuthProvider>
-      <InventoryProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
-        >
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AppRoutes />
-          </TooltipProvider>
-        </BrowserRouter>
-      </InventoryProvider>
-    </AuthProvider>
-  </ThemeProvider>
+  <ConfigurationCheck>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <AuthProvider>
+        <InventoryProvider>
+          <BrowserRouter
+            future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
+          >
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AppRoutes />
+            </TooltipProvider>
+          </BrowserRouter>
+        </InventoryProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  </ConfigurationCheck>
 )
 
 export default App

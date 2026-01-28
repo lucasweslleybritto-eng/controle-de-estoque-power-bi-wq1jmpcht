@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   GripVertical,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,8 @@ export function WarehouseMap() {
     pallets,
     currentUser,
     reorderStreets,
+    syncStatus,
+    retryConnection,
   } = useInventoryStore()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -132,6 +135,21 @@ export function WarehouseMap() {
     setDraggedId(null)
     document.body.style.overflow = ''
     reorderStreets(orderedStreets)
+  }
+
+  if (syncStatus === 'error' && orderedStreets.length === 0) {
+    return (
+      <div className="py-12 text-center border-2 border-dashed rounded-lg bg-muted/20">
+        <AlertTriangle className="h-12 w-12 mx-auto text-destructive mb-4" />
+        <h3 className="text-xl font-semibold">Erro ao carregar mapa</h3>
+        <p className="text-muted-foreground max-w-sm mx-auto mt-2 mb-4">
+          Não foi possível carregar as informações do armazém.
+        </p>
+        <Button onClick={retryConnection} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" /> Tentar Novamente
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -308,7 +326,7 @@ export function WarehouseMap() {
             </div>
           )
         })}
-        {orderedStreets.length === 0 && (
+        {syncStatus !== 'error' && orderedStreets.length === 0 && (
           <div className="col-span-full py-16 text-center border-2 border-dashed rounded-lg bg-muted/20">
             <Building className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
             <h3 className="text-xl font-semibold">Nenhuma rua configurada</h3>

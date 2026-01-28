@@ -28,8 +28,9 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // If user is already authenticated and loading is finished, redirect to dashboard
     if (user && !loading) {
-      navigate('/')
+      navigate('/', { replace: true })
     }
   }, [user, loading, navigate])
 
@@ -52,16 +53,26 @@ export default function Login() {
         title: 'Login realizado com sucesso',
         description: 'Redirecionando para o painel...',
       })
+      // Navigation will be handled by the useEffect
     } catch (err: any) {
       console.error(err)
       setError(
-        err.message === 'Invalid login credentials'
+        err.message?.includes('Invalid login credentials')
           ? 'Email ou senha inválidos.'
           : 'Erro ao conectar. Tente novamente.',
       )
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Optional: show a loading screen while checking auth status
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-100 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (

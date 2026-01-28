@@ -18,8 +18,14 @@ import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 export function ConnectionStatus() {
-  const { syncStatus, lastSync, isOnline, simulateRemoteUpdate, currentUser } =
-    useInventoryStore()
+  const {
+    syncStatus,
+    lastSync,
+    isOnline,
+    simulateRemoteUpdate,
+    currentUser,
+    retryConnection,
+  } = useInventoryStore()
   const canSimulate =
     currentUser?.role === 'ADMIN' || currentUser?.role === 'OPERATOR'
 
@@ -95,6 +101,16 @@ export function ConnectionStatus() {
                 {getStatusLabel()}
               </span>
             </div>
+            {syncStatus === 'error' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full mt-2"
+                onClick={retryConnection}
+              >
+                <RefreshCw className="mr-2 h-3 w-3" /> Tentar Conectar
+              </Button>
+            )}
           </div>
 
           {canSimulate && (

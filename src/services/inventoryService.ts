@@ -12,7 +12,7 @@ import {
   SyncStatus,
   BallisticItem,
 } from '@/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 const KEYS = {
   STREETS: 'streets',
@@ -57,6 +57,7 @@ class InventoryService {
   private queue: QueueItem[] = []
   private isProcessingQueue = false
   private realtimeChannel: any = null
+  private initialized = false
 
   private cache: {
     streets: Street[]
@@ -95,25 +96,50 @@ class InventoryService {
   }
 
   public async init() {
-    // If we have data in cache, we can treat loading as false initially for better UX,
-    // but typically we want to show we are syncing.
-    // For this requirements, we'll wait for the initial fetch.
+    if (!isSupabaseConfigured) {
+      this.setSyncStatus('error')
+      this.isLoading = false
+      this.notifyLoadingChange()
+      return
+    }
+
+    if (this.initialized) {
+      // Refresh data if already initialized
+      this.fetchAll().catch(console.error)
+      return
+    }
+
     try {
+      this.isLoading = true
+      this.notifyLoadingChange()
+
       if (this.isOnline) {
         this.setSyncStatus('syncing')
         this.subscribeToRealtime()
         await this.fetchAll()
         this.processQueue()
+        this.initialized = true
       } else {
         this.setSyncStatus('offline')
+        this.initialized = true // Considered initialized with cached data
       }
     } catch (error) {
       console.error('Initialization error:', error)
       this.setSyncStatus('error')
+      this.notifyEvent(
+        'Erro ao conectar com o banco de dados.',
+        'system',
+        'destructive',
+      )
     } finally {
       this.isLoading = false
       this.notifyLoadingChange()
     }
+  }
+
+  public retryConnection() {
+    this.initialized = false
+    this.init()
   }
 
   private setupNetworkListeners() {
@@ -137,6 +163,7 @@ class InventoryService {
     })
   }
 
+  // ... (toDb and fromDb methods remain the same)
   private toDb(table: string, data: any): any {
     const mapKeys = (obj: any): any => {
       const newObj: any = {}
@@ -172,13 +199,20 @@ class InventoryService {
     if (!this.isOnline) return
     try {
       const tables = Object.values(KEYS)
+      let hasError = false
 
       await Promise.all(
         tables.map(async (table) => {
-          // Graceful handling of connection errors
           try {
             const { data, error } = await supabase.from(table).select('*')
-            if (!error && data) {
+
+            if (error) {
+              console.warn(`Supabase error fetching ${table}:`, error.message)
+              hasError = true
+              return
+            }
+
+            if (data) {
               if (table === KEYS.SETTINGS) {
                 if (data.length > 0)
                   this.cache.settings = this.fromDb(table, data[0])
@@ -192,21 +226,24 @@ class InventoryService {
                 this.cache[cacheKey] = [...list]
               }
               this.notifyChange(table)
-            } else if (error) {
-              console.warn(
-                `Supabase error fetching ${table}: ${error.message}. Using cached data.`,
-              )
             }
           } catch (innerError) {
             console.warn(`Network/Client error fetching ${table}:`, innerError)
+            hasError = true
           }
         }),
       )
+
+      if (hasError) {
+        throw new Error('Some tables failed to load')
+      }
+
       this.saveToLocalStorage()
       this.setSyncStatus('synced')
     } catch (error) {
       console.error('Fetch all error:', error)
       this.setSyncStatus('error')
+      // Don't re-throw, just set error status so UI can react
     }
   }
 
@@ -229,6 +266,7 @@ class InventoryService {
     }
   }
 
+  // ... (handleRealtimeEvent, processQueue, addToQueue remain the same)
   private handleRealtimeEvent(payload: any) {
     const table = payload.table
     const eventType = payload.eventType
@@ -348,6 +386,7 @@ class InventoryService {
     return this.isLoading
   }
 
+  // ... (upsertItem, deleteItem, upsertMany remain the same)
   public async upsertItem(table: string, item: any) {
     const cacheKey = table === KEYS.BALLISTIC_ITEMS ? 'ballisticItems' : table
     if (table === KEYS.SETTINGS) {

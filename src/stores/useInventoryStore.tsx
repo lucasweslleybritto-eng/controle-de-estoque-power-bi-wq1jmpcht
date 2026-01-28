@@ -26,6 +26,7 @@ import {
 import { inventoryService } from '@/services/inventoryService'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/use-auth'
 
 interface InventoryContextType {
   streets: Street[]
@@ -102,6 +103,7 @@ interface InventoryContextType {
   updateSettings: (settings: Partial<SystemSettings>) => void
   resetSystem: () => void
   simulateRemoteUpdate: () => void
+  retryConnection: () => void
 
   addPallet: (
     pallet: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
@@ -116,8 +118,6 @@ interface InventoryContextType {
 const InventoryContext = createContext<InventoryContextType | undefined>(
   undefined,
 )
-
-const USER_STORAGE_KEY = 'inventory_current_user'
 
 const translateBallisticStatus = (status: BallisticStatus) => {
   const map: Record<BallisticStatus, string> = {
@@ -139,6 +139,7 @@ export const InventoryProvider = ({
   children: React.ReactNode
 }) => {
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
 
   const [streets, setStreets] = useState<Street[]>(() =>
     inventoryService.getStreets(),
@@ -183,9 +184,12 @@ export const InventoryProvider = ({
     inventoryService.getIsLoading(),
   )
 
+  // Initialize service only after user is authenticated to respect RLS
   useEffect(() => {
-    inventoryService.init()
-  }, [])
+    if (user && !authLoading) {
+      inventoryService.init()
+    }
+  }, [user, authLoading])
 
   useEffect(() => {
     const unsubscribe = inventoryService.subscribe((event) => {
@@ -386,9 +390,6 @@ export const InventoryProvider = ({
   }
 
   const addUser = (userData: Omit<User, 'id'>) => {
-    // Note: Creating a user via this method is purely virtual in this version,
-    // real users must be created via Auth Sign Up.
-    // However, we can create a profile entry in the DB.
     const newUser = { ...userData, id: crypto.randomUUID() }
     inventoryService.upsertItem(inventoryService.keys.USERS, newUser)
     return newUser
@@ -786,6 +787,10 @@ export const InventoryProvider = ({
     inventoryService.simulateRemoteUpdate()
   }
 
+  const retryConnection = () => {
+    inventoryService.retryConnection()
+  }
+
   const addPallet = (
     palletData: Omit<Pallet, 'id' | 'entryDate'> & { entryDate?: string },
     user: string = 'Operador',
@@ -919,6 +924,7 @@ export const InventoryProvider = ({
       updateSettings,
       resetSystem,
       simulateRemoteUpdate,
+      retryConnection,
       addPallet,
       updatePallet,
       movePallet,
